@@ -37,9 +37,17 @@ export async function POST(request: Request) {
             )
         }
 
-        // 3. TODO: Check Database for 'paid_subscribers'
-        // const user = await db.query('SELECT * FROM users WHERE telegram_id = $1', [data.id])
-        // if (!user.is_active) ...
+        // 3. Check for specific Admin/Subscriber ID
+        const ALLOWED_USERS = [7139453099]; // Votre ID Admin
+
+        // Simulating DB check
+        if (!ALLOWED_USERS.includes(data.id)) {
+            console.log(`User ${data.id} tried to login but is not in allowed list.`);
+            return NextResponse.json(
+                { error: "Access Denied. You do not have a paid subscription." },
+                { status: 403 }
+            )
+        }
 
         // 4. Set Session Cookie
         // In a real app, use a JWT or session ID encrypted library like 'jose' or 'iron-session'
