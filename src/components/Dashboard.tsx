@@ -189,19 +189,28 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* PnL Card */}
+                {/* PnL Card with Sparkline */}
                 <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
                     <div className={`absolute top-0 right-0 p-4 opacity-10 ${stats.dailyPnL >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                         {stats.dailyPnL >= 0 ? <TrendingUp size={48} /> : <TrendingDown size={48} />}
                     </div>
                     <span className="text-xs font-mono text-slate-500 uppercase">Daily PnL</span>
-                    <div className="flex items-center gap-2">
-                        <span className={`text-2xl font-bold tracking-tight ${stats.dailyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {stats.dailyPnL >= 0 ? '+' : ''}{stats.dailyPnL.toFixed(2)}
-                        </span>
-                        <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
-                            {((stats.dailyPnL / 2000) * 100).toFixed(2)}%
-                        </span>
+                    <div className="flex items-end justify-between gap-2">
+                        <div>
+                            <span className={`text-2xl font-bold tracking-tight block ${stats.dailyPnL >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                {stats.dailyPnL >= 0 ? '+' : ''}{stats.dailyPnL.toFixed(2)}
+                            </span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                                {((stats.dailyPnL / 2000) * 100).toFixed(2)}%
+                            </span>
+                        </div>
+                        {/* SVG SPARKLINE */}
+                        <div className="h-8 w-24">
+                            <svg viewBox="0 0 100 40" className="w-full h-full overflow-visible">
+                                <path d="M0 35 Q 25 35 30 20 T 60 15 T 90 5" fill="none" stroke={stats.dailyPnL >= 0 ? "#4ade80" : "#f87171"} strokeWidth="3" strokeLinecap="round" />
+                                <path d="M0 35 L 100 35" stroke="#334155" strokeWidth="1" strokeDasharray="4 2" />
+                            </svg>
+                        </div>
                     </div>
                 </div>
 
@@ -224,8 +233,8 @@ export default function Dashboard() {
                         layout
                         key={mod.id}
                         className={`p-5 rounded-xl border flex flex-col gap-4 relative overflow-hidden transition-all ${mod.active
-                                ? 'bg-slate-900/80 border-slate-700 shadow-lg shadow-blue-500/5'
-                                : 'bg-slate-950 border-slate-900 opacity-60'
+                            ? 'bg-slate-900/80 border-slate-700 shadow-lg shadow-blue-500/5'
+                            : 'bg-slate-950 border-slate-900 opacity-60'
                             }`}
                     >
                         {/* Status Light */}
@@ -238,8 +247,8 @@ export default function Dashboard() {
                             <button
                                 onClick={() => toggleModule(mod.id)}
                                 className={`text-[10px] font-bold px-2 py-1 rounded border uppercase tracking-wider transition-colors ${mod.active
-                                        ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
-                                        : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'
+                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20'
+                                    : 'bg-slate-800 text-slate-500 border-slate-700 hover:bg-slate-700'
                                     }`}
                             >
                                 {mod.active ? 'Active' : 'Standby'}
@@ -343,8 +352,8 @@ export default function Dashboard() {
                                 >
                                     <span className="text-slate-600 shrink-0">[{log.timestamp}]</span>
                                     <span className={`shrink-0 font-bold ${log.level === 'INFO' ? 'text-blue-500' :
-                                            log.level === 'WARN' ? 'text-amber-500' :
-                                                log.level === 'ERR' ? 'text-red-500' : 'text-green-500'
+                                        log.level === 'WARN' ? 'text-amber-500' :
+                                            log.level === 'ERR' ? 'text-red-500' : 'text-green-500'
                                         }`}>{log.level}</span>
                                     <span className="break-all">{log.message}</span>
                                 </motion.div>
