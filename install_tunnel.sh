@@ -20,4 +20,4 @@ echo ""
 sleep 3
 
 # Lancement du tunnel vers le port 3000 (Frontend)
-cloudflared tunnel --url http://localhost:3000
+cloudflared tunnel --url http://localhost:3001
