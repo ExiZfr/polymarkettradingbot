@@ -18,10 +18,10 @@ export default function LandingPage() {
         {/* Navbar */}
         <header className="px-6 py-6 flex items-center justify-between max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-2">
-            <div className="bg-gradient-to-tr from-blue-500 to-purple-500 p-2 rounded-lg">
+            <div className="bg-linear-to-tr from-blue-500 to-purple-500 p-2 rounded-lg">
               <Terminal size={20} className="text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight">Poly<span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">GraalX</span></span>
+            <span className="text-xl font-bold tracking-tight">Poly<span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 to-purple-400">GraalX</span></span>
           </div>
           <nav className="hidden md:flex gap-8 text-sm font-medium text-slate-400">
             <span className="hover:text-white transition cursor-not-allowed">Features</span>
@@ -37,7 +37,7 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <main className="flex-grow flex flex-col justify-center items-center px-4 py-20 text-center max-w-5xl mx-auto">
+        <main className="grow flex flex-col justify-center items-center px-4 py-20 text-center max-w-5xl mx-auto">
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -49,7 +49,7 @@ export default function LandingPage() {
             </span>
 
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight">
-              Dominate <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400">Polymarket</span> <br />
+              Dominate <span className="text-transparent bg-clip-text bg-linear-to-r from-blue-400 via-purple-400 to-pink-400">Polymarket</span> <br />
               with Algo Precision.
             </h1>
 
