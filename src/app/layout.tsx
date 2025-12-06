@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PolyBot Dashboard",
-  description: "Polymarket Trading Bot Dashboard",
+  title: "PolyGraalX Dashboard",
+  description: "The Ultimate Polymarket Trading Terminal",
 };
 
 export default function RootLayout({

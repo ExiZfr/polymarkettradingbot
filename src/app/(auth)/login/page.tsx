@@ -115,10 +115,10 @@ export default function LoginPage() {
             <div className="z-10 flex w-full max-w-md flex-col items-center gap-8 rounded-2xl border border-white/10 bg-zinc-900/50 p-8 backdrop-blur-xl">
                 <div className="text-center">
                     <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl">
-                        Poly<span className="text-blue-500">Bot</span> Dashboard
+                        Poly<span className="text-blue-500">GraalX</span>
                     </h1>
                     <p className="mt-2 text-zinc-400">
-                        Exclusive access for verified subscribers.
+                        The Ultimate Polymarket Trading Terminal
                     </p>
                 </div>
 
