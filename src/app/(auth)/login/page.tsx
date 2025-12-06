@@ -36,7 +36,9 @@ export default function LoginPage() {
 
     useEffect(() => {
         // Check if we're inside a Telegram Mini App
+        console.log("Checking Telegram WebApp...", window.Telegram)
         if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+            console.log("Telegram WebApp detected!", window.Telegram.WebApp)
             setIsMiniApp(true)
             const tg = window.Telegram.WebApp
             tg.ready()
@@ -44,6 +46,7 @@ export default function LoginPage() {
 
             // Auto-login if user data is available
             const user = tg.initDataUnsafe?.user
+            console.log("Telegram user data:", user)
             if (user) {
                 handleAuth({
                     id: user.id,
@@ -54,7 +57,11 @@ export default function LoginPage() {
                     auth_date: Math.floor(Date.now() / 1000),
                     hash: tg.initData, // Use full initData as hash for validation
                 })
+            } else {
+                setError("No user data from Telegram")
             }
+        } else {
+            console.log("Not in Telegram Mini App")
         }
     }, [])
 
