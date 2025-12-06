@@ -118,18 +118,25 @@ export default function Dashboard() {
                 return { ...p, currentPrice: newPrice, pnl: newPnL };
             }));
 
-            // 2. Add Log
-            if (Math.random() > 0.7) {
-                const actions = ["Scanning...", "Tick update", "Whale mvt detected", "Liquidity change"];
-                const msg = actions[Math.floor(Math.random() * actions.length)];
-                addLog('INFO', `${msg} [Block #${Math.floor(Math.random() * 100000)}]`);
+            // 2. Add Log (Diverse Events)
+            if (Math.random() > 0.6) {
+                const eventTypes = [
+                    { level: 'INFO', msg: "New Market Found: 'Will Bitcoin hit 100k?'" },
+                    { level: 'EXEC', msg: "Order Placed: BUY 'YES' on 'Trump 2024' @ 0.56" },
+                    { level: 'WARN', msg: "News Detected: 'Elon Musk tweets about Dodgecoin'" },
+                    { level: 'INFO', msg: "Oracle Update: Market #8829 resolved to 'NO'" },
+                    { level: 'INFO', msg: "Liquidity Scan: +$50k volume on 'Fed Rates'" },
+                    { level: 'EXEC', msg: "Stop Loss Triggered: SOLD 'NO' on 'Biden Dropout'" }
+                ];
+                const evt = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+                addLog(evt.level as LogType['level'], `${evt.msg}`);
             }
 
             // 3. Update Stats
             setStats(s => ({
                 ...s,
-                balance: s.balance + (Math.random() - 0.5) * 2,
-                dailyPnL: s.dailyPnL + (Math.random() - 0.5)
+                balance: s.balance + (Math.random() - 0.5) * 5,
+                dailyPnL: s.dailyPnL + (Math.random() - 0.5) * 2
             }));
 
         }, 2000);
