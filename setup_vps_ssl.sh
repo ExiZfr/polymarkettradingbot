@@ -18,17 +18,11 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -out /etc/nginx/ssl/nginx-selfsigned.crt \
   -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=$(curl -s ifconfig.me)"
 
-# 3. Configure Nginx Reverse Proxy
+# 3. Configure Nginx Reverse Proxy (Use port 8443 to avoid port 80/443 conflict with Plesk)
 echo "🔧 Configuring Nginx..."
 cat <<EOF > /etc/nginx/sites-available/polybot
 server {
-    listen 80;
-    server_name _;
-    return 301 https://\$host\$request_uri;
-}
-
-server {
-    listen 443 ssl;
+    listen 8443 ssl;
     server_name _;
 
     ssl_certificate /etc/nginx/ssl/nginx-selfsigned.crt;
@@ -54,6 +48,6 @@ systemctl restart nginx
 
 echo "=========================================="
 echo "✅ SETUP COMPLETE!"
-echo "Your bot is now accessible via HTTPS at: https://$(curl -s ifconfig.me)"
+echo "Your bot is now accessible via HTTPS at: https://$(curl -s ifconfig.me):8443"
 echo "Note: Since it is self-signed, you will see a security warning in the browser. You must accept it."
 echo "=========================================="
