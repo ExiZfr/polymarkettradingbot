@@ -10,6 +10,9 @@ export async function POST(request: Request) {
     try {
         const data: TelegramUser = await request.json()
 
+        // Define Allowed Users (Admin)
+        const ALLOWED_USERS = [7139453099]; // Votre ID Admin
+
         if (!BOT_TOKEN) {
             console.error("TELEGRAM_BOT_TOKEN is not defined")
             return NextResponse.json(
@@ -19,12 +22,17 @@ export async function POST(request: Request) {
         }
 
         // 1. Validate the cryptographic signature
-        const isValid = validateTelegramData(data, BOT_TOKEN)
-        if (!isValid) {
-            return NextResponse.json(
-                { error: "Invalid authentication data" },
-                { status: 401 }
-            )
+        // DEV BYPASS: Allow admin to bypass signature check for testing web flow
+        if (data.hash === "dev_bypass" && ALLOWED_USERS.includes(data.id)) {
+            console.log("Dev bypass used for admin login");
+        } else {
+            const isValid = validateTelegramData(data, BOT_TOKEN)
+            if (!isValid) {
+                return NextResponse.json(
+                    { error: "Invalid authentication data" },
+                    { status: 401 }
+                )
+            }
         }
 
         // 2. Check validity duration (optional but recommended)
@@ -37,8 +45,7 @@ export async function POST(request: Request) {
             )
         }
 
-        // 3. Check for specific Admin/Subscriber ID
-        const ALLOWED_USERS = [7139453099]; // Votre ID Admin
+
 
         // Simulating DB check
         if (!ALLOWED_USERS.includes(data.id)) {
