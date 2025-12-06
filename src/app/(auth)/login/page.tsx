@@ -35,33 +35,61 @@ export default function LoginPage() {
     const [isMiniApp, setIsMiniApp] = useState(false)
 
     useEffect(() => {
-        // Check if we're inside a Telegram Mini App
-        console.log("Checking Telegram WebApp...", window.Telegram)
-        if (typeof window !== "undefined" && window.Telegram?.WebApp) {
-            console.log("Telegram WebApp detected!", window.Telegram.WebApp)
-            setIsMiniApp(true)
-            const tg = window.Telegram.WebApp
-            tg.ready()
-            tg.expand()
+        // Function to handle Telegram authentication logic
+        const initTelegram = () => {
+            console.log("Checking Telegram WebApp...", window.Telegram)
+            if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+                const tg = window.Telegram.WebApp
 
-            // Auto-login if user data is available
-            const user = tg.initDataUnsafe?.user
-            console.log("Telegram user data:", user)
-            if (user) {
-                handleAuth({
-                    id: user.id,
-                    first_name: user.first_name,
-                    last_name: user.last_name,
-                    username: user.username,
-                    photo_url: user.photo_url,
-                    auth_date: Math.floor(Date.now() / 1000),
-                    hash: tg.initData, // Use full initData as hash for validation
-                })
+                // Only proceed if we are actually inside Telegram
+                // (Telegram WebApp is defined but initData is empty in regular browsers sometimes)
+                if (tg.initData) {
+                    console.log("Telegram WebApp detected with data")
+                    setIsMiniApp(true)
+                    tg.ready()
+                    tg.expand()
+
+                    const user = tg.initDataUnsafe?.user
+                    console.log("Telegram user data:", user)
+                    if (user) {
+                        handleAuth({
+                            id: user.id,
+                            first_name: user.first_name,
+                            last_name: user.last_name,
+                            username: user.username,
+                            photo_url: user.photo_url,
+                            auth_date: Math.floor(Date.now() / 1000),
+                            hash: tg.initData,
+                        })
+                    } else {
+                        setError("No user data from Telegram")
+                    }
+                } else {
+                    console.log("Telegram object present but no initData (likely browser)")
+                    setIsMiniApp(false)
+                }
             } else {
-                setError("No user data from Telegram")
+                console.log("Not in Telegram Mini App")
+                setIsMiniApp(false)
             }
-        } else {
-            console.log("Not in Telegram Mini App")
+        }
+
+        // Dynamically load the Telegram Script
+        const script = document.createElement("script")
+        script.src = "https://telegram.org/js/telegram-web-app.js"
+        script.async = true
+        script.onload = () => {
+            // Give a small delay for the object to be fully attached
+            setTimeout(initTelegram, 100)
+        }
+        script.onerror = () => {
+            console.error("Failed to load Telegram WebApp script")
+            setIsMiniApp(false)
+        }
+        document.head.appendChild(script)
+
+        return () => {
+            // Cleanup if needed, though usually not necessary for single script
         }
     }, [])
 
