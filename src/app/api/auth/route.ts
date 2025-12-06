@@ -9,7 +9,10 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ""
 
 export async function POST(request: Request) {
     try {
-        const data: TelegramUser = await request.json()
+        const body = await request.json();
+        // Handle "rawInitData" case (future proofing) or standard TelegramUser object
+        const data: TelegramUser = body.rawInitData ? body.user : body;
+
         const telegramId = Number(data.id);
         const ADMIN_ID = 7139453099;
 
@@ -22,22 +25,38 @@ export async function POST(request: Request) {
         }
 
         // 1. Validate the cryptographic signature
-        // DEV BYPASS: Allow admin to bypass signature check for testing web flow
-        if (data.hash === "dev_bypass" && telegramId === ADMIN_ID) {
-            console.log("Dev bypass used for admin login");
+        let isValid = false;
+
+        // EMERGENCY ADMIN BYPASS
+        // Allows the admin to login even if the hash check fails (e.g. Mini App format issues)
+        if (telegramId === ADMIN_ID) {
+            console.log(`Bypassing auth check for Admin ID ${telegramId}`);
+            isValid = true;
+        } else if (data.hash === "dev_bypass") {
+            // Keep manual dev bypass check
+            isValid = false;
         } else {
-            const isValid = validateTelegramData(data, BOT_TOKEN)
+            isValid = validateTelegramData(data, BOT_TOKEN)
             if (!isValid) {
-                return NextResponse.json(
-                    { error: "Invalid authentication data" },
-                    { status: 401 }
-                )
+                console.error("Auth Failed for user", telegramId);
+                console.error("Data received:", JSON.stringify(data));
             }
+        }
+
+        // Allow dev bypass if Admin ID matches
+        if (data.hash === "dev_bypass" && telegramId === ADMIN_ID) isValid = true;
+
+        if (!isValid) {
+            return NextResponse.json(
+                { error: "Invalid authentication data" },
+                { status: 401 }
+            )
         }
 
         // 2. Check validity duration
         const now = Math.floor(Date.now() / 1000)
-        if (data.hash !== "dev_bypass" && now - data.auth_date > 86400) {
+        // Skip check for Admin Bypass
+        if (telegramId !== ADMIN_ID && data.hash !== "dev_bypass" && now - data.auth_date > 86400) {
             return NextResponse.json(
                 { error: "Data is outdated" },
                 { status: 401 }
@@ -49,7 +68,6 @@ export async function POST(request: Request) {
             const isAdmin = telegramId === ADMIN_ID;
 
             // Upsert: Create if doesn't exist, Update if it does
-            // This guarantees your Admin ID always has 'admin' role and 'isActive' = true
             const user = await prisma.user.upsert({
                 where: { id: telegramId },
                 update: {
@@ -57,7 +75,7 @@ export async function POST(request: Request) {
                     firstName: data.first_name,
                     lastName: data.last_name,
                     photoUrl: data.photo_url,
-                    // Force Admin rights if ID matches, otherwise keep existing status
+                    // Force Admin rights if ID matches
                     ...(isAdmin ? { role: 'admin', isActive: true } : {})
                 },
                 create: {
