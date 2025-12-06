@@ -19,6 +19,11 @@ git pull origin main
 echo "📦 [2/4] Installing dependencies..."
 npm install
 
+# 2.5 Sync Database Schema
+echo "🗄️  [2.5/4] Syncing Database..."
+npx prisma generate
+npx prisma db push
+
 # 3. Build the Next.js Application
 echo "🏗️  [3/4] Building Next.js app..."
 npm run build

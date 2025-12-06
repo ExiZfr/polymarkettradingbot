@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { TelegramUser } from '@/lib/types'
 import { validateTelegramData } from '@/lib/auth'
 import { cookies } from 'next/headers'
+import { prisma } from '@/lib/prisma'
 
 // IMPORTANT: This comes from your env
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || ""
@@ -34,22 +35,61 @@ export async function POST(request: Request) {
             }
         }
 
-        // 2. Check validity duration (optional but recommended)
+        // 2. Check validity duration
         const now = Math.floor(Date.now() / 1000)
-        if (data.hash !== "dev_bypass" && now - data.auth_date > 86400) { // 24 hours
+        if (data.hash !== "dev_bypass" && now - data.auth_date > 86400) {
             return NextResponse.json(
                 { error: "Data is outdated" },
                 { status: 401 }
             )
         }
 
-        // 3. Simple Admin Check (Pending PostgreSQL Integration)
-        if (telegramId !== ADMIN_ID) {
-            console.log(`User ${data.id} denied (Not Admin)`);
-            return NextResponse.json(
-                { error: "Access Denied. You do not have a paid subscription." },
-                { status: 403 }
-            )
+        // 3. Database Check via Prisma
+        try {
+            const isAdmin = telegramId === ADMIN_ID;
+
+            // Upsert: Create if doesn't exist, Update if it does
+            // This guarantees your Admin ID always has 'admin' role and 'isActive' = true
+            const user = await prisma.user.upsert({
+                where: { id: telegramId },
+                update: {
+                    username: data.username,
+                    firstName: data.first_name,
+                    lastName: data.last_name,
+                    photoUrl: data.photo_url,
+                    // Force Admin rights if ID matches, otherwise keep existing status
+                    ...(isAdmin ? { role: 'admin', isActive: true } : {})
+                },
+                create: {
+                    id: telegramId,
+                    username: data.username,
+                    firstName: data.first_name,
+                    lastName: data.last_name,
+                    photoUrl: data.photo_url,
+                    isActive: isAdmin, // Auto-activate Admin
+                    role: isAdmin ? 'admin' : 'user'
+                }
+            })
+
+            // Check Access Permissions
+            const hasAccess = user.isActive || isAdmin
+
+            if (!hasAccess) {
+                return NextResponse.json(
+                    { error: "Access Denied. You do not have a paid subscription." },
+                    { status: 403 }
+                )
+            }
+
+        } catch (dbError) {
+            console.error("Database Login Error:", dbError)
+            // Fail-safe
+            if (telegramId !== ADMIN_ID) {
+                return NextResponse.json(
+                    { error: "Database Connection Failed" },
+                    { status: 500 }
+                )
+            }
         }
 
         // 4. Set Session Cookie
@@ -58,7 +98,7 @@ export async function POST(request: Request) {
             id: telegramId,
             username: data.username,
             photo_url: data.photo_url,
-            is_admin: true
+            is_admin: telegramId === ADMIN_ID
         }), {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
