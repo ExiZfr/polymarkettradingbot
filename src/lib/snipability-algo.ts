@@ -173,27 +173,4 @@ function generateDescription(score: number, urgency: UrgencyLevel, market: Proce
     return `⏳ Long-term market. ${timeStr} remaining. Low priority unless news breaks.`;
 }
 
-/**
- * Filter markets to maintain ~30 snipable markets
- * Returns top scoring markets
- */
-export function filterSnipableMarkets(markets: Array<{ market: ProcessedMarket; sniping: SnipabilityScore }>, targetCount: number = 30): typeof markets {
-    // Sort by score descending
-    const sorted = markets.sort((a, b) => b.sniping.score - a.sniping.score);
 
-    // Take top performers but ensure minimum score threshold
-    const minScore = 35; // Lowered from 45 to capture more markets
-    const filtered = sorted.filter(m => m.sniping.score >= minScore);
-
-    // If we have more than target, take top N
-    if (filtered.length > targetCount) {
-        return filtered.slice(0, targetCount);
-    }
-
-    // If we have less, lower the threshold slightly
-    if (filtered.length < targetCount * 0.7) { // If less than 70% of target
-        return sorted.slice(0, Math.min(targetCount, sorted.length));
-    }
-
-    return filtered;
-}
