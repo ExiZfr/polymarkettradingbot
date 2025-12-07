@@ -40,19 +40,26 @@ const GAMMA_API = 'https://gamma-api.polymarket.com';
  */
 export async function fetchPolymarketMarkets(): Promise<ProcessedMarket[]> {
     try {
-        // Fetch MORE markets for comprehensive coverage (1000 instead of 500)
-        const response = await fetch(`${GAMMA_API}/markets?closed=false&limit=1000`, {
+        console.log('[API] Fetching markets from Gamma...');
+
+        // Fetch fewer markets initially to ensure reliability (100)
+        // Add User-Agent to avoid WAF blocking
+        const response = await fetch(`${GAMMA_API}/markets?closed=false&limit=100`, {
             headers: {
                 'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
             },
-            cache: 'no-store'
+            next: { revalidate: 10 } // Cache for 10 seconds
         });
 
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[API Error] Status: ${response.status}, Body: ${errorText.substring(0, 200)}`);
             throw new Error(`Polymarket API error: ${response.status}`);
         }
 
         const markets = await response.json();
+        console.log(`[API] Successfully fetched ${markets.length} markets`);
 
         // Lower volume threshold to $100 minimum for broader coverage
         return markets
