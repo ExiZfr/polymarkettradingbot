@@ -97,7 +97,7 @@ export default function LoginPage() {
                 throw new Error(data.error || "Authentication failed")
             }
 
-            router.push("/")
+            router.push("/dashboard")
         } catch (err: any) {
             console.error("Login error:", err)
             setError(err.message || "Something went wrong")
