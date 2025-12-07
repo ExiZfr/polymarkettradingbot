@@ -204,7 +204,7 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, isTr
                             ) : (
                                 /* Single Market Metrics */
                                 <>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-2 gap-3 mb-4">
                                         <div className="p-2.5 rounded-lg bg-white/5 border border-white/5">
                                             <div className="flex items-center gap-1.5 text-slate-400 text-xs mb-1"><Droplets className="h-3 w-3" /> Liquidity</div>
                                             <div className="text-sm font-mono font-bold text-white">{formatLiquidity(activeMarket.liquidity)}</div>
@@ -214,9 +214,52 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, isTr
                                             <div className="text-sm font-mono font-bold text-white">{formatDate(activeMarket.endDate)}</div>
                                         </div>
                                     </div>
+
+                                    {/* Score Breakdown (Gauges) */}
+                                    {sniping.factors && (
+                                        <div className="space-y-3 p-3 bg-white/5 rounded-lg border border-white/5">
+                                            <p className="text-[10px] uppercase font-bold text-slate-500 mb-2">Algorithm Factors</p>
+
+                                            {/* Volume */}
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-300">
+                                                    <span>Volume Strength</span>
+                                                    <span>{sniping.factors.volumeScore}/35</span>
+                                                </div>
+                                                <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-blue-500" style={{ width: `${(sniping.factors.volumeScore / 35) * 100}%` }} />
+                                                </div>
+                                            </div>
+
+                                            {/* Liquidity */}
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-300">
+                                                    <span>Liquidity Depth</span>
+                                                    <span>{sniping.factors.liquidityScore}/35</span>
+                                                </div>
+                                                <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-purple-500" style={{ width: `${(sniping.factors.liquidityScore / 35) * 100}%` }} />
+                                                </div>
+                                            </div>
+
+                                            {/* Time/Urgency */}
+                                            <div className="space-y-1">
+                                                <div className="flex justify-between text-[10px] text-slate-300">
+                                                    <span>Urgency</span>
+                                                    <span>{sniping.factors.timeScore}/20</span>
+                                                </div>
+                                                <div className="h-1 w-full bg-black/50 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-yellow-500" style={{ width: `${(sniping.factors.timeScore / 20) * 100}%` }} />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     {/* AI Reason */}
-                                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10">
-                                        <p className="text-xs leading-relaxed text-blue-200">"{sniping.description}"</p>
+                                    <div className="p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 mt-3">
+                                        <p className="text-xs leading-relaxed text-blue-200">
+                                            <span className="font-bold">AI Insight:</span> {sniping.description}
+                                        </p>
                                     </div>
                                 </>
                             )}

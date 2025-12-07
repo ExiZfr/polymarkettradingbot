@@ -100,7 +100,31 @@ export default function Dashboard() {
             loadRealMetrics();
         }, 60000);
 
-        return () => clearInterval(interval);
+        // --- CONNECT TO CENTRAL LISTENER ---
+        const handleListenerLog = (log: any) => {
+            // Map Listener types to Dashboard types
+            let level: LogType['level'] = 'INFO';
+            if (log.type === 'WARNING') level = 'WARN';
+            if (log.type === 'SUCCESS') level = 'EXEC';
+
+            const message = log.type === 'SCAN' ? `[SCAN] ${log.message}` : log.message;
+
+            setLogs(prev => [{
+                id: Date.now() + Math.random(),
+                timestamp: new Date().toLocaleTimeString('en-GB', { hour12: false }),
+                level,
+                message
+            }, ...prev].slice(0, 100));
+        };
+
+        const { listener } = require("@/lib/listener");
+        listener.on('log', handleListenerLog);
+        listener.start();
+
+        return () => {
+            clearInterval(interval);
+            listener.off('log', handleListenerLog);
+        };
     }, []);
 
     async function loadRealMetrics() {

@@ -21,13 +21,21 @@ export default function RadarPage() {
     const [showHelpModal, setShowHelpModal] = useState(false);
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [listenerStatus, setListenerStatus] = useState<ListenerStatus | null>(null);
+    const [toasts, setToasts] = useState<Array<{ id: string, title: string, msg: string, type: 'info' | 'success' }>>([]);
 
     // Filters
     const [filterEventType, setFilterEventType] = useState<FilterEventType>('all');
     const [filterUrgency, setFilterUrgency] = useState<FilterUrgency>('ALL');
     const [filterCategory, setFilterCategory] = useState<FilterCategory>('All');
 
-    // Load markets on mount
+    // Toast Helper
+    const addToast = (title: string, msg: string, type: 'info' | 'success') => {
+        const id = Math.random().toString(36).substr(2, 9);
+        setToasts(prev => [...prev, { id, title, msg, type }]);
+        setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+    };
+
+    // Load markets on mount & Subscribe to Listener
     useEffect(() => {
         loadMarkets();
         listener.start();
@@ -36,8 +44,23 @@ export default function RadarPage() {
             setListenerStatus(listener.getStatus());
         }, 10000);
 
+        // Listener Subscriptions
+        const onMarketFound = (data: any) => {
+            addToast('New Opportunity', data.title, 'info');
+            loadMarkets(); // Auto-refresh data when new market found
+        };
+
+        const onSignalDetected = (data: any) => {
+            addToast('SNIPE SIGNAL', `${data.marketTitle} (${data.score}/100)`, 'success');
+        };
+
+        listener.on('market_found', onMarketFound);
+        listener.on('signal_detected', onSignalDetected);
+
         return () => {
             clearInterval(statusInterval);
+            listener.off('market_found', onMarketFound);
+            listener.off('signal_detected', onSignalDetected);
             listener.stop();
         };
     }, []);
@@ -385,7 +408,7 @@ export default function RadarPage() {
                     </AnimatePresence>
                 </div>
 
-                {/* Help Modal */}
+                {/* Help Modal - SIMPLIFIED */}
                 <AnimatePresence>
                     {showHelpModal && (
                         <motion.div
@@ -403,7 +426,7 @@ export default function RadarPage() {
                                 className="bg-gradient-to-br from-slate-900 to-slate-950 border border-white/10 rounded-3xl p-8 max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl"
                             >
                                 <div className="flex items-center justify-between mb-6">
-                                    <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-400">Metrics Guide</h2>
+                                    <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-linear-to-r from-blue-400 to-purple-400">Comment ça marche ?</h2>
                                     <button
                                         onClick={() => setShowHelpModal(false)}
                                         className="p-2 hover:bg-white/5 rounded-lg transition"
@@ -413,54 +436,78 @@ export default function RadarPage() {
                                 </div>
 
                                 <div className="space-y-6 text-slate-300">
-                                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                        <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                                            <span className="text-2xl">🎯</span>
-                                            Snipability Score (0-100)
+                                    <div className="p-5 bg-white/5 rounded-xl border border-white/10">
+                                        <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-3">
+                                            <span className="text-3xl">🎯</span>
+                                            Le Score de "Snipabilité"
                                         </h3>
-                                        <p className="text-sm leading-relaxed">
-                                            AI-powered composite metric analyzing urgency, volume, liquidity, and sentiment.
-                                            <span className="text-green-400 font-medium"> ≥80 = Excellent</span>,
-                                            <span className="text-yellow-400 font-medium"> 50-79 = Good</span>,
-                                            <span className="text-red-400 font-medium"> &lt;50 = Low Priority</span>.
+                                        <p className="text-base leading-relaxed mb-2">
+                                            C'est la note de 0 à 100 qui vous dit si ça vaut le coup d'entrer maintennant.
+                                        </p>
+                                        <ul className="space-y-2 ml-1">
+                                            <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-green-500"></div> <span className="text-white font-medium">80+ (Excellent)</span> : L'IA détecte une opportunité en or. Foncez !</li>
+                                            <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-yellow-500"></div> <span className="text-white font-medium">50-79 (Bon)</span> : Potentiel intéressant, surveillez-le.</li>
+                                            <li className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-red-500"></div> <span className="text-white font-medium">-50 (Bof)</span> : Peu d'activité ou trop risqué.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-5 bg-white/5 rounded-xl border border-white/10">
+                                        <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-3">
+                                            <span className="text-3xl">⏱️</span>
+                                            L'Urgence (Ça brule !)
+                                        </h3>
+                                        <p className="text-base leading-relaxed">
+                                            C'est le chrono avant que l'opportunité ne disparaisse.
+                                            <br />
+                                            <span className="text-red-400 font-bold">🔥 CRITICAL</span> veut dire qu'il se passe quelque chose de majeur DANS L'HEURE (annonce Fed, tweet d'Elon, fin de match). Soyez prêts.
                                         </p>
                                     </div>
 
-                                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                        <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                                            <span className="text-2xl">⏱️</span>
-                                            Urgency Levels
+                                    <div className="p-5 bg-white/5 rounded-xl border border-white/10">
+                                        <h3 className="text-xl font-bold text-white mb-3 flex items-center gap-3">
+                                            <span className="text-3xl">🕵️</span>
+                                            L'Espion IA (Listener)
                                         </h3>
-                                        <p className="text-sm leading-relaxed">
-                                            <span className="text-red-400 font-medium">🔥 CRITICAL</span>: &lt;24h or score ≥85<br />
-                                            <span className="text-orange-400 font-medium">⚡ HIGH</span>: &lt;48h or score ≥70<br />
-                                            <span className="text-yellow-400 font-medium">📊 MEDIUM</span>: &lt;7 days or score ≥50<br />
-                                            <span className="text-slate-400 font-medium">⏳ LOW</span>: Long-term markets
-                                        </p>
-                                    </div>
-
-                                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                                        <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
-                                            <span className="text-2xl">🤖</span>
-                                            AI Listener
-                                        </h3>
-                                        <p className="text-sm leading-relaxed">
-                                            Real-time monitoring of Twitter, RSS, and news APIs for market-relevant info.
-                                            <span className="text-yellow-400 font-medium"> ⭐ Favorites</span> get 3x more frequent scans.
+                                        <p className="text-base leading-relaxed">
+                                            Imaginez une armée d'espions qui lisent Twitter et les news financières 24h/24 pour vous. Dès qu'une info tombe (ex: "Trump va parler"), l'IA la relie au bon pari et vous alerte avant tout le monde.
                                         </p>
                                     </div>
                                 </div>
 
                                 <button
                                     onClick={() => setShowHelpModal(false)}
-                                    className="mt-8 w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl font-semibold transition shadow-lg shadow-blue-500/20"
+                                    className="mt-8 w-full py-4 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 rounded-xl font-bold text-lg text-white transition shadow-lg shadow-blue-500/20"
                                 >
-                                    Got it! Let's snipe 🎯
+                                    Compris ! 🚀
                                 </button>
                             </motion.div>
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* Toast Notifications */}
+                <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none">
+                    <AnimatePresence>
+                        {toasts.map(toast => (
+                            <motion.div
+                                key={toast.id}
+                                initial={{ opacity: 0, x: 20, scale: 0.9 }}
+                                animate={{ opacity: 1, x: 0, scale: 1 }}
+                                exit={{ opacity: 0, x: 20, scale: 0.9 }}
+                                className={`pointer-events-auto p-4 rounded-xl shadow-2xl border min-w-[300px] backdrop-blur-xl flex items-start gap-3 ${toast.type === 'success'
+                                    ? 'bg-green-500/10 border-green-500/20 text-green-100'
+                                    : 'bg-blue-500/10 border-blue-500/20 text-blue-100'
+                                    }`}
+                            >
+                                <div className={`mt-1 p-1 rounded-full ${toast.type === 'success' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                                <div>
+                                    <h4 className="font-bold text-sm">{toast.title}</h4>
+                                    <p className="text-xs opacity-80">{toast.msg}</p>
+                                </div>
+                            </motion.div>
+                        ))}
+                    </AnimatePresence>
+                </div>
             </div>
         </div>
     );
