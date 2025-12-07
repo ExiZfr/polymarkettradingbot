@@ -46,7 +46,10 @@ export async function GET() {
     }
 }
 
-function formatVolume(volume: number): string {
+function formatVolume(volume: number | null | undefined): string {
+    if (!volume || typeof volume !== 'number') {
+        return '$0';
+    }
     if (volume >= 1000000) {
         return `$${(volume / 1000000).toFixed(1)}M`;
     } else if (volume >= 1000) {
