@@ -72,9 +72,18 @@ export default function RadarPage() {
 
             // Dynamic filtering: guarantees 25-500 quality markets
             const filtered = filterSnipableMarkets(scored, 25, 500);
-            setMarkets(filtered);
 
-            filtered.forEach(({ market }) => {
+            // STRICT CLIENT-SIDE DEDUPLICATION
+            const uniqueMap = new Map();
+            const uniqueFiltered = filtered.filter(item => {
+                if (uniqueMap.has(item.market.id)) return false;
+                uniqueMap.set(item.market.id, true);
+                return true;
+            });
+
+            setMarkets(uniqueFiltered);
+
+            uniqueFiltered.forEach(({ market }) => {
                 listener.trackMarket(market, favorites.has(market.id));
             });
         } catch (error) {
