@@ -38,7 +38,15 @@ export async function GET() {
                 tags: m.tags || []
             }));
 
-        return NextResponse.json(processed);
+        // Deduplicate markets by ID
+        const uniqueMarkets = new Map();
+        processed.forEach((m: any) => {
+            if (!uniqueMarkets.has(m.id)) {
+                uniqueMarkets.set(m.id, m);
+            }
+        });
+
+        return NextResponse.json(Array.from(uniqueMarkets.values()));
 
     } catch (error) {
         console.error('[API Route] Critical error:', error);
