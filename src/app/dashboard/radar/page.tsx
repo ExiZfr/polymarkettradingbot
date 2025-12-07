@@ -124,15 +124,8 @@ export default function RadarPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-[#050505] via-[#0a0a0f] to-[#050505] text-white">
-            {/* Animated Background */}
-            <div className="fixed inset-0 opacity-30 pointer-events-none">
-                <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob" />
-                <div className="absolute top-0 -right-4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000" />
-                <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000" />
-            </div>
-
-            <div className="relative z-10 p-6">
+        <div className="min-h-screen bg-[#050505] text-white">
+            <div className="p-6">
                 {/* Enhanced Header */}
                 <div className="max-w-7xl mx-auto mb-8">
                     <motion.div
@@ -150,7 +143,7 @@ export default function RadarPage() {
                                         Market Radar
                                     </h1>
                                 </div>
-                                <p className="text-slate-400 ml-14">
+                                <p className="text-slate-300 ml-14 text-base">
                                     {loading ? (
                                         <span className="flex items-center gap-2">
                                             <RefreshCw size={14} className="animate-spin" />
@@ -219,58 +212,58 @@ export default function RadarPage() {
                                 <select
                                     value={sortBy}
                                     onChange={(e) => setSortBy(e.target.value as "score" | "volume")}
-                                    className="px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition"
+                                    className="px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-medium text-base focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition"
                                 >
-                                    <option value="score">🎯 Sort by Score</option>
-                                    <option value="volume">💰 Sort by Volume</option>
+                                    <option value="score" className="bg-slate-900 text-white">🎯 Sort by Score</option>
+                                    <option value="volume" className="bg-slate-900 text-white">💰 Sort by Volume</option>
                                 </select>
                             </div>
 
-                            {/* Category & Event Filters */}
+                            {/* Category & Event Filters - IMPROVED READABILITY */}
                             <div className="flex flex-wrap gap-3">
-                                <div className="flex items-center gap-2 px-4 py-2 bg-black/20 rounded-lg border border-white/5">
-                                    <Filter size={16} className="text-slate-400" />
+                                <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-800/50 rounded-xl border border-white/10">
+                                    <Filter size={16} className="text-blue-400" />
                                     <select
                                         value={filterCategory}
                                         onChange={(e) => setFilterCategory(e.target.value as FilterCategory)}
-                                        className="bg-transparent text-sm text-white focus:outline-none"
+                                        className="bg-transparent text-base font-medium text-white focus:outline-none cursor-pointer"
                                     >
-                                        <option value="All">All Categories</option>
-                                        <option value="Crypto">💰 Crypto</option>
-                                        <option value="Politics">🏛️ Politics</option>
-                                        <option value="Sports">⚽ Sports</option>
-                                        <option value="Finance">📈 Finance</option>
-                                        <option value="Other">🔮 Other</option>
+                                        <option value="All" className="bg-slate-900 text-white">All Categories</option>
+                                        <option value="Crypto" className="bg-slate-900 text-white">💰 Crypto</option>
+                                        <option value="Politics" className="bg-slate-900 text-white">🏛️ Politics</option>
+                                        <option value="Sports" className="bg-slate-900 text-white">⚽ Sports</option>
+                                        <option value="Finance" className="bg-slate-900 text-white">📈 Finance</option>
+                                        <option value="Other" className="bg-slate-900 text-white">🔮 Other</option>
                                     </select>
                                 </div>
 
                                 <select
                                     value={filterEventType}
                                     onChange={(e) => setFilterEventType(e.target.value as FilterEventType)}
-                                    className="px-4 py-2 bg-black/20 border border-white/5 rounded-lg text-sm text-white focus:outline-none"
+                                    className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-xl text-base font-medium text-white focus:outline-none cursor-pointer"
                                 >
-                                    <option value="all">All Events</option>
-                                    <option value="tweet">🐦 Tweets</option>
-                                    <option value="announcement">📢 Announcements</option>
-                                    <option value="event">🎪 Events</option>
-                                    <option value="news">📰 News</option>
+                                    <option value="all" className="bg-slate-900 text-white">All Events</option>
+                                    <option value="tweet" className="bg-slate-900 text-white">🐦 Tweets</option>
+                                    <option value="announcement" className="bg-slate-900 text-white">📢 Announcements</option>
+                                    <option value="event" className="bg-slate-900 text-white">🎪 Events</option>
+                                    <option value="news" className="bg-slate-900 text-white">📰 News</option>
                                 </select>
 
                                 <select
                                     value={filterUrgency}
                                     onChange={(e) => setFilterUrgency(e.target.value as FilterUrgency)}
-                                    className="px-4 py-2 bg-black/20 border border-white/5 rounded-lg text-sm text-white focus:outline-none"
+                                    className="px-4 py-2.5 bg-slate-800/50 border border-white/10 rounded-xl text-base font-medium text-white focus:outline-none cursor-pointer"
                                 >
-                                    <option value="ALL">All Urgency</option>
-                                    <option value="CRITICAL">🔥 Critical</option>
-                                    <option value="HIGH">⚡ High</option>
-                                    <option value="MEDIUM">📊 Medium</option>
-                                    <option value="LOW">⏳ Low</option>
+                                    <option value="ALL" className="bg-slate-900 text-white">All Urgency</option>
+                                    <option value="CRITICAL" className="bg-slate-900 text-white">🔥 Critical</option>
+                                    <option value="HIGH" className="bg-slate-900 text-white">⚡ High</option>
+                                    <option value="MEDIUM" className="bg-slate-900 text-white">📊 Medium</option>
+                                    <option value="LOW" className="bg-slate-900 text-white">⏳ Low</option>
                                 </select>
 
                                 {favorites.size > 0 && (
-                                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-sm shadow-lg shadow-yellow-500/10">
-                                        <Star size={14} className="fill-current" />
+                                    <div className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/30 rounded-xl text-yellow-300 text-base font-medium shadow-lg shadow-yellow-500/10">
+                                        <Star size={16} className="fill-current" />
                                         {favorites.size} Favorite{favorites.size > 1 ? 's' : ''}
                                     </div>
                                 )}
