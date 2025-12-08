@@ -351,7 +351,7 @@ export default function RadarView() {
             </div>
 
             {/* CONTROLS BAR (Floating Glass) */}
-            <div className="sticky top-4 z-40 mb-8 p-1.5 bg-[#0C0D12]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2">
+            <div className="sticky top-4 z-40 mb-8 p-1.5 bg-[#0C0D12]/80 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl flex flex-col md:flex-row gap-2 overflow-visible">
                 {/* Search */}
                 <div className="relative flex-1 group">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-indigo-400 transition-colors" size={18} />
@@ -367,7 +367,7 @@ export default function RadarView() {
                 <div className="h-8 w-px bg-white/10 self-center hidden md:block mx-2" />
 
                 {/* Filters Row */}
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-none px-2 md:px-0">
+                <div className="flex items-center gap-2 overflow-visible pb-1 md:pb-0 scrollbar-none px-2 md:px-0">
                     {/* Category Filter */}
                     <div className="relative">
                         <button
