@@ -27,6 +27,7 @@ export async function GET() {
             .filter((m: any) => m.active && m.volume > 100)
             .map((m: any) => ({
                 id: m.id || m.condition_id,
+                slug: m.slug || m.id || m.condition_id, // Add slug for Polymarket URLs
                 title: m.question || m.description,
                 image: m.image || 'https://via.placeholder.com/400x200/1a1a2e/ffffff?text=Polymarket',
                 outcome: m.outcomes?.[0]?.name || 'YES',

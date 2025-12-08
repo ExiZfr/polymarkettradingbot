@@ -16,9 +16,13 @@ import {
     Zap,
     ChevronRight,
     Receipt,
-    Radio
+    Radio,
+    X,
+    AlertTriangle,
+    TrendingUp,
+    Info
 } from "lucide-react";
-import { RadarProvider } from "@/lib/radar-context";
+import { RadarProvider, useRadar, ListenerLog } from "@/lib/radar-context";
 
 type NavItem = {
     label: string;
@@ -36,6 +40,154 @@ const navItems: NavItem[] = [
     { label: "Oracle", href: "/dashboard/oracle", icon: Brain },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
+
+// Notification Panel Component
+function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose: () => void; logs: ListenerLog[] }) {
+    const recentLogs = logs.slice(0, 10);
+
+    const getLogIcon = (type: string) => {
+        switch (type) {
+            case 'signal': return <TrendingUp className="text-green-400" size={14} />;
+            case 'alert': return <AlertTriangle className="text-amber-400" size={14} />;
+            case 'error': return <AlertTriangle className="text-red-400" size={14} />;
+            default: return <Info className="text-blue-400" size={14} />;
+        }
+    };
+
+    const getLogBg = (priority: string) => {
+        switch (priority) {
+            case 'high': return 'bg-red-500/10 border-red-500/20';
+            case 'medium': return 'bg-amber-500/10 border-amber-500/20';
+            default: return 'bg-white/5 border-white/5';
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-40" onClick={onClose} />
+
+            {/* Panel */}
+            <motion.div
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                className="absolute top-full right-0 mt-2 w-80 bg-[#0C0D12] border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden"
+            >
+                <div className="p-4 border-b border-white/5 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-white">Notifications</h3>
+                    <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto">
+                    {recentLogs.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 text-sm">
+                            No recent notifications
+                        </div>
+                    ) : (
+                        <div className="p-2 space-y-2">
+                            {recentLogs.map((log) => (
+                                <div
+                                    key={log.id}
+                                    className={`p-3 rounded-xl border ${getLogBg(log.priority)} transition-colors hover:bg-white/5`}
+                                >
+                                    <div className="flex items-start gap-2">
+                                        <div className="mt-0.5">{getLogIcon(log.type)}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-slate-300 leading-relaxed">{log.message}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[10px] text-slate-500 uppercase">{log.source}</span>
+                                                <span className="text-[10px] text-slate-600">
+                                                    {new Date(log.timestamp).toLocaleTimeString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                <div className="p-3 border-t border-white/5">
+                    <Link
+                        href="/dashboard/listener"
+                        onClick={onClose}
+                        className="block w-full py-2 text-center text-xs font-medium text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                        View All Activity →
+                    </Link>
+                </div>
+            </motion.div>
+        </>
+    );
+}
+
+// Header with Notifications - needs to be inside RadarProvider
+function DashboardHeader({ toggleSidebar, pathname }: { toggleSidebar: () => void; pathname: string }) {
+    const [isNotifOpen, setIsNotifOpen] = useState(false);
+    const { logs } = useRadar();
+
+    const unreadCount = logs.filter(l => l.priority === 'high').length;
+
+    return (
+        <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-[#06070A]/80 backdrop-blur-xl z-20">
+            <div className="flex items-center gap-4">
+                <button
+                    onClick={toggleSidebar}
+                    className="p-2 -ml-2 text-slate-400 hover:text-white lg:hidden transition-colors"
+                >
+                    <Menu size={24} />
+                </button>
+                <div>
+                    <h1 className="text-xl font-bold text-white hidden sm:block">
+                        {navItems.find(i => i.href === pathname)?.label || "Dashboard"}
+                    </h1>
+                </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+                {/* Status Indicator */}
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    </span>
+                    <span className="text-xs font-medium text-green-400">System Online</span>
+                </div>
+
+                {/* Notifications */}
+                <div className="relative">
+                    <button
+                        onClick={() => setIsNotifOpen(!isNotifOpen)}
+                        className="relative p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-full hover:bg-white/10"
+                    >
+                        <Bell size={20} />
+                        {unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-indigo-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#06070A]">
+                                {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
+
+                    <AnimatePresence>
+                        {isNotifOpen && (
+                            <NotificationPanel
+                                isOpen={isNotifOpen}
+                                onClose={() => setIsNotifOpen(false)}
+                                logs={logs}
+                            />
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+        </header>
+    );
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -138,38 +290,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
 
                     {/* Header */}
-                    <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-[#06070A]/80 backdrop-blur-xl z-20">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={toggleSidebar}
-                                className="p-2 -ml-2 text-slate-400 hover:text-white lg:hidden transition-colors"
-                            >
-                                <Menu size={24} />
-                            </button>
-                            <div>
-                                <h1 className="text-xl font-bold text-white hidden sm:block">
-                                    {navItems.find(i => i.href === pathname)?.label || "Dashboard"}
-                                </h1>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center gap-4">
-                            {/* Status Indicator */}
-                            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full">
-                                <span className="relative flex h-2 w-2">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                                </span>
-                                <span className="text-xs font-medium text-green-400">System Online</span>
-                            </div>
-
-                            {/* Notifications */}
-                            <button className="relative p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-full hover:bg-white/10">
-                                <Bell size={20} />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-indigo-500 rounded-full ring-2 ring-[#06070A]"></span>
-                            </button>
-                        </div>
-                    </header>
+                    <DashboardHeader toggleSidebar={toggleSidebar} pathname={pathname} />
 
                     {/* Page Content */}
                     <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -182,3 +303,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </RadarProvider >
     );
 }
+

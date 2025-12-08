@@ -21,6 +21,7 @@ export interface PolymarketMarket {
 
 export interface ProcessedMarket {
     id: string;
+    slug?: string; // For Polymarket URL
     title: string;
     image: string;
     outcome: string;

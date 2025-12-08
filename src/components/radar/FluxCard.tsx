@@ -307,7 +307,7 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
                                         <Flame className="h-4 w-4" /> SNIP NOW
                                     </button>
                                     <a
-                                        href={`https://polymarket.com/market/${activeMarket.id}`}
+                                        href={`https://polymarket.com/event/${activeMarket.slug || activeMarket.id}`}
                                         target="_blank"
                                         rel="noreferrer"
                                         onClick={(e) => e.stopPropagation()}
