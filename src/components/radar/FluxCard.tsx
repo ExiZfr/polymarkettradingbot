@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 
 export interface MarketData {
     id: string
+    slug?: string
     title: string
     image: string
     outcome: string

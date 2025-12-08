@@ -2,7 +2,7 @@
 
 ## ✅ Étape 1 : Ajouter les Secrets GitHub
 
-Va sur : https://github.com/ExiZfr/polymarkettradingbot/settings/secrets/actions
+Va sur : https://github.com/ExiZfr/PolygraalX/settings/secrets/actions
 
 Ajoute ces 4 secrets :
 

@@ -27,9 +27,29 @@ jobs:
             echo "🚀 STARTING AUTO-DEPLOYMENT"
             echo "========================================"
             
-            cd ~/polymarkettradingbot
+            # Define variables
+            OLD_DIR=~/polymarkettradingbot
+            NEW_DIR=~/PolygraalX
+            APP_NAME="PolygraalX"
+
+            # 1. Handle Directory Rename (Migration)
+            if [ -d "$OLD_DIR" ] && [ ! -d "$NEW_DIR" ]; then
+              echo "🚚 [0/5] Renaming directory from $OLD_DIR to $NEW_DIR..."
+              mv "$OLD_DIR" "$NEW_DIR"
+            fi
+
+            # Create new directory if it doesn't exist (fresh install or after rename)
+            if [ ! -d "$NEW_DIR" ]; then
+               echo "📂 [0/5] Creating directory $NEW_DIR..."
+               git clone https://github.com/${{ github.repository }} $NEW_DIR
+            fi
+
+            cd $NEW_DIR
             
             echo "📥 [1/5] Syncing with GitHub (force)..."
+            # Update remote URL in case repository name changed
+            git remote set-url origin https://github.com/${{ github.repository }}
+            
             # Force sync - discard any local changes on VPS
             git fetch origin main
             git reset --hard origin/main
@@ -45,7 +65,13 @@ jobs:
             npm run build
             
             echo "♻️ [5/5] Restarting Application..."
-            pm2 restart polymarket-dashboard || pm2 start npm --name polymarket-dashboard -- start
+            # Check if old process exists and delete it
+            if pm2 list | grep -q "polymarket-dashboard"; then
+                echo "🧹 Cleaning up old process 'polymarket-dashboard'..."
+                pm2 delete polymarket-dashboard
+            fi
+            
+            pm2 restart $APP_NAME || pm2 start npm --name $APP_NAME -- start
             
             echo "========================================"
             echo "✅ DEPLOYMENT SUCCESSFUL"
