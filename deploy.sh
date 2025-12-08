@@ -44,35 +44,7 @@ echo "🚀 Starting new instance..."
 pm2 start npm --name "$APP_NAME" -- start
 echo "✅ Process '$APP_NAME' started."
 
-# 5. Configure Root Domain Redirect (polygraalx.app -> app.polygraalx.app)
-echo "🔀 [5/5] Configuring domain redirect..."
-NGINX_AVAILABLE="/etc/nginx/sites-available"
-NGINX_ENABLED="/etc/nginx/sites-enabled"
-REDIRECT_CONF="polygraalx-redirect"
-
-# Create nginx redirect config (Cloudflare handles SSL)
-sudo tee "$NGINX_AVAILABLE/$REDIRECT_CONF" > /dev/null << 'NGINX_EOF'
-# Redirect polygraalx.app to app.polygraalx.app
-# Cloudflare handles SSL termination, so we only need port 80
-server {
-    listen 80;
-    listen [::]:80;
-    server_name polygraalx.app www.polygraalx.app;
-    return 301 https://app.polygraalx.app$request_uri;
-}
-NGINX_EOF
-
-# Enable the config
-sudo ln -sf "$NGINX_AVAILABLE/$REDIRECT_CONF" "$NGINX_ENABLED/$REDIRECT_CONF" 2>/dev/null || true
-
-# Test and reload nginx
-if sudo nginx -t 2>/dev/null; then
-    sudo systemctl reload nginx
-    echo "✅ Redirect configured: polygraalx.app -> app.polygraalx.app"
-else
-    echo "⚠️  Nginx config test failed. You may need to run: sudo certbot --nginx -d polygraalx.app"
-fi
-
 echo "=========================================="
 echo "✅ DEPLOYMENT SUCCESSFUL!"
 echo "=========================================="
+
