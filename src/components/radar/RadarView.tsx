@@ -73,7 +73,7 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => (
                             <div className="text-sm font-bold text-slate-200">Whale Activity</div>
                         </div>
                         <p className="text-xs text-slate-400">
-                            Detects large buy orders (> $10k) causing immediate price impact.
+                            Detects large buy orders (&gt; $10k) causing immediate price impact.
                         </p>
                     </div>
                 </div>
