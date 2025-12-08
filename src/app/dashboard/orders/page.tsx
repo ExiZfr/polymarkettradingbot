@@ -2,198 +2,440 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { History, Wallet, CheckCircle2, XCircle, TrendingUp, TrendingDown, Clock, Search, Filter } from "lucide-react";
-import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
+import {
+    Receipt,
+    Clock,
+    CheckCircle,
+    XCircle,
+    AlertCircle,
+    TrendingUp,
+    TrendingDown,
+    Filter,
+    Search,
+    ExternalLink,
+    DollarSign,
+    Percent,
+    Target,
+    Zap,
+    Users,
+    Brain,
+    RefreshCw,
+    MoreVertical,
+    X
+} from "lucide-react";
+import { paperStore, PaperOrder, PaperStats } from "@/lib/paper-trading";
 
-type Tab = 'REAL' | 'PAPER';
+type FilterStatus = 'ALL' | 'OPEN' | 'CLOSED' | 'CANCELLED';
+type FilterSource = 'ALL' | 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
+
+const sourceIcons: Record<PaperOrder['source'], React.ElementType> = {
+    MANUAL: Target,
+    SNIPER: Zap,
+    COPY_TRADING: Users,
+    ORACLE: Brain
+};
+
+const sourceColors: Record<PaperOrder['source'], string> = {
+    MANUAL: 'text-slate-400 bg-slate-400/10',
+    SNIPER: 'text-amber-400 bg-amber-400/10',
+    COPY_TRADING: 'text-purple-400 bg-purple-400/10',
+    ORACLE: 'text-blue-400 bg-blue-400/10'
+};
 
 export default function OrdersPage() {
-    const [activeTab, setActiveTab] = useState<Tab>('PAPER');
     const [orders, setOrders] = useState<PaperOrder[]>([]);
-    const [profile, setProfile] = useState<PaperProfile | null>(null);
+    const [stats, setStats] = useState<PaperStats | null>(null);
+    const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
+    const [filterSource, setFilterSource] = useState<FilterSource>('ALL');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedOrder, setSelectedOrder] = useState<PaperOrder | null>(null);
 
-    // Initial dummy data for demo if empty
     useEffect(() => {
-        // Load data on mount and interval
-        const load = () => {
-            setOrders(paperStore.getOrders());
-            setProfile(paperStore.getProfile());
-        };
-        load();
-        const interval = setInterval(load, 2000); // Live update
-        return () => clearInterval(interval);
+        loadData();
+
+        const handleUpdate = () => loadData();
+        window.addEventListener('paper-update', handleUpdate);
+        return () => window.removeEventListener('paper-update', handleUpdate);
     }, []);
 
-    // Filter Logic
-    const activeOrders = orders.filter(o => o.status === 'OPEN');
-    const historyOrders = orders.filter(o => o.status !== 'OPEN');
+    const loadData = () => {
+        setOrders(paperStore.getOrders());
+        setStats(paperStore.getStats());
+    };
+
+    const handleCloseOrder = (orderId: string, exitPrice: number) => {
+        paperStore.closeOrder(orderId, exitPrice);
+        loadData();
+        setSelectedOrder(null);
+    };
+
+    const handleCancelOrder = (orderId: string) => {
+        if (confirm('Cancel this order? Amount will be refunded.')) {
+            paperStore.cancelOrder(orderId);
+            loadData();
+        }
+    };
+
+    // Filter orders
+    const filteredOrders = orders.filter(order => {
+        if (filterStatus !== 'ALL' && order.status !== filterStatus) return false;
+        if (filterSource !== 'ALL' && order.source !== filterSource) return false;
+        if (searchQuery && !order.marketTitle.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        return true;
+    });
+
+    const getStatusBadge = (status: PaperOrder['status']) => {
+        switch (status) {
+            case 'OPEN':
+                return <span className="px-2 py-1 text-xs font-bold bg-blue-500/20 text-blue-400 rounded-full flex items-center gap-1"><Clock size={12} /> Open</span>;
+            case 'CLOSED':
+                return <span className="px-2 py-1 text-xs font-bold bg-green-500/20 text-green-400 rounded-full flex items-center gap-1"><CheckCircle size={12} /> Closed</span>;
+            case 'CANCELLED':
+                return <span className="px-2 py-1 text-xs font-bold bg-red-500/20 text-red-400 rounded-full flex items-center gap-1"><XCircle size={12} /> Cancelled</span>;
+            case 'PENDING':
+                return <span className="px-2 py-1 text-xs font-bold bg-yellow-500/20 text-yellow-400 rounded-full flex items-center gap-1"><AlertCircle size={12} /> Pending</span>;
+            default:
+                return null;
+        }
+    };
+
+    const formatDate = (timestamp: number) => {
+        return new Date(timestamp).toLocaleString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 pb-20">
-            <div className="max-w-7xl mx-auto space-y-6">
-
-                {/* Header & Wallet Switcher */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h1 className="text-3xl font-bold mb-1">Orders History</h1>
-                        <p className="text-slate-400">Track and manage your market entries</p>
-                    </div>
-
-                    <div className="bg-white/5 p-1 rounded-xl flex gap-1 border border-white/10">
-                        <button
-                            onClick={() => setActiveTab('REAL')}
-                            className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'REAL'
-                                    ? 'bg-blue-600 text-white shadow-lg'
-                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            <Wallet size={16} />
-                            Real Wallet
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('PAPER')}
-                            className={`px-6 py-2.5 rounded-lg text-sm font-bold flex items-center gap-2 transition-all ${activeTab === 'PAPER'
-                                    ? 'bg-green-600 text-white shadow-lg'
-                                    : 'text-slate-500 hover:text-white hover:bg-white/5'
-                                }`}
-                        >
-                            <History size={16} />
-                            Paper Trading
-                        </button>
-                    </div>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <Receipt className="text-indigo-400" />
+                        Order History
+                    </h1>
+                    <p className="text-slate-400 text-sm mt-1">Track all your paper trading orders and performance</p>
                 </div>
 
-                {/* Wallet Balance Card (Context Aware) */}
-                <motion.div
-                    key={activeTab}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`rounded-2xl p-6 border ${activeTab === 'PAPER'
-                            ? 'bg-gradient-to-br from-green-900/20 to-emerald-900/10 border-green-500/30'
-                            : 'bg-gradient-to-br from-blue-900/20 to-indigo-900/10 border-blue-500/30'
-                        }`}
+                <button
+                    onClick={loadData}
+                    className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-slate-300 transition-colors"
                 >
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className={`text-sm font-bold uppercase tracking-wider mb-1 ${activeTab === 'PAPER' ? 'text-green-400' : 'text-blue-400'}`}>
-                                {activeTab === 'PAPER' ? 'Simulated Balance' : 'Live USDC Balance'}
-                            </p>
-                            <h2 className="text-4xl font-mono font-bold text-white">
-                                ${activeTab === 'PAPER' ? (profile?.currentBalance.toFixed(2) || '0.00') : '0.00'}
-                            </h2>
-                        </div>
-                        <div className="text-right">
-                            <p className="text-sm text-slate-400 mb-1">Total PnL</p>
-                            <div className={`text-xl font-bold flex items-center justify-end gap-1 ${activeTab === 'PAPER' && (profile?.totalPnL || 0) >= 0 ? 'text-green-400' : 'text-red-400'
-                                }`}>
-                                {(profile?.totalPnL || 0) >= 0 ? <TrendingUp size={20} /> : <TrendingDown size={20} />}
-                                ${activeTab === 'PAPER' ? Math.abs(profile?.totalPnL || 0).toFixed(2) : '0.00'}
-                            </div>
-                        </div>
-                    </div>
-                </motion.div>
+                    <RefreshCw size={18} />
+                    Refresh
+                </button>
+            </div>
 
-                {/* Content Area */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                    {/* OPEN ORDERS */}
-                    <div className="lg:col-span-2 space-y-4">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-lg font-bold flex items-center gap-2">
-                                <Clock size={18} className="text-yellow-400" />
-                                Active Positions ({activeTab === 'PAPER' ? activeOrders.length : 0})
-                            </h3>
+            {/* Stats Overview */}
+            {stats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {[
+                        { label: 'Total Trades', value: stats.totalTrades, color: 'text-white' },
+                        { label: 'Open', value: stats.openTrades, color: 'text-blue-400' },
+                        { label: 'Closed', value: stats.closedTrades, color: 'text-green-400' },
+                        { label: 'Win Rate', value: `${stats.winRate.toFixed(1)}%`, color: 'text-indigo-400' },
+                        { label: 'Total PnL', value: `$${stats.totalPnL.toFixed(2)}`, color: stats.totalPnL >= 0 ? 'text-green-400' : 'text-red-400' },
+                        { label: 'Profit Factor', value: stats.profitFactor === Infinity ? '∞' : stats.profitFactor.toFixed(2), color: 'text-amber-400' }
+                    ].map((stat, i) => (
+                        <div key={i} className="bg-[#0C0D12] border border-white/5 rounded-xl p-4">
+                            <div className="text-xs text-slate-500 mb-1">{stat.label}</div>
+                            <div className={`text-xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
                         </div>
+                    ))}
+                </div>
+            )}
 
-                        {activeTab === 'REAL' ? (
-                            <div className="p-12 border border-dashed border-white/10 rounded-xl flex flex-col items-center justify-center text-slate-500">
-                                <Wallet size={48} className="mb-4 opacity-50" />
-                                <p>No active positions on Mainnet</p>
-                            </div>
-                        ) : activeOrders.length === 0 ? (
-                            <div className="p-12 bg-white/5 rounded-xl flex flex-col items-center justify-center text-slate-500 border border-white/5">
-                                <Clock size={48} className="mb-4 opacity-50" />
-                                <p>Waiting for signals...</p>
-                                <p className="text-xs mt-2 text-slate-600">Go to Radar to snip opportunities</p>
-                            </div>
-                        ) : (
-                            <div className="space-y-3">
-                                {activeOrders.map(order => (
-                                    <motion.div
-                                        key={order.id}
-                                        layout
-                                        className="bg-[#0A0B10] border border-white/10 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 group hover:border-white/20 transition-colors"
-                                    >
-                                        <div>
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${order.outcome === 'YES' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                                                    {order.outcome}
-                                                </span>
-                                                <h4 className="font-semibold text-sm text-slate-200">{order.marketTitle}</h4>
-                                            </div>
-                                            <div className="text-xs text-slate-500 font-mono">
-                                                Entry: <span className="text-white">${order.entryPrice}</span> · Shares: <span className="text-white">{order.shares}</span> · ID: #{order.id}
-                                            </div>
-                                        </div>
-                                        <div className="bg-slate-900 px-4 py-2 rounded-lg text-right min-w-[120px]">
-                                            <div className="text-xs text-slate-500">Value</div>
-                                            <div className="font-mono font-bold text-green-400">${order.amount.toFixed(2)}</div>
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        )}
+            {/* Filters */}
+            <div className="bg-[#0C0D12] border border-white/5 rounded-xl p-4">
+                <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Search */}
+                    <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" size={18} />
+                        <input
+                            type="text"
+                            placeholder="Search by market name..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 bg-black/30 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:border-indigo-500/50"
+                        />
                     </div>
 
-                    {/* HISTORY */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-bold flex items-center gap-2">
-                            <History size={18} className="text-slate-400" />
-                            History
-                        </h3>
-
-                        <div className="bg-white/5 rounded-2xl border border-white/10 overflow-hidden min-h-[400px]">
-                            {activeTab === 'PAPER' && historyOrders.length === 0 ? (
-                                <div className="h-full flex items-center justify-center text-slate-500 text-sm p-8 text-center">
-                                    <History size={32} className="mb-2 opacity-50 block mx-auto" />
-                                    No trade history yet
-                                </div>
-                            ) : activeTab === 'REAL' ? (
-                                <div className="h-full flex items-center justify-center text-slate-500 text-sm p-8 text-center">
-                                    <History size={32} className="mb-2 opacity-50 block mx-auto" />
-                                    No history
-                                </div>
-                            ) : (
-                                <div className="divide-y divide-white/5">
-                                    {historyOrders.map(order => (
-                                        <div key={order.id} className="p-4 hover:bg-white/5 transition-colors">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <span className="text-xs text-slate-500 font-mono">
-                                                    {new Date(order.timestamp).toLocaleDateString()}
-                                                </span>
-                                                <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${(order.pnl || 0) >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                                                    }`}>
-                                                    {(order.pnl || 0) >= 0 ? 'WIN' : 'LOSS'}
-                                                </span>
-                                            </div>
-                                            <p className="text-sm font-medium line-clamp-1 mb-2">{order.marketTitle}</p>
-                                            <div className="flex justify-between items-end">
-                                                <div className="text-xs text-slate-400">
-                                                    PnL
-                                                </div>
-                                                <div className={`font-mono font-bold ${(order.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                    {(order.pnl || 0) > 0 ? '+' : ''}${(order.pnl || 0).toFixed(2)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                    {/* Status Filter */}
+                    <div className="flex gap-2">
+                        {(['ALL', 'OPEN', 'CLOSED', 'CANCELLED'] as FilterStatus[]).map(status => (
+                            <button
+                                key={status}
+                                onClick={() => setFilterStatus(status)}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${filterStatus === status
+                                        ? 'bg-indigo-600 text-white'
+                                        : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                                    }`}
+                            >
+                                {status}
+                            </button>
+                        ))}
                     </div>
 
+                    {/* Source Filter */}
+                    <select
+                        value={filterSource}
+                        onChange={(e) => setFilterSource(e.target.value as FilterSource)}
+                        className="px-4 py-2 bg-black/30 border border-white/10 rounded-xl text-sm text-slate-300 focus:outline-none"
+                    >
+                        <option value="ALL">All Sources</option>
+                        <option value="MANUAL">Manual</option>
+                        <option value="SNIPER">Sniper</option>
+                        <option value="COPY_TRADING">Copy Trading</option>
+                        <option value="ORACLE">Oracle</option>
+                    </select>
                 </div>
             </div>
+
+            {/* Orders Table */}
+            <div className="bg-[#0C0D12] border border-white/5 rounded-2xl overflow-hidden">
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-4 p-4 border-b border-white/5 text-xs font-bold text-slate-500 uppercase tracking-wider">
+                    <div className="col-span-4 lg:col-span-3">Market</div>
+                    <div className="col-span-2 lg:col-span-1">Type</div>
+                    <div className="col-span-2 hidden lg:block">Source</div>
+                    <div className="col-span-2 lg:col-span-1">Entry</div>
+                    <div className="col-span-2 lg:col-span-1 hidden lg:block">Exit</div>
+                    <div className="col-span-2 lg:col-span-1">Amount</div>
+                    <div className="col-span-2 lg:col-span-1">PnL</div>
+                    <div className="col-span-2 lg:col-span-1">Status</div>
+                    <div className="col-span-1 text-right">Actions</div>
+                </div>
+
+                {/* Orders List */}
+                <div className="divide-y divide-white/5">
+                    <AnimatePresence>
+                        {filteredOrders.length === 0 ? (
+                            <div className="p-12 text-center text-slate-500">
+                                <Receipt size={48} className="mx-auto mb-4 opacity-50" />
+                                <p>No orders found</p>
+                            </div>
+                        ) : (
+                            filteredOrders.map((order, index) => {
+                                const SourceIcon = sourceIcons[order.source];
+                                const unrealizedPnL = order.status === 'OPEN' && order.currentPrice
+                                    ? (order.shares * order.currentPrice) - order.amount
+                                    : undefined;
+
+                                return (
+                                    <motion.div
+                                        key={order.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/[0.02] transition-colors cursor-pointer"
+                                        onClick={() => setSelectedOrder(order)}
+                                    >
+                                        {/* Market */}
+                                        <div className="col-span-4 lg:col-span-3">
+                                            <div className="font-medium text-white text-sm line-clamp-1">{order.marketTitle}</div>
+                                            <div className="text-xs text-slate-500">{formatDate(order.timestamp)}</div>
+                                        </div>
+
+                                        {/* Type */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            <span className={`px-2 py-1 text-xs font-bold rounded ${order.type === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                {order.type}
+                                            </span>
+                                        </div>
+
+                                        {/* Source */}
+                                        <div className="col-span-2 hidden lg:flex items-center gap-2">
+                                            <div className={`p-1.5 rounded ${sourceColors[order.source]}`}>
+                                                <SourceIcon size={14} />
+                                            </div>
+                                            <span className="text-xs text-slate-400">{order.source.replace('_', ' ')}</span>
+                                        </div>
+
+                                        {/* Entry */}
+                                        <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
+                                            ${order.entryPrice.toFixed(2)}
+                                        </div>
+
+                                        {/* Exit */}
+                                        <div className="col-span-2 lg:col-span-1 hidden lg:block font-mono text-sm text-slate-400">
+                                            {order.exitPrice ? `$${order.exitPrice.toFixed(2)}` : '—'}
+                                        </div>
+
+                                        {/* Amount */}
+                                        <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
+                                            ${order.amount.toFixed(2)}
+                                        </div>
+
+                                        {/* PnL */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            {order.pnl !== undefined ? (
+                                                <div className={`font-mono text-sm font-bold ${order.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {order.pnl >= 0 ? '+' : ''}{order.pnl.toFixed(2)}
+                                                </div>
+                                            ) : unrealizedPnL !== undefined ? (
+                                                <div className={`font-mono text-sm ${unrealizedPnL >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
+                                                    ~{unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-500">—</span>
+                                            )}
+                                        </div>
+
+                                        {/* Status */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            {getStatusBadge(order.status)}
+                                        </div>
+
+                                        {/* Actions */}
+                                        <div className="col-span-1 text-right">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                            >
+                                                <MoreVertical size={16} className="text-slate-400" />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
+
+            {/* Order Detail Modal */}
+            <AnimatePresence>
+                {selectedOrder && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setSelectedOrder(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-[#0C0D12] border border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                        >
+                            <div className="flex items-start justify-between mb-6">
+                                <div>
+                                    <h3 className="text-lg font-bold text-white">{selectedOrder.marketTitle}</h3>
+                                    <p className="text-xs text-slate-500">Order ID: {selectedOrder.id}</p>
+                                </div>
+                                <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/10 rounded-lg">
+                                    <X size={20} className="text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4 mb-6">
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Type</div>
+                                    <div className={`font-bold ${selectedOrder.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                                        {selectedOrder.type} {selectedOrder.outcome}
+                                    </div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Status</div>
+                                    {getStatusBadge(selectedOrder.status)}
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Entry Price</div>
+                                    <div className="font-mono font-bold text-white">${selectedOrder.entryPrice.toFixed(4)}</div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Exit Price</div>
+                                    <div className="font-mono font-bold text-white">
+                                        {selectedOrder.exitPrice ? `$${selectedOrder.exitPrice.toFixed(4)}` : '—'}
+                                    </div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Amount</div>
+                                    <div className="font-mono font-bold text-white">${selectedOrder.amount.toFixed(2)}</div>
+                                </div>
+                                <div className="bg-white/5 p-4 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-1">Shares</div>
+                                    <div className="font-mono font-bold text-white">{selectedOrder.shares.toFixed(4)}</div>
+                                </div>
+                                {selectedOrder.pnl !== undefined && (
+                                    <>
+                                        <div className="bg-white/5 p-4 rounded-xl">
+                                            <div className="text-xs text-slate-500 mb-1">PnL</div>
+                                            <div className={`font-mono font-bold ${selectedOrder.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {selectedOrder.pnl >= 0 ? '+' : ''}${selectedOrder.pnl.toFixed(2)}
+                                            </div>
+                                        </div>
+                                        <div className="bg-white/5 p-4 rounded-xl">
+                                            <div className="text-xs text-slate-500 mb-1">ROI</div>
+                                            <div className={`font-mono font-bold ${(selectedOrder.roi || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                {(selectedOrder.roi || 0) >= 0 ? '+' : ''}{(selectedOrder.roi || 0).toFixed(2)}%
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+
+                            {/* Risk Management */}
+                            {(selectedOrder.stopLoss || selectedOrder.takeProfit) && (
+                                <div className="mb-6 p-4 bg-white/5 rounded-xl">
+                                    <div className="text-xs text-slate-500 mb-2">Risk Management</div>
+                                    <div className="flex gap-4">
+                                        {selectedOrder.stopLoss && (
+                                            <div className="flex items-center gap-2 text-red-400">
+                                                <TrendingDown size={14} />
+                                                <span className="font-mono text-sm">SL: ${selectedOrder.stopLoss.toFixed(4)}</span>
+                                            </div>
+                                        )}
+                                        {selectedOrder.takeProfit && (
+                                            <div className="flex items-center gap-2 text-green-400">
+                                                <TrendingUp size={14} />
+                                                <span className="font-mono text-sm">TP: ${selectedOrder.takeProfit.toFixed(4)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Actions for Open Orders */}
+                            {selectedOrder.status === 'OPEN' && (
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={() => {
+                                            const price = prompt('Enter exit price:', selectedOrder.currentPrice?.toString() || selectedOrder.entryPrice.toString());
+                                            if (price) handleCloseOrder(selectedOrder.id, parseFloat(price));
+                                        }}
+                                        className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
+                                    >
+                                        Close Position
+                                    </button>
+                                    <button
+                                        onClick={() => handleCancelOrder(selectedOrder.id)}
+                                        className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* View on Polymarket */}
+                            <a
+                                href={`https://polymarket.com/market/${selectedOrder.marketId}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-medium transition-colors"
+                            >
+                                View on Polymarket <ExternalLink size={16} />
+                            </a>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

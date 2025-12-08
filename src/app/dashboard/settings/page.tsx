@@ -2,186 +2,415 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Save, RefreshCw, User, Shield, AlertTriangle, Wallet } from "lucide-react";
-import { paperStore, PaperProfile } from "@/lib/paper-trading";
+import {
+    Settings as SettingsIcon,
+    Wallet,
+    Shield,
+    Zap,
+    Radar,
+    Users,
+    Brain,
+    Save,
+    RefreshCw,
+    ToggleLeft,
+    ToggleRight,
+    AlertTriangle,
+    TrendingUp,
+    TrendingDown,
+    DollarSign,
+    Percent,
+    Target,
+    Layers
+} from "lucide-react";
+import { paperStore, PaperTradingSettings, PaperProfile } from "@/lib/paper-trading";
+
+type ModuleConfig = {
+    id: string;
+    name: string;
+    description: string;
+    icon: React.ElementType;
+    enabled: boolean;
+    usePaperTrading: boolean;
+};
+
+const DEFAULT_MODULES: ModuleConfig[] = [
+    { id: 'sniper', name: 'Sniper Engine', description: 'Auto-snipe high-score opportunities', icon: Zap, enabled: true, usePaperTrading: true },
+    { id: 'radar', name: 'Market Radar', description: 'Live market scanning & alerts', icon: Radar, enabled: true, usePaperTrading: true },
+    { id: 'copy', name: 'Copy Trading', description: 'Follow whale wallets automatically', icon: Users, enabled: false, usePaperTrading: true },
+    { id: 'oracle', name: 'Oracle AI', description: 'AI-powered predictions & signals', icon: Brain, enabled: false, usePaperTrading: true },
+];
 
 export default function SettingsPage() {
-    const [profile, setProfile] = useState<PaperProfile>(paperStore.getProfile());
-    const [balanceInput, setBalanceInput] = useState(1000);
-    const [usernameInput, setUsernameInput] = useState("Ghost Trader");
+    const [settings, setSettings] = useState<PaperTradingSettings | null>(null);
+    const [profile, setProfile] = useState<PaperProfile | null>(null);
+    const [modules, setModules] = useState<ModuleConfig[]>(DEFAULT_MODULES);
+    const [saved, setSaved] = useState(false);
+    const [activeTab, setActiveTab] = useState<'trading' | 'modules' | 'account'>('trading');
 
     useEffect(() => {
+        setSettings(paperStore.getSettings());
         setProfile(paperStore.getProfile());
-        setBalanceInput(paperStore.getProfile().initialBalance);
-        setUsernameInput(paperStore.getProfile().username);
+
+        // Load modules config from localStorage
+        const savedModules = localStorage.getItem('polybot_modules_config');
+        if (savedModules) {
+            setModules(JSON.parse(savedModules));
+        }
     }, []);
 
-    const handleSaveProfile = () => {
-        const current = paperStore.getProfile();
-        // Update keeping history if name changes, or logic for full reset?
-        // For simplicity, we just update config parts
-        const updated = { ...current, username: usernameInput, active: true };
-        paperStore.saveProfile(updated);
-        setProfile(updated);
-        console.log("Profile Saved");
+    const handleSettingsChange = (key: keyof PaperTradingSettings, value: any) => {
+        if (!settings) return;
+        setSettings({ ...settings, [key]: value });
+        setSaved(false);
     };
 
-    const handleReset = () => {
-        if (confirm("⚠️ This will WIPE all your trading history and reset balance. Are you sure?")) {
-            paperStore.reset(balanceInput);
+    const handleModuleChange = (moduleId: string, key: 'enabled' | 'usePaperTrading', value: boolean) => {
+        setModules(prev => prev.map(m =>
+            m.id === moduleId ? { ...m, [key]: value } : m
+        ));
+        setSaved(false);
+    };
+
+    const saveAllSettings = () => {
+        if (settings) {
+            paperStore.saveSettings(settings);
+        }
+        localStorage.setItem('polybot_modules_config', JSON.stringify(modules));
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+    };
+
+    const resetPaperTrading = () => {
+        if (settings && confirm('Are you sure you want to reset your paper trading account? All history will be lost.')) {
+            paperStore.resetProfile(settings.initialBalance);
             setProfile(paperStore.getProfile());
         }
     };
 
+    if (!settings || !profile) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <RefreshCw className="animate-spin text-indigo-400" size={32} />
+            </div>
+        );
+    }
+
     return (
-        <div className="min-h-screen bg-[#050505] text-white p-6 pb-20">
-            <div className="max-w-4xl mx-auto space-y-8">
-
-                {/* Header */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex items-center gap-4 mb-8"
-                >
-                    <div className="p-3 bg-white/5 rounded-xl border border-white/10">
-                        <Wallet size={24} className="text-blue-400" />
-                    </div>
-                    <div>
-                        <h1 className="text-3xl font-bold">Settings & Configuration</h1>
-                        <p className="text-slate-400">Manage your bot parameters and simulation accounts</p>
-                    </div>
-                </motion.div>
-
-                {/* PAPER TRADING SECTION */}
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    className="p-1 rounded-2xl bg-gradient-to-r from-green-500/50 via-emerald-500/50 to-teal-500/50"
-                >
-                    <div className="bg-[#0A0B10] rounded-xl p-6 border border-white/10">
-                        <div className="flex items-center justify-between mb-6">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 bg-green-500/20 rounded-lg">
-                                    <User size={20} className="text-green-400" />
-                                </div>
-                                <div>
-                                    <h2 className="text-xl font-bold text-white">Paper Trading Profile</h2>
-                                    <p className="text-sm text-green-400/80 font-mono">Simulated Environment Active</p>
-                                </div>
-                            </div>
-                            <div className="px-3 py-1 bg-green-900/30 border border-green-500/30 rounded-full text-xs text-green-400 font-bold uppercase tracking-wider">
-                                {profile.active ? 'System Online' : 'Offline'}
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Avatar / Identity */}
-                            <div className="space-y-4">
-                                <label className="text-sm text-slate-400 font-medium">Virtual Identity</label>
-                                <div className="flex gap-4">
-                                    <div className="w-16 h-16 rounded-full bg-slate-800 border-2 border-green-500/50 flex items-center justify-center text-2xl">
-                                        👻
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={usernameInput}
-                                        onChange={(e) => setUsernameInput(e.target.value)}
-                                        className="flex-1 bg-slate-900/50 border border-white/10 rounded-xl px-4 text-white focus:border-green-500/50 focus:outline-none transition"
-                                        placeholder="Trader Name"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Balance Config */}
-                            <div className="space-y-4">
-                                <div className="flex justify-between">
-                                    <label className="text-sm text-slate-400 font-medium">Initial Balance ($)</label>
-                                    <span className="text-xs text-slate-500">Current PnL: <span className={profile.totalPnL >= 0 ? "text-green-400" : "text-red-400"}>${profile.totalPnL.toFixed(2)}</span></span>
-                                </div>
-                                <div className="relative">
-                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                    <input
-                                        type="number"
-                                        value={balanceInput}
-                                        onChange={(e) => setBalanceInput(Number(e.target.value))}
-                                        className="w-full bg-slate-900/50 border border-white/10 rounded-xl pl-8 pr-4 py-3 text-white font-mono text-lg focus:border-green-500/50 focus:outline-none transition"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 flex gap-4 border-t border-white/5 pt-6">
-                            <button
-                                onClick={handleSaveProfile}
-                                className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-black font-bold rounded-xl transition flex items-center justify-center gap-2"
-                            >
-                                <Save size={18} />
-                                Save Profile
-                            </button>
-                            <button
-                                onClick={handleReset}
-                                className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl transition flex items-center gap-2"
-                            >
-                                <RefreshCw size={18} />
-                                Reset Account
-                            </button>
-                        </div>
-                    </div>
-                </motion.div>
-
-                {/* BOT CONF SECTION */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="p-6 bg-white/5 rounded-2xl border border-white/10"
-                    >
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                            <Shield size={18} className="text-blue-400" />
-                            Risk Management
-                        </h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs text-slate-400 block mb-2">Max Amount per Snipe</label>
-                                <input type="range" min="10" max="500" className="w-full accent-blue-500" />
-                                <div className="flex justify-between text-xs text-slate-500 mt-1">
-                                    <span>$10</span>
-                                    <span>$500</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center gap-3 p-3 bg-slate-900/50 rounded-lg">
-                                <input type="checkbox" className="w-5 h-5 rounded border-slate-600 accent-blue-500" defaultChecked />
-                                <div className="text-sm">
-                                    <span className="block text-white font-medium">Auto-Stop Loss</span>
-                                    <span className="text-slate-500 text-xs">Sell if price drops &gt; 15%</span>
-                                </div>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="p-6 bg-white/5 rounded-2xl border border-white/10"
-                    >
-                        <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                            <AlertTriangle size={18} className="text-orange-400" />
-                            Emergency
-                        </h3>
-                        <div className="space-y-4">
-                            <button className="w-full py-3 border border-red-500/50 text-red-500 hover:bg-red-500/10 rounded-xl font-medium transition text-sm">
-                                PANIC BUTTON: CLOSE ALL POSITIONS
-                            </button>
-                            <p className="text-xs text-slate-500 text-center">
-                                Use this only if the API behaves erratically. This will dump all simulated holdings.
-                            </p>
-                        </div>
-                    </motion.div>
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                        <SettingsIcon className="text-indigo-400" />
+                        Settings
+                    </h1>
+                    <p className="text-slate-400 text-sm mt-1">Configure your trading bot and preferences</p>
                 </div>
 
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={saveAllSettings}
+                    className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${saved
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                >
+                    <Save size={18} />
+                    {saved ? 'Saved!' : 'Save All Settings'}
+                </motion.button>
             </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 bg-white/5 p-1 rounded-xl w-fit">
+                {[
+                    { id: 'trading', label: 'Paper Trading', icon: Wallet },
+                    { id: 'modules', label: 'Modules', icon: Layers },
+                    { id: 'account', label: 'Account', icon: Shield }
+                ].map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as any)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === tab.id
+                                ? 'bg-indigo-600 text-white'
+                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            }`}
+                    >
+                        <tab.icon size={16} />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Paper Trading Settings */}
+            {activeTab === 'trading' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Main Settings Card */}
+                    <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Wallet className="text-indigo-400" size={20} />
+                                Paper Trading Mode
+                            </h3>
+                            <button
+                                onClick={() => handleSettingsChange('enabled', !settings.enabled)}
+                                className={`p-2 rounded-lg transition-colors ${settings.enabled ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-slate-500'
+                                    }`}
+                            >
+                                {settings.enabled ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Initial Balance */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    <DollarSign className="inline-block mr-1" size={14} />
+                                    Initial Balance
+                                </label>
+                                <input
+                                    type="number"
+                                    value={settings.initialBalance}
+                                    onChange={(e) => handleSettingsChange('initialBalance', parseFloat(e.target.value) || 0)}
+                                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500/50"
+                                />
+                            </div>
+
+                            {/* Position Sizing Mode */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">Position Sizing</label>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => handleSettingsChange('useRiskBasedSizing', true)}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${settings.useRiskBasedSizing
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        Risk % Based
+                                    </button>
+                                    <button
+                                        onClick={() => handleSettingsChange('useRiskBasedSizing', false)}
+                                        className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!settings.useRiskBasedSizing
+                                                ? 'bg-indigo-600 text-white'
+                                                : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                                            }`}
+                                    >
+                                        Fixed Amount
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Risk Per Trade or Fixed Amount */}
+                            {settings.useRiskBasedSizing ? (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                                        <Percent className="inline-block mr-1" size={14} />
+                                        Risk Per Trade (% of Balance)
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="range"
+                                            min="1"
+                                            max="25"
+                                            value={settings.riskPerTrade}
+                                            onChange={(e) => handleSettingsChange('riskPerTrade', parseInt(e.target.value))}
+                                            className="flex-1 accent-indigo-500"
+                                        />
+                                        <span className="text-white font-mono w-12 text-right">{settings.riskPerTrade}%</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-400 mb-2">
+                                        <DollarSign className="inline-block mr-1" size={14} />
+                                        Fixed Position Size
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={settings.defaultPositionSize}
+                                        onChange={(e) => handleSettingsChange('defaultPositionSize', parseFloat(e.target.value) || 0)}
+                                        className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500/50"
+                                    />
+                                </div>
+                            )}
+
+                            {/* Max Open Positions */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    <Layers className="inline-block mr-1" size={14} />
+                                    Max Open Positions
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="50"
+                                    value={settings.maxOpenPositions}
+                                    onChange={(e) => handleSettingsChange('maxOpenPositions', parseInt(e.target.value) || 1)}
+                                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500/50"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Risk Management Card */}
+                    <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6 space-y-6">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Target className="text-amber-400" size={20} />
+                            Risk Management
+                        </h3>
+
+                        <div className="space-y-4">
+                            {/* Auto Stop Loss */}
+                            <div>
+                                <label className="flex items-center justify-between text-sm font-medium text-slate-400 mb-2">
+                                    <span className="flex items-center gap-1">
+                                        <TrendingDown className="text-red-400" size={14} />
+                                        Auto Stop Loss
+                                    </span>
+                                    <span className="text-xs">(0 = disabled)</span>
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="50"
+                                        value={settings.autoStopLoss}
+                                        onChange={(e) => handleSettingsChange('autoStopLoss', parseInt(e.target.value))}
+                                        className="flex-1 accent-red-500"
+                                    />
+                                    <span className="text-red-400 font-mono w-12 text-right">
+                                        {settings.autoStopLoss > 0 ? `-${settings.autoStopLoss}%` : 'OFF'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Auto Take Profit */}
+                            <div>
+                                <label className="flex items-center justify-between text-sm font-medium text-slate-400 mb-2">
+                                    <span className="flex items-center gap-1">
+                                        <TrendingUp className="text-green-400" size={14} />
+                                        Auto Take Profit
+                                    </span>
+                                    <span className="text-xs">(0 = disabled)</span>
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={settings.autoTakeProfit}
+                                        onChange={(e) => handleSettingsChange('autoTakeProfit', parseInt(e.target.value))}
+                                        className="flex-1 accent-green-500"
+                                    />
+                                    <span className="text-green-400 font-mono w-12 text-right">
+                                        {settings.autoTakeProfit > 0 ? `+${settings.autoTakeProfit}%` : 'OFF'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Risk/Reward Display */}
+                            {settings.autoStopLoss > 0 && settings.autoTakeProfit > 0 && (
+                                <div className="mt-4 p-4 bg-white/5 rounded-xl border border-white/5">
+                                    <div className="text-xs text-slate-500 mb-1">Risk/Reward Ratio</div>
+                                    <div className="text-2xl font-bold text-white">
+                                        1 : {(settings.autoTakeProfit / settings.autoStopLoss).toFixed(2)}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Reset Button */}
+                        <div className="pt-4 border-t border-white/5">
+                            <button
+                                onClick={resetPaperTrading}
+                                className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 rounded-xl font-medium transition-colors"
+                            >
+                                <AlertTriangle size={18} />
+                                Reset Paper Trading Account
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Current Stats Preview */}
+                    <div className="lg:col-span-2 bg-[#0C0D12] border border-white/5 rounded-2xl p-6">
+                        <h3 className="text-lg font-bold text-white mb-4">Current Account Status</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[
+                                { label: 'Balance', value: `$${profile.currentBalance.toFixed(2)}`, color: 'text-white' },
+                                { label: 'Total PnL', value: `$${profile.totalPnL.toFixed(2)}`, color: profile.totalPnL >= 0 ? 'text-green-400' : 'text-red-400' },
+                                { label: 'Win Rate', value: `${profile.winRate.toFixed(1)}%`, color: 'text-indigo-400' },
+                                { label: 'Trades', value: profile.tradesCount.toString(), color: 'text-white' },
+                            ].map((stat, i) => (
+                                <div key={i} className="bg-white/5 rounded-xl p-4">
+                                    <div className="text-xs text-slate-500 mb-1">{stat.label}</div>
+                                    <div className={`text-xl font-bold font-mono ${stat.color}`}>{stat.value}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modules Settings */}
+            {activeTab === 'modules' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {modules.map((module) => (
+                        <motion.div
+                            key={module.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-[#0C0D12] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors"
+                        >
+                            <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-3 rounded-xl ${module.enabled ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-500'}`}>
+                                        <module.icon size={24} />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold text-white">{module.name}</h4>
+                                        <p className="text-xs text-slate-500">{module.description}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                {/* Enable Toggle */}
+                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <span className="text-sm text-slate-300">Module Enabled</span>
+                                    <button
+                                        onClick={() => handleModuleChange(module.id, 'enabled', !module.enabled)}
+                                        className={`p-1 rounded-lg transition-colors ${module.enabled ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-slate-500'
+                                            }`}
+                                    >
+                                        {module.enabled ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
+                                    </button>
+                                </div>
+
+                                {/* Paper Trading Toggle */}
+                                <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                    <span className="text-sm text-slate-300">Use Paper Trading</span>
+                                    <button
+                                        onClick={() => handleModuleChange(module.id, 'usePaperTrading', !module.usePaperTrading)}
+                                        className={`p-1 rounded-lg transition-colors ${module.usePaperTrading ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-slate-500'
+                                            }`}
+                                    >
+                                        {module.usePaperTrading ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            {/* Account Settings */}
+            {activeTab === 'account' && (
+                <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6">
+                    <h3 className="text-lg font-bold text-white mb-4">Account Information</h3>
+                    <p className="text-slate-400">Account settings and API keys will be available here in a future update.</p>
+                </div>
+            )}
         </div>
     );
 }

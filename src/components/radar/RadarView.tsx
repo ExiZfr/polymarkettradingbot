@@ -2,16 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Filter, RefreshCw, Star, TrendingUp, HelpCircle, XCircle } from "lucide-react";
+import { Search, RefreshCw, TrendingUp, CheckCircle, AlertCircle } from "lucide-react";
 import { FluxCard, SnipingData } from "@/components/radar/FluxCard";
 import { fetchPolymarketMarkets, ProcessedMarket } from "@/lib/polymarket";
 import { calculateSnipability, EventType, UrgencyLevel } from "@/lib/snipability-algo";
 import { filterSnipableMarkets } from "@/lib/dynamic-filter";
 import { listener, ListenerStatus } from "@/lib/listener";
+import { paperStore } from "@/lib/paper-trading";
 
 type FilterEventType = EventType | 'all';
 type FilterUrgency = UrgencyLevel | 'ALL';
 type FilterCategory = 'All' | 'Crypto' | 'Politics' | 'Sports' | 'Finance' | 'Other';
+
+type Toast = {
+    id: string;
+    type: 'success' | 'error' | 'info';
+    message: string;
+};
 
 export default function RadarView() {
     const [markets, setMarkets] = useState<Array<{ market: ProcessedMarket; sniping: SnipingData & { eventType: EventType } }>>([]);
@@ -20,7 +27,7 @@ export default function RadarView() {
     const [sortBy, setSortBy] = useState<"score" | "volume">("score");
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [listenerStatus, setListenerStatus] = useState<ListenerStatus | null>(null);
-    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [toasts, setToasts] = useState<Toast[]>([]);
 
     // Filters
     const [filterEventType, setFilterEventType] = useState<FilterEventType>('all');
@@ -39,6 +46,14 @@ export default function RadarView() {
             listener.stop();
         };
     }, []);
+
+    const showToast = (type: Toast['type'], message: string) => {
+        const id = Math.random().toString(36).substr(2, 9);
+        setToasts(prev => [...prev, { id, type, message }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 4000);
+    };
 
     async function loadMarkets() {
         setLoading(true);
@@ -84,6 +99,42 @@ export default function RadarView() {
         setFavorites(newFavs);
     };
 
+    // SNIPE FUNCTION - Places a paper trading order
+    const handleSnipe = (marketId: string) => {
+        const settings = paperStore.getSettings();
+
+        if (!settings.enabled) {
+            showToast('error', 'Paper Trading is disabled. Enable it in Settings.');
+            return;
+        }
+
+        const marketData = markets.find(m => m.market.id === marketId);
+        if (!marketData) {
+            showToast('error', 'Market not found');
+            return;
+        }
+
+        const { market } = marketData;
+
+        // Place the order
+        const order = paperStore.placeOrder({
+            marketId: market.id,
+            marketTitle: market.title,
+            marketImage: market.image,
+            type: 'BUY',
+            outcome: 'YES', // Default to YES for snipes
+            entryPrice: market.probability / 100, // Convert % to decimal as price proxy
+            source: 'SNIPER',
+            notes: `Auto-sniped from Radar. Score: ${marketData.sniping.score}`
+        });
+
+        if (order) {
+            showToast('success', `Sniped! Order placed: $${order.amount.toFixed(2)}`);
+        } else {
+            showToast('error', 'Failed to place order. Check balance or settings.');
+        }
+    };
+
     // Filter Logic
     const filteredMarkets = markets.filter(item => {
         if (!item.market.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
@@ -95,11 +146,32 @@ export default function RadarView() {
         if (favorites.has(a.market.id) && !favorites.has(b.market.id)) return -1;
         if (!favorites.has(a.market.id) && favorites.has(b.market.id)) return 1;
         if (sortBy === "score") return b.sniping.score - a.sniping.score;
-        return 0; // Simplified volume sort for now as helper is complex to migrate instantly
+        return 0;
     });
 
     return (
         <div className="space-y-6">
+            {/* Toast Notifications */}
+            <div className="fixed top-24 right-6 z-50 flex flex-col gap-2">
+                <AnimatePresence>
+                    {toasts.map(toast => (
+                        <motion.div
+                            key={toast.id}
+                            initial={{ opacity: 0, x: 50 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 50 }}
+                            className={`px-4 py-3 rounded-xl flex items-center gap-3 shadow-xl backdrop-blur-xl border ${toast.type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
+                                    toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+                                        'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                                }`}
+                        >
+                            {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
+                            <span className="text-sm font-medium">{toast.message}</span>
+                        </motion.div>
+                    ))}
+                </AnimatePresence>
+            </div>
+
             {/* Control Bar */}
             <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-4 sm:p-6 sticky top-0 z-30 shadow-xl backdrop-blur-xl">
                 <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
@@ -122,6 +194,10 @@ export default function RadarView() {
                                     </span>
                                     <span>•</span>
                                     <span>{filteredMarkets.length} Opportunities</span>
+                                    <span>•</span>
+                                    <span className={paperStore.getSettings().enabled ? 'text-green-400' : 'text-red-400'}>
+                                        {paperStore.getSettings().enabled ? 'Paper Mode' : 'Paper Off'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -178,7 +254,7 @@ export default function RadarView() {
                             <FluxCard
                                 market={item.market}
                                 sniping={item.sniping}
-                                onSnip={(id) => console.log('Snip', id)}
+                                onSnip={handleSnipe}
                                 isTracked={favorites.has(item.market.id)}
                             />
                         </motion.div>

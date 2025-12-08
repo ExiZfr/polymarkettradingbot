@@ -14,7 +14,8 @@ import {
     Bell,
     LogOut,
     Zap,
-    ChevronRight
+    ChevronRight,
+    Receipt
 } from "lucide-react";
 
 type NavItem = {
@@ -27,6 +28,7 @@ type NavItem = {
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Market Radar", href: "/dashboard/radar", icon: Radar, badge: "Live" },
+    { label: "Orders", href: "/dashboard/orders", icon: Receipt },
     { label: "Copy Trading", href: "/dashboard/copy-trading", icon: Users },
     { label: "Oracle", href: "/dashboard/oracle", icon: Brain },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -80,8 +82,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 href={item.href}
                                 onClick={() => setSidebarOpen(false)}
                                 className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${isActive
-                                        ? "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20"
-                                        : "text-slate-400 hover:bg-white/5 hover:text-white"
+                                    ? "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20"
+                                    : "text-slate-400 hover:bg-white/5 hover:text-white"
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
