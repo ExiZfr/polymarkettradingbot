@@ -1,86 +1,124 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { TrendingUp, TrendingDown, Clock, Zap } from "lucide-react";
 
 const markets = [
-    { id: 1, title: "Trump vs Biden 2024", prob: 52, vol: "$12.4M", img: "https://via.placeholder.com/50", cat: "Politics" },
-    { id: 2, title: "Bitcoin > $100k by 2025", prob: 34, vol: "$4.1M", img: "https://via.placeholder.com/50", cat: "Crypto" },
-    { id: 3, title: "Fed Rate Cut in March", prob: 89, vol: "$8.2M", img: "https://via.placeholder.com/50", cat: "Economy" },
-    { id: 4, title: "GTA VI Release Date", prob: 12, vol: "$1.2M", img: "https://via.placeholder.com/50", cat: "Gaming" },
-    { id: 5, title: "SpaceX Starship Launch", prob: 78, vol: "$3.5M", img: "https://via.placeholder.com/50", cat: "Science" },
-    { id: 6, title: "Super Bowl Winner", prob: 45, vol: "$15M", img: "https://via.placeholder.com/50", cat: "Sports" },
+    { title: "Trump wins 2024", odds: "67%", change: "+5.2%", trend: "up", volume: "$4.2M" },
+    { title: "Bitcoin > $100K by EOY", odds: "42%", change: "+12.1%", trend: "up", volume: "$2.8M" },
+    { title: "Fed rate cut Q1 2025", odds: "78%", change: "-2.3%", trend: "down", volume: "$1.9M" },
+    { title: "Tesla stock > $300", odds: "31%", change: "+8.5%", trend: "up", volume: "$980K" },
+    { title: "OpenAI IPO 2025", odds: "23%", change: "+3.1%", trend: "up", volume: "$1.2M" },
+    { title: "Ukraine peace deal Q1", odds: "15%", change: "-4.2%", trend: "down", volume: "$3.5M" },
+    { title: "S&P 500 > 6000", odds: "56%", change: "+2.8%", trend: "up", volume: "$890K" },
+    { title: "Super Bowl Chiefs win", odds: "29%", change: "+1.5%", trend: "up", volume: "$2.1M" },
 ];
 
-export default function RadarShowcase() {
+function MarketCard({ market }: { market: typeof markets[0] }) {
+    const isUp = market.trend === "up";
+
     return (
-        <section id="radar" className="py-20 bg-[#06070A] overflow-hidden">
-            <div className="max-w-7xl mx-auto px-6 text-center mb-16">
-                <h2 className="text-4xl font-bold text-white mb-4">Live Market Radar</h2>
-                <p className="text-slate-400">Scan thousands of markets in real-time. Identify mispriced odds immediately.</p>
+        <div className="flex-shrink-0 w-72 sm:w-80 p-5 glass rounded-2xl mx-2 hover:bg-white/[0.04] transition-all cursor-pointer group">
+            {/* Header */}
+            <div className="flex items-start justify-between mb-4">
+                <h3 className="text-sm font-medium text-white line-clamp-2 leading-tight pr-2 group-hover:text-indigo-300 transition-colors">
+                    {market.title}
+                </h3>
+                <div className={`flex items-center gap-1 text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                    {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                    {market.change}
+                </div>
             </div>
 
-            <div className="relative w-full">
-                {/* Gradients to fade edges */}
-                <div className="absolute left-0 top-0 bottom-0 w-32 bg-linear-to-r from-[#06070A] to-transparent z-10" />
-                <div className="absolute right-0 top-0 bottom-0 w-32 bg-linear-to-l from-[#06070A] to-transparent z-10" />
-
-                {/* Moving Marquee Row 1 */}
-                <div className="flex w-full overflow-hidden mb-6">
-                    <motion.div
-                        className="flex gap-6 min-w-full"
-                        animate={{ x: "-50%" }}
-                        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                    >
-                        {[...markets, ...markets, ...markets].map((m, i) => (
-                            <MarketCard key={`r1-${i}`} market={m} />
-                        ))}
-                    </motion.div>
+            {/* Odds */}
+            <div className="flex items-end justify-between">
+                <div>
+                    <div className="text-3xl font-bold text-white mb-1">{market.odds}</div>
+                    <div className="flex items-center gap-2 text-xs text-slate-500">
+                        <Clock size={10} />
+                        {market.volume} volume
+                    </div>
                 </div>
 
-                {/* Moving Marquee Row 2 (Reverse) */}
-                <div className="flex w-full overflow-hidden">
-                    <motion.div
-                        className="flex gap-6 min-w-full"
-                        initial={{ x: "-50%" }}
-                        animate={{ x: "0%" }}
-                        transition={{ duration: 35, repeat: Infinity, ease: "linear" }}
-                    >
-                        {[...markets, ...markets, ...markets].reverse().map((m, i) => (
-                            <MarketCard key={`r2-${i}`} market={m} />
-                        ))}
-                    </motion.div>
+                {/* Mini Chart */}
+                <div className="flex items-end gap-0.5 h-8">
+                    {[30, 45, 35, 60, 40, 70, 55].map((h, i) => (
+                        <div
+                            key={i}
+                            className={`w-1.5 rounded-t ${isUp ? 'bg-green-500/50' : 'bg-red-500/50'}`}
+                            style={{ height: `${h}%` }}
+                        />
+                    ))}
                 </div>
-
             </div>
-        </section>
+        </div>
     );
 }
 
-function MarketCard({ market }: { market: any }) {
-    const isHigh = market.prob > 70;
-    const color = isHigh ? "text-green-400" : market.prob < 30 ? "text-red-400" : "text-blue-400";
-
+export default function RadarShowcase() {
     return (
-        <div className="w-[300px] shrink-0 p-4 rounded-xl bg-[#0F1116] border border-white/5 hover:border-blue-500/30 transition-colors group">
-            <div className="flex items-start gap-3 mb-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold bg-white/5`}>
-                    {market.cat[0]}
-                </div>
-                <div className="text-sm font-medium text-white line-clamp-2 leading-tight">
-                    {market.title}
-                </div>
-            </div>
-            <div className="flex items-center justify-between mt-2">
-                <div className="text-xs text-slate-500">{market.vol} Vol</div>
-                <div className={`text-lg font-bold ${color}`}>
-                    {market.prob}%
-                </div>
+        <section id="how-it-works" className="relative py-24 sm:py-32 overflow-hidden">
+            {/* Background */}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute top-0 left-0 w-full h-20 bg-gradient-to-b from-[#06070A] to-transparent" />
+                <div className="absolute bottom-0 left-0 w-full h-20 bg-gradient-to-t from-[#06070A] to-transparent" />
             </div>
 
-            {/* Hover Flip Effect Mock */}
-            <div className="absolute inset-0 bg-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl pointer-events-none" />
-        </div>
-    )
+            <div className="relative z-10">
+                {/* Section Header */}
+                <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7 }}
+                    className="text-center mb-12 sm:mb-16 px-4"
+                >
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-6">
+                        <Zap size={14} className="text-green-400" />
+                        <span className="text-sm font-medium text-slate-300">Live Market Radar</span>
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+                        Scan <span className="gradient-text">Every Market</span> in Real-Time
+                    </h2>
+                    <p className="text-lg text-slate-400 max-w-2xl mx-auto">
+                        Our radar continuously monitors all Polymarket events,
+                        identifying opportunities with the highest profit potential.
+                    </p>
+                </motion.div>
+
+                {/* Marquee Row 1 */}
+                <div className="relative">
+                    <div className="flex animate-marquee">
+                        {[...markets, ...markets].map((market, i) => (
+                            <MarketCard key={`row1-${i}`} market={market} />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Marquee Row 2 - Reverse */}
+                <div className="relative mt-4" style={{ direction: 'rtl' }}>
+                    <div className="flex animate-marquee" style={{ direction: 'ltr' }}>
+                        {[...markets.slice(4), ...markets.slice(0, 4), ...markets.slice(4), ...markets.slice(0, 4)].map((market, i) => (
+                            <MarketCard key={`row2-${i}`} market={market} />
+                        ))}
+                    </div>
+                </div>
+
+                {/* Bottom Text */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.7, delay: 0.3 }}
+                    className="text-center mt-12 sm:mt-16 px-4"
+                >
+                    <p className="text-slate-500 text-sm">
+                        Scanning <span className="text-white font-medium">500+</span> markets •
+                        Updated every <span className="text-white font-medium">30 seconds</span> •
+                        <span className="text-green-400 font-medium"> 24/7 monitoring</span>
+                    </p>
+                </motion.div>
+            </div>
+        </section>
+    );
 }

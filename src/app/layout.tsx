@@ -1,20 +1,37 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
+  display: "swap",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#06070A",
+};
 
 export const metadata: Metadata = {
-  title: "PolyGraalX Dashboard",
-  description: "The Ultimate Polymarket Trading Terminal",
+  metadataBase: new URL("https://app.polygraalx.app"),
+  title: {
+    default: "PolyGraalX - AI-Powered Polymarket Trading Bot",
+    template: "%s | PolyGraalX",
+  },
+  description: "Dominate Polymarket with AI precision. Automated trading bot with real-time market radar, precision sniping, copy trading, and predictive analytics.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -23,10 +40,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className="scroll-smooth">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+      </head>
+      <body className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-[#06070A] text-white`}>
         {children}
       </body>
     </html>
