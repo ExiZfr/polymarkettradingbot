@@ -211,8 +211,8 @@ export default function RadarView() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 50 }}
                             className={`px-4 py-3 rounded-xl flex items-center gap-3 shadow-xl backdrop-blur-xl border ${toast.type === 'success' ? 'bg-green-500/20 border-green-500/30 text-green-400' :
-                                    toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
-                                        'bg-blue-500/20 border-blue-500/30 text-blue-400'
+                                toast.type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' :
+                                    'bg-blue-500/20 border-blue-500/30 text-blue-400'
                                 }`}
                         >
                             {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
@@ -222,11 +222,8 @@ export default function RadarView() {
                 </AnimatePresence>
             </div>
 
-            {/* Fixed Search Bar */}
-            <div className={`sticky top-0 z-40 transition-all duration-300 ${isScrolled
-                    ? 'bg-[#06070A]/80 backdrop-blur-xl border-b border-white/5 shadow-2xl'
-                    : 'bg-transparent'
-                }`}>
+            {/* Fixed Search Bar - Always Opaque */}
+            <div className="sticky top-0 z-40 bg-[#0A0B10] border-b border-white/10 shadow-xl">
                 <div className="p-4 sm:p-6">
                     <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
@@ -250,8 +247,8 @@ export default function RadarView() {
                                     <span>•</span>
                                     <span>{markets.length} Markets</span>
                                     <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${paperStore.getSettings().enabled
-                                            ? 'bg-green-500/20 text-green-400'
-                                            : 'bg-red-500/20 text-red-400'
+                                        ? 'bg-green-500/20 text-green-400'
+                                        : 'bg-red-500/20 text-red-400'
                                         }`}>
                                         {paperStore.getSettings().enabled ? 'PAPER' : 'OFF'}
                                     </span>
@@ -331,8 +328,8 @@ export default function RadarView() {
                                             <div className="flex items-center gap-4">
                                                 <div className="flex items-center gap-2">
                                                     <div className={`px-3 py-1.5 rounded-lg font-bold text-sm ${group.bestScore >= 80 ? 'bg-red-500/20 text-red-400' :
-                                                            group.bestScore >= 60 ? 'bg-orange-500/20 text-orange-400' :
-                                                                'bg-blue-500/20 text-blue-400'
+                                                        group.bestScore >= 60 ? 'bg-orange-500/20 text-orange-400' :
+                                                            'bg-blue-500/20 text-blue-400'
                                                         }`}>
                                                         {group.bestScore}
                                                     </div>

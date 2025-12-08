@@ -15,7 +15,8 @@ import {
     LogOut,
     Zap,
     ChevronRight,
-    Receipt
+    Receipt,
+    Radio
 } from "lucide-react";
 
 type NavItem = {
@@ -28,6 +29,7 @@ type NavItem = {
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Market Radar", href: "/dashboard/radar", icon: Radar, badge: "Live" },
+    { label: "Listener", href: "/dashboard/listener", icon: Radio },
     { label: "Orders", href: "/dashboard/orders", icon: Receipt },
     { label: "Copy Trading", href: "/dashboard/copy-trading", icon: Users },
     { label: "Oracle", href: "/dashboard/oracle", icon: Brain },
