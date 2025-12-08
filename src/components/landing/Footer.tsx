@@ -5,8 +5,8 @@ import { Zap, Twitter, MessageCircle, Github } from "lucide-react";
 
 const footerLinks = {
     product: [
-        { label: "Features", href: "#features" },
-        { label: "Pricing", href: "#pricing" },
+        { label: "Features", href: "/#features" },
+        { label: "Pricing", href: "/#pricing" },
         { label: "API", href: "#" },
     ],
     company: [
