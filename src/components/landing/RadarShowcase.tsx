@@ -91,7 +91,7 @@ export default function RadarShowcase() {
 
                 // Auto-scroll
                 if (!isPaused) {
-                    scrollAccumulator.current += 1.5; // Adjust speed here
+                    scrollAccumulator.current += 1; // Adjust speed here
                     if (scrollAccumulator.current >= 1) {
                         container.scrollLeft += 1;
                         scrollAccumulator.current -= 1;
@@ -142,8 +142,6 @@ export default function RadarShowcase() {
                 <div
                     ref={scrollRef}
                     className="w-full overflow-x-auto md:overflow-x-hidden [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden cursor-grab active:cursor-grabbing md:cursor-default md:active:cursor-default"
-                    onMouseEnter={() => setIsPaused(true)}
-                    onMouseLeave={() => setIsPaused(false)}
                     onTouchStart={() => setIsPaused(true)}
                     onTouchEnd={() => setIsPaused(false)}
                 >
