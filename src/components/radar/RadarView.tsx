@@ -214,6 +214,7 @@ export default function RadarView() {
     const [search, setSearch] = useState("");
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     const [showHelp, setShowHelp] = useState(false);
+    const [openFilter, setOpenFilter] = useState<'category' | 'urgency' | 'type' | null>(null);
 
     // Filter State
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('All');
