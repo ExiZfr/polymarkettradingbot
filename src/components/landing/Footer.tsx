@@ -70,12 +70,12 @@ export default function Footer() {
                         <ul className="space-y-3">
                             {footerLinks.product.map((link) => (
                                 <li key={link.label}>
-                                    <Link
+                                    <a
                                         href={link.href}
                                         className="text-sm text-slate-400 hover:text-white transition-colors"
                                     >
                                         {link.label}
-                                    </Link>
+                                    </a>
                                 </li>
                             ))}
                         </ul>

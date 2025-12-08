@@ -49,13 +49,13 @@ export default function Navbar() {
                         {/* Desktop Navigation */}
                         <div className="hidden md:flex items-center gap-1">
                             {navLinks.map((link) => (
-                                <Link
+                                <a
                                     key={link.href}
                                     href={link.href}
                                     className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
                                 >
                                     {link.label}
-                                </Link>
+                                </a>
                             ))}
                         </div>
 
@@ -102,14 +102,14 @@ export default function Navbar() {
                         <div className="bg-[#0A0B10]/95 backdrop-blur-xl border-b border-white/5 p-4">
                             <div className="flex flex-col gap-2">
                                 {navLinks.map((link) => (
-                                    <Link
+                                    <a
                                         key={link.href}
                                         href={link.href}
                                         onClick={() => setIsMobileMenuOpen(false)}
                                         className="px-4 py-3 text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
                                     >
                                         {link.label}
-                                    </Link>
+                                    </a>
                                 ))}
                                 <hr className="border-white/5 my-2" />
                                 <Link
