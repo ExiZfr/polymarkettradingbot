@@ -85,12 +85,11 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
                 analysis: calculateSnipability(m)
             }));
 
-            // 3. Filter (Keep top high potential)
-            // We keep more markets in memory to allow filtering on UI side
-            const viable = analyzed.filter(m => m.analysis.score > 20);
-
-            // 4. Sort by score
-            viable.sort((a, b) => b.analysis.score - a.analysis.score);
+            // 3. Filter (Keep only quality opportunities)
+            const viable = analyzed
+                .filter(m => m.analysis.score >= 50) // Strict threshold
+                .sort((a, b) => b.analysis.score - a.analysis.score)
+                .slice(0, 30); // Top 30 only
 
             setMarkets(viable);
             setLastUpdated(new Date());

@@ -27,55 +27,52 @@ type EventGroup = {
 };
 
 const HelpModal = ({ onClose }: { onClose: () => void }) => (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg">
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#0F1115] border border-white/10 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-[#0F1115] border border-white/10 rounded-3xl max-w-md w-full p-6 shadow-2xl relative overflow-hidden"
         >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
-                <X size={20} />
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-red-500 to-pink-500" />
+            <button onClick={onClose} className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors">
+                <X size={18} />
             </button>
 
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-xl">
-                    <Activity className="text-indigo-400" size={24} />
-                </div>
-                Metric Definitions
+            <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-3">
+                <Flame className="text-orange-500" size={24} />
+                How does the algorithm work?
             </h2>
 
-            <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl hover:border-white/10 transition-colors">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Flame className="text-orange-500 fill-orange-500/20" size={18} />
-                        <span className="text-slate-200 font-bold tracking-wide text-sm">FLAME SCORE (0-100)</span>
-                    </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                        Our proprietary algorithm that combines <strong>Volume Velocity</strong>, <strong>Liquidity Gaps</strong>, and <strong>Probability Deviations</strong>.
-                        <br /><span className="text-orange-400 mt-1 block">🔥 80+ indicates a high-probability sniping opportunity.</span>
+            <div className="space-y-3 text-sm">
+                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-xl">
+                    <div className="font-bold text-orange-400 mb-1">🔥 Flame Score (0-100)</div>
+                    <p className="text-slate-300 text-xs leading-relaxed">
+                        The higher, the better the opportunity. <strong>80+</strong> means "act fast".
+                        We calculate this from trading volume, liquidity, and price movements.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Clock className="text-red-400" size={16} />
-                            <div className="text-sm font-bold text-slate-200">Urgency</div>
-                        </div>
-                        <p className="text-xs text-slate-400">
-                            Time-sensitivity. <span className="text-red-400 font-bold">HIGH</span> means the window is closing in seconds.
-                        </p>
-                    </div>
-                    <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="text-yellow-400" size={16} />
-                            <div className="text-sm font-bold text-slate-200">Whale Activity</div>
-                        </div>
-                        <p className="text-xs text-slate-400">
-                            Detects large buy orders (&gt; $10k) causing immediate price impact.
-                        </p>
-                    </div>
+                <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+                    <div className="font-bold text-red-400 mb-1">⏱️ Urgency</div>
+                    <p className="text-slate-400 text-xs">How quickly you need to act.<br />
+                        <span className="text-red-400">HIGH</span> = minutes,
+                        <span className="text-amber-400"> MEDIUM</span> = hours,
+                        <span className="text-blue-400"> LOW</span> = days.
+                    </p>
+                </div>
+
+                <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+                    <div className="font-bold text-green-400 mb-1">📊 Volume</div>
+                    <p className="text-slate-400 text-xs">
+                        Total money bet on this market. More volume = more reliable signal.
+                    </p>
+                </div>
+
+                <div className="p-3 bg-white/5 border border-white/5 rounded-xl">
+                    <div className="font-bold text-purple-400 mb-1">🐋 Whale Activity</div>
+                    <p className="text-slate-400 text-xs">
+                        Detects big players betting $10k+ at once. Often signals insider info.
+                    </p>
                 </div>
             </div>
         </motion.div>
@@ -247,19 +244,20 @@ export default function RadarView() {
             // Search
             if (search && !item.market.title.toLowerCase().includes(search.toLowerCase())) return false;
 
-            // Fix Filter Logic: Normalize Strings for comparison
-            // Category
+            // Category Filter (flexible matching)
             if (activeCategory !== 'All') {
-                if (!item.market.category) return false;
-                if (item.market.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
+                const cat = (item.market.category || 'other').toLowerCase();
+                const filterCat = activeCategory.toLowerCase();
+                // Check if category contains the filter word
+                if (!cat.includes(filterCat) && !filterCat.includes(cat)) return false;
             }
 
-            // Type
+            // Type Filter
             if (activeType !== 'ALL') {
                 if (item.analysis.eventType !== activeType) return false;
             }
 
-            // Urgency
+            // Urgency Filter
             if (activeUrgency !== 'ALL') {
                 if (item.analysis.urgency !== activeUrgency) return false;
             }
@@ -438,11 +436,13 @@ export default function RadarView() {
             )}
 
             {/* HELP BUTTON */}
+            {/* HELP BUTTON - Fixed position with high z-index */}
             <button
                 onClick={() => setShowHelp(true)}
-                className="fixed bottom-8 left-8 h-12 w-12 bg-white/5 hover:bg-indigo-600 backdrop-blur-md border border-white/10 hover:border-indigo-500 rounded-full flex items-center justify-center text-slate-400 hover:text-white shadow-2xl transition-all duration-300 z-50 group origin-center hover:scale-110"
+                style={{ position: 'fixed', bottom: '2rem', left: '2rem', zIndex: 9999 }}
+                className="h-14 w-14 bg-gradient-to-br from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 rounded-full flex items-center justify-center text-white shadow-2xl shadow-orange-500/30 transition-all duration-300 group hover:scale-110"
             >
-                <HelpCircle size={22} className="group-hover:rotate-12 transition-transform" />
+                <HelpCircle size={26} className="group-hover:rotate-12 transition-transform" />
             </button>
         </div>
     );
