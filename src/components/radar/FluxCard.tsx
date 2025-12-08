@@ -153,8 +153,13 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
                                 </div>
 
                                 <button
+                                    onMouseDown={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                    }}
                                     onClick={(e) => {
                                         e.stopPropagation();
+                                        e.preventDefault();
                                         onToggleFavorite?.(market.id);
                                     }}
                                     className={cn("h-8 w-8 rounded-full flex items-center justify-center transition hover:scale-110", isTracked ? "bg-yellow-500 text-black" : "bg-white/5 text-slate-400 hover:bg-white/10")}
