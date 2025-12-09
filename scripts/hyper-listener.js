@@ -119,9 +119,10 @@ async function saveSignalToDB(market) {
 // -- Source Adapters --
 async function fetchPolymarket() {
     try {
-        // Fetch more markets to filter down
-        const url = `https://gamma-api.polymarket.com/markets?closed=false&limit=1000&active=true&sort=volume&order=desc`;
+        // Use same URL format that worked in previous version
+        const url = `https://gamma-api.polymarket.com/markets?closed=false&limit=500&active=true`;
         const { data } = await axios.get(url);
+        console.log('[Polymarket] Scanning...');
         return Array.isArray(data) ? data : [];
     } catch (e) {
         logToFile('error', `Polymarket Scan Failed: ${e.message}`, 'high');
