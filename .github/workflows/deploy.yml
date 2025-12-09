@@ -23,24 +23,36 @@ jobs:
           script_stop: true
           debug: true
           script: |
+            export PATH=$PATH:/usr/local/bin
+            
             echo "========================================"
             echo "🚀 STARTING AUTO-DEPLOYMENT"
             echo "========================================"
             
-            # Application Directory
-            APP_DIR=~/PolygraalX
+            # Debug Info
+            echo "👤 User: $(whoami)"
+            echo "🏠 Home: $HOME"
+            echo "📂 PWD: $(pwd)"
+            
+            # Application Directory (Use $HOME instead of ~)
+            APP_DIR="$HOME/PolygraalX"
+            echo "🎯 Target: $APP_DIR"
             
             # Check if directory exists
             if [ -d "$APP_DIR" ]; then
-              echo "📂 Directory $APP_DIR exists."
-              cd $APP_DIR
-              echo "📥 [1/5] Syncing with GitHub (fetch & reset)..."
+              echo "✅ Directory exists. Navigating..."
+              cd "$APP_DIR" || exit 1
+              
+              echo "📥 [1/5] Syncing with GitHub..."
+              # Reset any local changes to avoid conflicts
               git fetch origin main
               git reset --hard origin/main
             else
-              echo "📂 Directory $APP_DIR does not exist. Cloning..."
-              git clone git@github.com:ExiZfr/PolygraalX.git $APP_DIR
-              cd $APP_DIR
+              echo "⚠️ Directory not found. Cloning repository..."
+              # Ensure parent dir exists (unlikely needed for home but good practice)
+              cd "$HOME"
+              git clone git@github.com:ExiZfr/PolygraalX.git PolygraalX
+              cd "$APP_DIR" || exit 1
             fi
             
             echo "📦 [2/5] Installing dependencies..."
@@ -54,11 +66,18 @@ jobs:
             npm run build
             
             echo "♻️ [5/5] Restarting Application..."
-            # Start or Restart using PM2 with new name 'polygraalx'
-            pm2 describe polygraalx > /dev/null
-            if [ $? -eq 0 ]; then
+            # Check if pm2 is installed
+            if ! command -v pm2 &> /dev/null; then
+                echo "❌ PM2 not found. Installing global pm2..."
+                npm install -g pm2
+            fi
+
+            # Start or Restart using PM2
+            if pm2 describe polygraalx > /dev/null 2>&1; then
+                echo "🔄 Restarting existing process..."
                 pm2 restart polygraalx
             else
+                echo "▶️ Starting new process..."
                 pm2 start npm --name polygraalx -- start
             fi
             
