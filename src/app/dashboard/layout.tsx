@@ -255,6 +255,7 @@ function DashboardHeader({ toggleSidebar, pathname }: { toggleSidebar: () => voi
  * Main Layout Component
  */
 import Sidebar from "@/components/dashboard/Sidebar";
+import { ToastProvider } from "@/contexts/ToastContext";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -263,30 +264,32 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <RadarProvider>
-            <WalletProvider>
-                <div className="min-h-screen bg-[#06070A] text-white flex overflow-hidden font-sans selection:bg-indigo-500/30">
+        <ToastProvider>
+            <RadarProvider>
+                <WalletProvider>
+                    <div className="min-h-screen bg-[#06070A] text-white flex overflow-hidden font-sans selection:bg-indigo-500/30">
 
-                    <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
+                        <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-                    {/* Main Content */}
-                    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#06070A] relative">
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.02]"
-                            style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}>
-                        </div>
-
-                        <DashboardHeader toggleSidebar={toggleSidebar} pathname={pathname} />
-
-                        {/* Page Content */}
-                        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-                            <div className="max-w-7xl mx-auto">
-                                {children}
+                        {/* Main Content */}
+                        <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#06070A] relative">
+                            {/* Background Pattern */}
+                            <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.02]"
+                                style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)', backgroundSize: '40px 40px' }}>
                             </div>
-                        </main>
+
+                            <DashboardHeader toggleSidebar={toggleSidebar} pathname={pathname} />
+
+                            {/* Page Content */}
+                            <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+                                <div className="max-w-7xl mx-auto">
+                                    {children}
+                                </div>
+                            </main>
+                        </div>
                     </div>
-                </div>
-            </WalletProvider>
-        </RadarProvider>
+                </WalletProvider>
+            </RadarProvider>
+        </ToastProvider>
     );
 }

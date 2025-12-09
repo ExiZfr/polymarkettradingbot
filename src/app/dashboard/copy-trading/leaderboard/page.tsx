@@ -9,6 +9,7 @@ import {
     Target, Clock, Award, AlertTriangle, Activity, CheckCircle, XCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Trader {
     rank: number;
@@ -29,6 +30,7 @@ interface Trader {
 
 function LeaderboardContent() {
     const router = useRouter();
+    const { showSuccessToast, showTradeToast } = useToast();
     const [topTraders, setTopTraders] = useState<Trader[]>([]);
     const [worstTraders, setWorstTraders] = useState<Trader[]>([]);
     const [loading, setLoading] = useState(true);
@@ -101,11 +103,32 @@ function LeaderboardContent() {
             });
 
             if (res.ok) {
-                const mode = isInverseMode ? 'INVERSE copying' : 'copying';
+                const mode = isInverseMode ? 'Inverse' : 'Normal';
                 const amountStr = copyMode === 'fixed'
                     ? `$${copyAmount}/trade`
                     : `${copyPercentage}% match`;
-                alert(`✅ Started ${mode} ${selectedTrader.username} (${amountStr})!`);
+
+                // UI Toast Notification
+                showSuccessToast(
+                    `${isInverseMode ? '🔄' : '⚡'} Copy Trading Started`,
+                    `${mode} copying ${selectedTrader.username} (${amountStr})`
+                );
+
+                // Send Telegram Notification
+                fetch('/api/notifications/telegram', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'copy_started',
+                        data: {
+                            trader: selectedTrader.username,
+                            inverse: isInverseMode,
+                            copyMode: copyMode,
+                            amount: copyMode === 'fixed' ? copyAmount : copyPercentage
+                        }
+                    })
+                }).catch(err => console.warn('Telegram notification failed:', err));
+
                 setShowCopyModal(false);
                 router.push('/dashboard/copy-trading');
             }
@@ -404,8 +427,8 @@ function LeaderboardContent() {
                                     <button
                                         onClick={() => setCopyMode('fixed')}
                                         className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${copyMode === 'fixed'
-                                                ? 'bg-blue-600 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'text-gray-400 hover:text-white'
                                             }`}
                                     >
                                         💵 Fixed Amount
@@ -413,8 +436,8 @@ function LeaderboardContent() {
                                     <button
                                         onClick={() => setCopyMode('percentage')}
                                         className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${copyMode === 'percentage'
-                                                ? 'bg-purple-600 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                            ? 'bg-purple-600 text-white'
+                                            : 'text-gray-400 hover:text-white'
                                             }`}
                                     >
                                         📊 % Match
