@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Copy, Trash2, Edit2, Shield, Zap, TrendingUp, AlertTriangle } from "lucide-react";
+import { Copy, Trash2, Edit2, Shield, Zap, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CopySetting {
@@ -17,6 +17,19 @@ interface CopySetting {
     pnl?: number; // Mocked or calculated
 }
 
+interface CopiedTrade {
+    id: string;
+    market: string;
+    side: string; // YES or NO
+    buyPrice: number;
+    shares: number;
+    amount: number;
+    timestamp: string;
+    status: 'open' | 'closed';
+    currentPrice?: number;
+    pnl?: number;
+}
+
 interface ActiveWalletsProps {
     isPaperMode: boolean;
 }
@@ -24,6 +37,8 @@ interface ActiveWalletsProps {
 export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
     const [wallets, setWallets] = useState<CopySetting[]>([]);
     const [loading, setLoading] = useState(true);
+    const [expandedWallet, setExpandedWallet] = useState<string | null>(null);
+    const [tradeHistory, setTradeHistory] = useState<Record<string, CopiedTrade[]>>({});
 
     const fetchWallets = async () => {
         setLoading(true);
@@ -85,6 +100,54 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
             }
         } else {
             alert('Real mode not implemented yet');
+        }
+    };
+
+    const handleExpand = async (walletAddress: string) => {
+        if (expandedWallet === walletAddress) {
+            setExpandedWallet(null);
+        } else {
+            setExpandedWallet(walletAddress);
+
+            // Fetch trade history if not already loaded
+            if (!tradeHistory[walletAddress] && isPaperMode) {
+                try {
+                    // Mock trade data for now - in real implementation, fetch from API
+                    const mockTrades: CopiedTrade[] = [
+                        {
+                            id: '1',
+                            market: 'Will Bitcoin reach $100k by EOY?',
+                            side: 'YES',
+                            buyPrice: 0.65,
+                            shares: 100,
+                            amount: 65,
+                            timestamp: new Date(Date.now() - 3600000).toISOString(),
+                            status: 'open',
+                            currentPrice: 0.72,
+                            pnl: 7
+                        },
+                        {
+                            id: '2',
+                            market: 'Trump wins 2024 election?',
+                            side: 'NO',
+                            buyPrice: 0.45,
+                            shares: 50,
+                            amount: 22.5,
+                            timestamp: new Date(Date.now() - 7200000).toISOString(),
+                            status: 'open',
+                            currentPrice: 0.38,
+                            pnl: 3.5
+                        }
+                    ];
+
+                    setTradeHistory(prev => ({
+                        ...prev,
+                        [walletAddress]: mockTrades
+                    }));
+                } catch (error) {
+                    console.error("Failed to fetch trade history", error);
+                }
+            }
         }
     };
 
@@ -173,11 +236,22 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
                                     <button
+                                        onClick={() => handleExpand(wallet.walletAddress)}
+                                        title="View Trade History"
+                                        className="p-2 bg-[#262626] hover:bg-[#333] rounded-lg text-slate-400 hover:text-white transition-colors"
+                                    >
+                                        {expandedWallet === wallet.walletAddress ? (
+                                            <ChevronUp size={16} />
+                                        ) : (
+                                            <ChevronDown size={16} />
+                                        )}
+                                    </button>
+                                    <button
                                         onClick={() => handleToggleInverse(wallet)}
                                         title={wallet.inverse ? "Switch to Normal Copy" : "Switch to Inverse Copy"}
                                         className={`p-2 rounded-lg transition-colors ${wallet.inverse
-                                                ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
-                                                : 'bg-[#262626] text-slate-400 hover:bg-orange-500/20 hover:text-orange-400'
+                                            ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                                            : 'bg-[#262626] text-slate-400 hover:bg-orange-500/20 hover:text-orange-400'
                                             }`}
                                     >
                                         <TrendingUp size={16} className={wallet.inverse ? 'rotate-180' : ''} />
@@ -194,6 +268,97 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Expandable Trade History */}
+                        <AnimatePresence>
+                            {expandedWallet === wallet.walletAddress && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="overflow-hidden"
+                                >
+                                    <div className="mt-4 pt-4 border-t border-[#262626]">
+                                        <h4 className="text-sm font-bold text-gray-300 mb-3 flex items-center gap-2">
+                                            <Activity size={14} />
+                                            Copied Trades ({tradeHistory[wallet.walletAddress]?.length || 0})
+                                        </h4>
+
+                                        {tradeHistory[wallet.walletAddress]?.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {tradeHistory[wallet.walletAddress].map((trade) => (
+                                                    <div
+                                                        key={trade.id}
+                                                        className="bg-[#0a0a0a] border border-[#333] rounded-lg p-3 hover:border-[#444] transition-colors"
+                                                    >
+                                                        <div className="flex items-start justify-between mb-2">
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${trade.side === 'YES'
+                                                                            ? 'bg-green-500/20 text-green-400'
+                                                                            : 'bg-red-500/20 text-red-400'
+                                                                        }`}>
+                                                                        {trade.side}
+                                                                    </span>
+                                                                    <span className="text-xs text-slate-500">
+                                                                        {new Date(trade.timestamp).toLocaleString()}
+                                                                    </span>
+                                                                </div>
+                                                                <p className="text-sm text-white font-medium line-clamp-1">
+                                                                    {trade.market}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right ml-3">
+                                                                <div className={`text-sm font-bold font-mono ${(trade.pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'
+                                                                    }`}>
+                                                                    {(trade.pnl || 0) >= 0 ? '+' : ''}${trade.pnl?.toFixed(2)}
+                                                                </div>
+                                                                <div className="text-xs text-slate-500">
+                                                                    {trade.status === 'open' ? '🟢 Open' : '⚪ Closed'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Trade Metrics Grid */}
+                                                        <div className="grid grid-cols-4 gap-2 mt-3 pt-3 border-t border-[#262626]">
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-600 uppercase mb-0.5">Buy Price</div>
+                                                                <div className="text-xs text-slate-300 font-mono">
+                                                                    ${trade.buyPrice.toFixed(2)}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-600 uppercase mb-0.5">Current</div>
+                                                                <div className="text-xs text-slate-300 font-mono">
+                                                                    ${trade.currentPrice?.toFixed(2) || '-'}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-600 uppercase mb-0.5">Shares</div>
+                                                                <div className="text-xs text-slate-300 font-mono">
+                                                                    {trade.shares}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div className="text-[10px] text-slate-600 uppercase mb-0.5">Amount</div>
+                                                                <div className="text-xs text-slate-300 font-mono">
+                                                                    ${trade.amount.toFixed(2)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-6 text-sm text-slate-500">
+                                                No trades copied yet
+                                            </div>
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 ))}
             </AnimatePresence>
