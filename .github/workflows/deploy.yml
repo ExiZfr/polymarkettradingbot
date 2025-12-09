@@ -17,12 +17,13 @@ jobs:
         uses: appleboy/ssh-action@v1.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: GITHUB_TOKEN
+          envs: GITHUB_TOKEN,DATABASE_URL
           script_stop: false
           debug: true
           script: |
@@ -44,6 +45,12 @@ jobs:
             REPO_URL="https://${GITHUB_TOKEN}@github.com/ExiZfr/PolygraalX.git"
             
             echo "🎯 Target: $APP_DIR"
+            
+            # Create/Update .env file
+            echo "📝 Updating .env file..."
+            mkdir -p "$APP_DIR"
+            echo "DATABASE_URL=$DATABASE_URL" > "$APP_DIR/.env"
+            echo "NEXT_PUBLIC_APP_URL=https://polygraalx.com" >> "$APP_DIR/.env"
             
             # Check if directory exists
             if [ -d "$APP_DIR" ]; then
