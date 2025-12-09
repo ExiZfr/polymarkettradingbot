@@ -653,13 +653,13 @@ export default function RadarView() {
                             onClick={() => setOpenFilter(openFilter === 'type' ? null : 'type')}
                             className={`h-10 px-4 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${activeType !== 'ALL' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
                         >
-                            {activeType === 'ALL' ? 'Type' : activeType.replace('_', ' ')}
+                            {activeType === 'ALL' ? 'Type' : activeType.charAt(0).toUpperCase() + activeType.slice(1)}
                             <ChevronDown size={14} className={`opacity-50 transition-transform ${openFilter === 'type' ? 'rotate-180' : ''}`} />
                         </button>
                         {openFilter === 'type' && (
                             <div className="absolute top-full left-0 mt-2 w-48 bg-[#15171E] border border-white/10 rounded-xl shadow-xl p-1 z-[9999] pointer-events-auto">
-                                {(['ALL', 'new_market', 'price_surge', 'whale_volume', 'social_hype'] as FilterType[]).map(type => (
-                                    <button key={type} onClick={() => { setActiveType(type); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${activeType === type ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>{type === 'ALL' ? 'All Types' : type.replace('_', ' ')}</button>
+                                {(['ALL', 'tweet', 'annonce', 'evenement', 'news', 'autre'] as FilterType[]).map(type => (
+                                    <button key={type} onClick={() => { setActiveType(type); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${activeType === type ? 'bg-amber-500/20 text-amber-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>{type === 'ALL' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}</button>
                                 ))}
                             </div>
                         )}

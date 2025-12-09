@@ -5,7 +5,7 @@
 
 import { ProcessedMarket } from './polymarket';
 
-export type EventType = 'tweet' | 'announcement' | 'event' | 'news' | 'other';
+export type EventType = 'tweet' | 'annonce' | 'evenement' | 'news' | 'autre';
 export type UrgencyLevel = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 
 export interface SnipabilityScore {
@@ -151,10 +151,10 @@ function determineEventType(title: string, tags: string[]): EventType {
     const tagStr = tags.join(' ').toLowerCase();
 
     if (lower.includes('tweet') || lower.includes('twitter') || lower.includes('elon')) return 'tweet';
-    if (lower.includes('announce') || lower.includes('launch') || tagStr.includes('announcement')) return 'announcement';
-    if (lower.includes('event') || lower.includes('conference') || lower.includes('summit')) return 'event';
+    if (lower.includes('announce') || lower.includes('launch') || tagStr.includes('announcement')) return 'annonce';
+    if (lower.includes('event') || lower.includes('conference') || lower.includes('summit')) return 'evenement';
     if (lower.includes('report') || lower.includes('earnings') || lower.includes('news')) return 'news';
-    return 'other';
+    return 'autre';
 }
 
 /**
