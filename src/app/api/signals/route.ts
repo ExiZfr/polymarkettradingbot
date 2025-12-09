@@ -7,8 +7,20 @@ export async function GET(req: Request) {
         const { searchParams } = new URL(req.url);
         const limit = parseInt(searchParams.get('limit') || '50');
         const status = searchParams.get('status');
+        const source = searchParams.get('source');
+        const fromDate = searchParams.get('fromDate');
+        const toDate = searchParams.get('toDate');
 
-        const where = status ? { status } : {};
+        const where: any = {};
+
+        if (status) where.status = status;
+        if (source) where.source = source;
+
+        if (fromDate || toDate) {
+            where.timestamp = {};
+            if (fromDate) where.timestamp.gte = new Date(fromDate);
+            if (toDate) where.timestamp.lte = new Date(toDate);
+        }
 
         const signals = await prisma.signal.findMany({
             where,

@@ -245,7 +245,38 @@ async function scanAndProcess() {
                 volume: pick.volume,
                 slug: pick.slug
             });
+
+            // Record market snapshot for historical analysis
+            try {
+                await axios.post(`${API_URL}/intelligence/history`, {
+                    marketId: pick.id,
+                    score: pick.score,
+                    volume: parseFloat(pick.volume) || 0,
+                    liquidity: parseFloat(pick.liquidity) || 0,
+                    probability: 50 // Default - update if available
+                });
+            } catch (e) {
+                // Silent fail for snapshots
+            }
         }
+
+        // Check alerts against current high-potential markets
+        try {
+            const marketData = highPotential.map(m => ({
+                id: m.id,
+                title: m.question,
+                score: m.score,
+                volume: parseFloat(m.volume) || 0,
+                probability: 50 // Default
+            }));
+
+            if (marketData.length > 0) {
+                await axios.post(`${API_URL}/alerts/check`, { marketData });
+            }
+        } catch (e) {
+            console.error('[Alerts] Check failed:', e.message);
+        }
+
 
     } catch (e) {
         logToFile('error', `Cycle Error: ${e.message}`, 'high');

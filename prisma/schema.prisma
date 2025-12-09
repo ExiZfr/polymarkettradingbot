@@ -8,19 +8,20 @@ datasource db {
 }
 
 model User {
-  id          Int      @id // Telegram ID
-  username    String?
-  firstName   String?
-  lastName    String?
-  photoUrl    String?
-  role        String   @default("user") // "user", "admin"
-  isActive    Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@map("users") // Table name in DB
+  id        Int      @id // Telegram ID
+  username  String?
+  firstName String?
+  lastName  String?
+  photoUrl  String?
+  role      String   @default("user") // "user", "admin"
+  isActive  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   copySettings CopySetting[]
+  alerts       Alert[]
+
+  @@map("users") // Table name in DB
 }
 
 model Signal {
@@ -33,6 +34,8 @@ model Signal {
   volume          Float
   liquidity       Float
   newsCorrelation Boolean
+  source          String   @default("RADAR") // RSS, TWITTER, RADAR, MANUAL
+  metadata        Json? // Flexible storage for additional data
   timestamp       DateTime @default(now())
   status          String   @default("NEW") // NEW, TRADED, DISMISSED, EXPIRED
 
@@ -45,9 +48,9 @@ model TrackedWallet {
   ens         String?
   tags        String[] // ["Leaderboard Top 10", "Whale"]
   isMonitored Boolean  @default(false)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   copySettings CopySetting[]
   snapshots    WalletSnapshot[]
@@ -56,35 +59,78 @@ model TrackedWallet {
 }
 
 model CopySetting {
-  id             String        @id @default(cuid())
-  userId         Int
-  user           User          @relation(fields: [userId], references: [id])
-  walletId       String
-  trackedWallet  TrackedWallet @relation(fields: [walletId], references: [id])
-  
-  enabled        Boolean       @default(true)
-  fixedAmount    Float?        // Fixed amount per bet
-  percentage     Float?        // Percentage of balance per bet
-  maxBetAmount   Float?        // Cap
-  dailyStopLoss  Float?
-  
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id            String        @id @default(cuid())
+  userId        Int
+  user          User          @relation(fields: [userId], references: [id])
+  walletId      String
+  trackedWallet TrackedWallet @relation(fields: [walletId], references: [id])
+
+  enabled       Boolean @default(true)
+  fixedAmount   Float? // Fixed amount per bet
+  percentage    Float? // Percentage of balance per bet
+  maxBetAmount  Float? // Cap
+  dailyStopLoss Float?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, walletId])
   @@map("copy_settings")
 }
 
 model WalletSnapshot {
-  id              String        @id @default(cuid())
-  walletId        String
-  trackedWallet   TrackedWallet @relation(fields: [walletId], references: [id])
-  
-  date            DateTime      @default(now()) // Can be just date part effectively
+  id            String        @id @default(cuid())
+  walletId      String
+  trackedWallet TrackedWallet @relation(fields: [walletId], references: [id])
+
+  date            DateTime @default(now()) // Can be just date part effectively
   totalPnl        Float
   winRate         Float
   totalVolume     Float
   activePositions Int
 
   @@map("wallet_snapshots")
+}
+
+model Alert {
+  id     String @id @default(cuid())
+  userId Int
+  user   User   @relation(fields: [userId], references: [id])
+
+  // Alert Configuration
+  name     String
+  type     String // "PRICE_THRESHOLD", "VOLUME_SPIKE", "KEYWORD", "SCORE_TRIGGER", "WALLET_ACTIVITY"
+  isActive Boolean @default(true)
+
+  // Conditions (JSON for flexibility)
+  conditions Json // { minScore: 80, keywords: ["Trump"], maxPrice: 0.7, walletAddress: "0x..." }
+
+  // Notifications
+  telegramEnabled Boolean @default(false)
+  emailEnabled    Boolean @default(false)
+  webEnabled      Boolean @default(true)
+
+  // Tracking
+  triggeredCount Int       @default(0)
+  lastTriggered  DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("alerts")
+}
+
+model MarketSnapshot {
+  id       String @id @default(cuid())
+  marketId String
+
+  // Metrics at this point in time
+  score       Int
+  volume      Float
+  liquidity   Float
+  probability Float
+
+  timestamp DateTime @default(now())
+
+  @@index([marketId, timestamp])
+  @@map("market_snapshots")
 }
