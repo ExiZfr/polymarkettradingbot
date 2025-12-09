@@ -32,27 +32,30 @@ export function calculateSnipability(market: ProcessedMarket): SnipabilityScore 
     const timeUntilEnd = endDate - now;
     const hoursUntilEnd = timeUntilEnd / (1000 * 60 * 60);
 
-    // 1. Time Score (0-30 points) - STRICTER
+    // 1. Time Score (0-30 points)
     const timeScore = calculateTimeScore(hoursUntilEnd);
 
-    // 2. Volume Score (0-30 points) - INCREASED WEIGHT & HIGHER THRESHOLD
-    // Now requires $500k for max score (was $100k)
+    // 2. Volume Score (0-30 points) - Lowered threshold for more markets
+    // Max score at $100k (was $500k)
     const volumeNum = parseVolume(market.volume);
-    const volumeScore = Math.min(30, (volumeNum / 500000) * 30);
+    const volumeScore = Math.min(30, (volumeNum / 100000) * 30);
 
-    // 3. Liquidity Score (0-25 points) - INCREASED WEIGHT
-    // Requires $200k liquidity for max score (was $50k)
-    const liquidityScore = Math.min(25, (market.liquidity / 200000) * 25);
+    // 3. Liquidity Score (0-25 points) - Lowered threshold
+    // Max score at $50k (was $200k)
+    const liquidityScore = Math.min(25, (market.liquidity / 50000) * 25);
 
-    // 4. Probability Score (0-10 points) - REDUCED (less important)
+    // 4. Probability Score (0-10 points) - Near 50% is more interesting
     const probDiff = Math.abs(market.probability - 50);
     const probabilityScore = Math.max(0, 10 - (probDiff / 50) * 10);
 
-    // 5. Category Score (0-15 points) - INCREASED IMPORTANCE
+    // 5. Category Score (0-15 points) - Boost for popular categories
     const categoryScore = getCategoryScore(market.category, market.tags);
 
+    // 6. Base score boost (every market gets +10 points to be more inclusive)
+    const baseBoost = 10;
+
     // Total Score
-    const rawScore = timeScore + volumeScore + liquidityScore + probabilityScore + categoryScore;
+    const rawScore = baseBoost + timeScore + volumeScore + liquidityScore + probabilityScore + categoryScore;
     const score = Math.round(Math.min(100, rawScore));
 
     // Determine urgency
