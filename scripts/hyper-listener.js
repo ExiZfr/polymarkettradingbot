@@ -45,17 +45,40 @@ function saveSignalsHistory(data) {
         console.error('[SignalsDB] Failed to save:', e.message);
     }
 }
-
 // Check if signal already sent (by marketId, within 24h)
-function isSignalAlreadySent(marketId) {
+// Returns: { skip: boolean, reason?: string, previousScore?: number }
+function shouldSkipSignal(marketId, newScore, hasNewsCorrelation) {
     const db = loadSignalsHistory();
     const existing = db.signals.find(s => s.marketId === marketId);
-    if (existing) {
-        const sentAt = new Date(existing.timestamp);
-        const hoursSince = (Date.now() - sentAt.getTime()) / (1000 * 60 * 60);
-        return hoursSince < 24; // Already sent in last 24h
+
+    if (!existing) {
+        return { skip: false }; // New signal, don't skip
     }
-    return false;
+
+    const sentAt = new Date(existing.timestamp);
+    const hoursSince = (Date.now() - sentAt.getTime()) / (1000 * 60 * 60);
+
+    // If older than 24h, allow resend
+    if (hoursSince >= 24) {
+        return { skip: false, reason: 'Signal expired (24h+)' };
+    }
+
+    // EXCEPTION: If score increased by 10+ points AND has news correlation, resend
+    const scoreDiff = newScore - (existing.score || 0);
+    if (scoreDiff >= 10 && hasNewsCorrelation && !existing.newsCorrelation) {
+        return {
+            skip: false,
+            reason: `Score increased by ${scoreDiff} points due to news correlation`,
+            previousScore: existing.score
+        };
+    }
+
+    // Otherwise skip
+    return {
+        skip: true,
+        reason: 'Already sent in last 24h',
+        previousScore: existing.score
+    };
 }
 
 // Save signal with ALL info that led to it
@@ -320,7 +343,7 @@ function normalizeMarkets(polyMarkets, rssItems) {
 }
 
 // -- Notification System --
-async function sendTelegramAlert(market) {
+async function sendTelegramAlert(market, signalReason = '') {
     if (!TELEGRAM_BOT_TOKEN) return;
 
     // DEDUPLICATION: Check if we already sniped this market in the last 24h
@@ -339,7 +362,8 @@ ${market.newsCorrelation ? '🔥 Validated by News/RSS' : ''}
 💰 Vol: $${(parseFloat(market.volume) / 1000).toFixed(1)}k
 💧 Liq: $${(parseFloat(market.liquidity) / 1000).toFixed(1)}k
 
-🔗 [Polymarket](https://polymarket.com/event/${market.slug || market.id})
+${signalReason ? `\n📋 *Why this signal:*\n${signalReason}\n` : ''}
+🔗 [Open on Polymarket](https://polymarket.com/event/${market.slug || market.market_id})
     `.trim();
 
     try {
@@ -391,28 +415,44 @@ async function run() {
         console.log(`[Scan] Processed ${markets.length} markets. Found ${topPicks.length} high-potential opportunities.`);
 
         for (const pick of topPicks) {
-            // DEDUPLICATION: Check if signal already sent in last 24h
-            if (isSignalAlreadySent(pick.market_id)) {
-                console.log(`[Signal] Skipping duplicate: ${pick.question.slice(0, 30)}... (already sent)`);
-                continue; // Skip this signal entirely
+            // DEDUPLICATION: Check if signal should be skipped
+            const skipCheck = shouldSkipSignal(pick.market_id, pick.score, pick.newsCorrelation);
+
+            if (skipCheck.skip) {
+                console.log(`[Signal] Skipping: ${pick.question.slice(0, 30)}... (${skipCheck.reason})`);
+                continue;
             }
+
+            // Build reason explanation
+            let signalReason = '📊 Scoring factors: ';
+            const reasons = [];
+            if (pick.newsCorrelation) reasons.push('🔥 News/RSS match detected');
+            reasons.push(`Volume: $${parseFloat(pick.volume || 0).toLocaleString()}`);
+            reasons.push(`Liquidity: $${parseFloat(pick.liquidity || 0).toLocaleString()}`);
+            if (skipCheck.previousScore) {
+                reasons.push(`📈 Score increased: ${skipCheck.previousScore} → ${pick.score}`);
+            }
+            signalReason += reasons.join(' | ');
 
             // Save signal to history database WITH ALL INFO
             const signalRecord = saveSignalToHistory(pick);
             console.log(`[Signal] NEW: ${pick.question.slice(0, 40)}... (ID: ${signalRecord.id})`);
+            if (skipCheck.reason) console.log(`[Signal] Reason: ${skipCheck.reason}`);
 
-            // Log signal to dashboard console
-            logToFile('signal', `🎯 Signal Detected: ${pick.question.slice(0, 60)}... (Score: ${pick.score})`, 'high', {
+            // Log signal to dashboard console WITH EXPLANATION
+            logToFile('signal', `🎯 ${pick.question.slice(0, 50)}... | Score: ${pick.score} | ${pick.newsCorrelation ? '🔥 NEWS' : ''}`, 'high', {
                 relatedMarketId: pick.market_id,
                 signalId: signalRecord.id,
                 score: pick.score,
                 volume: pick.volume,
                 liquidity: pick.liquidity,
-                newsCorrelation: pick.newsCorrelation || false
+                newsCorrelation: pick.newsCorrelation || false,
+                reason: signalReason,
+                slug: pick.slug
             });
 
-            // Send Telegram (already has sniped-markets dedup, but now also blocked by signals check)
-            await sendTelegramAlert(pick);
+            // Send Telegram with detailed explanation
+            await sendTelegramAlert(pick, signalReason);
 
             // AUTO-TRADE INTEGRATION
             if (settings.autoTrade && pick.score >= (settings.minAutoScore || 90)) {

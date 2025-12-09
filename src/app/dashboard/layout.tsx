@@ -154,8 +154,10 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                                                 >
                                                     View in Radar
                                                 </Link>
-                                                <Link
-                                                    href={`/dashboard/market/${log.relatedMarket.id}`}
+                                                <a
+                                                    href={`https://polymarket.com/event/${log.relatedMarket.slug || log.relatedMarket.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
                                                     onClick={onClose}
                                                     className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg text-center transition-all ${log.relatedMarket.score >= 70
                                                         ? 'bg-green-500 hover:bg-green-400 text-black'
@@ -163,7 +165,7 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                                                         }`}
                                                 >
                                                     {log.relatedMarket.score >= 70 ? '⚡ SNIPE' : 'Analyze'}
-                                                </Link>
+                                                </a>
                                             </div>
                                         )}
                                     </div>
