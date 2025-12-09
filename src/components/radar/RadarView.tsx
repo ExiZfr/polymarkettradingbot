@@ -43,10 +43,10 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                 <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
                     <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-                    <div className="relative px-6 pt-8 pb-4">
+                    <div className="relative px-6 pt-12 pb-4">
                         <button
                             onClick={onClose}
-                            className="absolute top-3 right-3 p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all hover:rotate-90 duration-300"
+                            className="absolute top-4 right-4 p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all hover:rotate-90 duration-300 z-10"
                         >
                             <X size={18} />
                         </button>
@@ -61,22 +61,23 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                         </motion.div>
 
                         <h2 className="text-2xl font-black text-white mb-2 drop-shadow-lg">Comment ça marche ? 🤔</h2>
-                        <p className="text-white/80 text-sm font-medium">Explications simples pour tout comprendre !</p>
+                        <p className="text-white/80 text-sm font-medium mb-4">Explications simples pour tout comprendre !</p>
                     </div>
 
-                    {/* Tabs */}
-                    <div className="flex gap-1 px-4 pb-2">
+                    {/* Tabs - Ensure clickable */}
+                    <div className="relative z-20 flex gap-2 px-6 pb-4">
                         {[
-                            { id: 'score', label: '🔥 Score', desc: 'C\'est quoi ?' },
-                            { id: 'urgency', label: '⏰ Urgence', desc: 'Quand agir ?' },
-                            { id: 'tips', label: '💡 Astuces', desc: 'Pro tips' },
+                            { id: 'score', label: '🔥 Score' },
+                            { id: 'urgency', label: '⏰ Urgence' },
+                            { id: 'tips', label: '💡 Astuces' },
                         ].map((tab) => (
                             <button
                                 key={tab.id}
-                                onClick={() => setActiveTab(tab.id as any)}
-                                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id
+                                type="button"
+                                onClick={() => setActiveTab(tab.id as 'score' | 'urgency' | 'tips')}
+                                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer ${activeTab === tab.id
                                     ? 'bg-white text-black shadow-lg'
-                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                    : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
                                     }`}
                             >
                                 {tab.label}
