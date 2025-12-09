@@ -23,6 +23,7 @@ export type ListenerLog = {
     message: string;
     priority: 'low' | 'medium' | 'high';
     relatedMarketId?: string;
+    signalId?: string; // ID of the signal in signals-history.json
     // Enhanced: Include market data for direct display
     relatedMarket?: {
         id: string;
@@ -31,6 +32,7 @@ export type ListenerLog = {
         score: number;
         probability: number;
         volume: string;
+        slug?: string; // Polymarket market slug
     };
 };
 
