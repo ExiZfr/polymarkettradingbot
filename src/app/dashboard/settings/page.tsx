@@ -20,9 +20,25 @@ import {
     DollarSign,
     Percent,
     Target,
-    Layers
+    Layers,
+    Radio,
+    Plus,
+    X,
+    Tag
 } from "lucide-react";
 import { paperStore, PaperTradingSettings, PaperProfile } from "@/lib/paper-trading";
+import { KEYWORD_CATEGORIES, LISTENER_KEYWORDS } from "@/lib/keywords-config";
+
+// Listener Settings Type
+type ListenerSettings = {
+    enabled: boolean;
+    scanInterval: number; // seconds
+    minScore: number;
+    maxMarkets: number;
+    prioritizeFavorites: boolean;
+    customKeywords: string[];
+    enabledCategories: string[];
+};
 
 type ModuleConfig = {
     id: string;
@@ -45,7 +61,19 @@ export default function SettingsPage() {
     const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [modules, setModules] = useState<ModuleConfig[]>(DEFAULT_MODULES);
     const [saved, setSaved] = useState(false);
-    const [activeTab, setActiveTab] = useState<'trading' | 'modules' | 'account'>('trading');
+    const [activeTab, setActiveTab] = useState<'trading' | 'modules' | 'listener' | 'account'>('trading');
+    const [newKeyword, setNewKeyword] = useState("");
+
+    // Listener Settings State
+    const [listenerSettings, setListenerSettings] = useState<ListenerSettings>({
+        enabled: true,
+        scanInterval: 60,
+        minScore: 15,
+        maxMarkets: 150,
+        prioritizeFavorites: true,
+        customKeywords: [],
+        enabledCategories: Object.keys(LISTENER_KEYWORDS)
+    });
 
     useEffect(() => {
         setSettings(paperStore.getSettings());
@@ -55,6 +83,12 @@ export default function SettingsPage() {
         const savedModules = localStorage.getItem('polybot_modules_config');
         if (savedModules) {
             setModules(JSON.parse(savedModules));
+        }
+
+        // Load listener settings from localStorage
+        const savedListener = localStorage.getItem('polybot_listener_settings');
+        if (savedListener) {
+            setListenerSettings(JSON.parse(savedListener));
         }
     }, []);
 
@@ -76,8 +110,38 @@ export default function SettingsPage() {
             paperStore.saveSettings(settings);
         }
         localStorage.setItem('polybot_modules_config', JSON.stringify(modules));
+        localStorage.setItem('polybot_listener_settings', JSON.stringify(listenerSettings));
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+    };
+
+    const addCustomKeyword = () => {
+        if (newKeyword.trim() && !listenerSettings.customKeywords.includes(newKeyword.trim())) {
+            setListenerSettings(prev => ({
+                ...prev,
+                customKeywords: [...prev.customKeywords, newKeyword.trim()]
+            }));
+            setNewKeyword("");
+            setSaved(false);
+        }
+    };
+
+    const removeCustomKeyword = (keyword: string) => {
+        setListenerSettings(prev => ({
+            ...prev,
+            customKeywords: prev.customKeywords.filter(k => k !== keyword)
+        }));
+        setSaved(false);
+    };
+
+    const toggleCategory = (categoryId: string) => {
+        setListenerSettings(prev => ({
+            ...prev,
+            enabledCategories: prev.enabledCategories.includes(categoryId)
+                ? prev.enabledCategories.filter(c => c !== categoryId)
+                : [...prev.enabledCategories, categoryId]
+        }));
+        setSaved(false);
     };
 
     const resetPaperTrading = () => {
@@ -112,8 +176,8 @@ export default function SettingsPage() {
                     whileTap={{ scale: 0.98 }}
                     onClick={saveAllSettings}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${saved
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                         }`}
                 >
                     <Save size={18} />
@@ -122,18 +186,19 @@ export default function SettingsPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-2 bg-white/5 p-1 rounded-xl w-fit">
+            <div className="flex gap-2 bg-white/5 p-1 rounded-xl w-fit flex-wrap">
                 {[
                     { id: 'trading', label: 'Paper Trading', icon: Wallet },
                     { id: 'modules', label: 'Modules', icon: Layers },
+                    { id: 'listener', label: 'Listener', icon: Radio },
                     { id: 'account', label: 'Account', icon: Shield }
                 ].map(tab => (
                     <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all ${activeTab === tab.id
-                                ? 'bg-indigo-600 text-white'
-                                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                            ? 'bg-indigo-600 text-white'
+                            : 'text-slate-400 hover:text-white hover:bg-white/5'
                             }`}
                     >
                         <tab.icon size={16} />
@@ -183,8 +248,8 @@ export default function SettingsPage() {
                                     <button
                                         onClick={() => handleSettingsChange('useRiskBasedSizing', true)}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${settings.useRiskBasedSizing
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white/5 text-slate-400 hover:bg-white/10'
                                             }`}
                                     >
                                         Risk % Based
@@ -192,8 +257,8 @@ export default function SettingsPage() {
                                     <button
                                         onClick={() => handleSettingsChange('useRiskBasedSizing', false)}
                                         className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!settings.useRiskBasedSizing
-                                                ? 'bg-indigo-600 text-white'
-                                                : 'bg-white/5 text-slate-400 hover:bg-white/10'
+                                            ? 'bg-indigo-600 text-white'
+                                            : 'bg-white/5 text-slate-400 hover:bg-white/10'
                                             }`}
                                     >
                                         Fixed Amount
@@ -401,6 +466,169 @@ export default function SettingsPage() {
                             </div>
                         </motion.div>
                     ))}
+                </div>
+            )}
+
+            {/* Listener Settings */}
+            {activeTab === 'listener' && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Scan Settings Card */}
+                    <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Radio className="text-indigo-400" size={20} />
+                                Scan Settings
+                            </h3>
+                            <button
+                                onClick={() => setListenerSettings(prev => ({ ...prev, enabled: !prev.enabled }))}
+                                className={`p-2 rounded-lg transition-colors ${listenerSettings.enabled ? 'bg-green-500/20 text-green-400' : 'bg-white/5 text-slate-500'}`}
+                            >
+                                {listenerSettings.enabled ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                            </button>
+                        </div>
+
+                        <div className="space-y-4">
+                            {/* Scan Interval */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    Scan Interval (seconds)
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="range"
+                                        min="10"
+                                        max="300"
+                                        step="10"
+                                        value={listenerSettings.scanInterval}
+                                        onChange={(e) => setListenerSettings(prev => ({ ...prev, scanInterval: parseInt(e.target.value) }))}
+                                        className="flex-1 accent-indigo-500"
+                                    />
+                                    <span className="text-white font-mono w-16 text-right">{listenerSettings.scanInterval}s</span>
+                                </div>
+                            </div>
+
+                            {/* Min Score */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    Minimum Score Threshold
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="80"
+                                        step="5"
+                                        value={listenerSettings.minScore}
+                                        onChange={(e) => setListenerSettings(prev => ({ ...prev, minScore: parseInt(e.target.value) }))}
+                                        className="flex-1 accent-orange-500"
+                                    />
+                                    <span className="text-orange-400 font-mono w-12 text-right">{listenerSettings.minScore}</span>
+                                </div>
+                            </div>
+
+                            {/* Max Markets */}
+                            <div>
+                                <label className="block text-sm font-medium text-slate-400 mb-2">
+                                    Max Markets to Display
+                                </label>
+                                <input
+                                    type="number"
+                                    min="10"
+                                    max="500"
+                                    value={listenerSettings.maxMarkets}
+                                    onChange={(e) => setListenerSettings(prev => ({ ...prev, maxMarkets: parseInt(e.target.value) || 50 }))}
+                                    className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500/50"
+                                />
+                            </div>
+
+                            {/* Prioritize Favorites */}
+                            <div className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
+                                <span className="text-sm text-slate-300">Prioritize Favorited Markets</span>
+                                <button
+                                    onClick={() => setListenerSettings(prev => ({ ...prev, prioritizeFavorites: !prev.prioritizeFavorites }))}
+                                    className={`p-1 rounded-lg transition-colors ${listenerSettings.prioritizeFavorites ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-slate-500'}`}
+                                >
+                                    {listenerSettings.prioritizeFavorites ? <ToggleRight size={24} /> : <ToggleLeft size={24} />}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Keyword Categories Card */}
+                    <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Tag className="text-purple-400" size={20} />
+                            Keyword Categories
+                        </h3>
+                        <p className="text-xs text-slate-500">Enable/disable keyword categories for market matching</p>
+
+                        <div className="grid grid-cols-2 gap-2">
+                            {KEYWORD_CATEGORIES.map(cat => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => toggleCategory(cat.id)}
+                                    className={`p-3 rounded-xl text-left transition-all ${listenerSettings.enabledCategories.includes(cat.id)
+                                            ? 'bg-indigo-500/20 border border-indigo-500/30 text-white'
+                                            : 'bg-white/5 border border-white/5 text-slate-500 hover:bg-white/10'
+                                        }`}
+                                >
+                                    <div className="text-sm font-bold">{cat.label}</div>
+                                    <div className="text-xs opacity-70">{cat.count} keywords</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Custom Keywords Card */}
+                    <div className="lg:col-span-2 bg-[#0C0D12] border border-white/5 rounded-2xl p-6 space-y-4">
+                        <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                            <Plus className="text-green-400" size={20} />
+                            Custom Keywords
+                        </h3>
+                        <p className="text-xs text-slate-500">Add your own keywords to track specific markets</p>
+
+                        {/* Add Keyword Input */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={newKeyword}
+                                onChange={(e) => setNewKeyword(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && addCustomKeyword()}
+                                placeholder="Enter a keyword..."
+                                className="flex-1 px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white placeholder:text-slate-600 focus:outline-none focus:border-indigo-500/50"
+                            />
+                            <button
+                                onClick={addCustomKeyword}
+                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors flex items-center gap-2"
+                            >
+                                <Plus size={18} /> Add
+                            </button>
+                        </div>
+
+                        {/* Keywords List */}
+                        {listenerSettings.customKeywords.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {listenerSettings.customKeywords.map(keyword => (
+                                    <div
+                                        key={keyword}
+                                        className="flex items-center gap-2 px-3 py-2 bg-indigo-500/20 border border-indigo-500/30 rounded-lg text-indigo-300"
+                                    >
+                                        <span className="text-sm font-medium">{keyword}</span>
+                                        <button
+                                            onClick={() => removeCustomKeyword(keyword)}
+                                            className="p-0.5 rounded hover:bg-white/10 transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-slate-500 text-sm">
+                                No custom keywords added yet
+                            </div>
+                        )}
+                    </div>
                 </div>
             )}
 
