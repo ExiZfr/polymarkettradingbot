@@ -739,12 +739,12 @@ export default function RadarView() {
                 </div>
             )}
 
-            {/* HELP BUTTON */}
+            {/* HELP BUTTON - Fixed bottom right */}
             <button
                 onClick={() => setShowHelp(true)}
-                className="fixed bottom-8 left-8 h-12 w-12 bg-white/5 hover:bg-indigo-600 backdrop-blur-md border border-white/10 hover:border-indigo-500 rounded-full flex items-center justify-center text-slate-400 hover:text-white shadow-2xl transition-all duration-300 z-50 group origin-center hover:scale-110"
+                className="fixed bottom-8 right-8 h-14 w-14 bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 backdrop-blur-md border border-indigo-400/30 rounded-2xl flex items-center justify-center text-white shadow-2xl shadow-indigo-500/30 transition-all duration-300 z-50 group origin-center hover:scale-110"
             >
-                <HelpCircle size={22} className="group-hover:rotate-12 transition-transform" />
+                <HelpCircle size={24} className="group-hover:rotate-12 transition-transform" />
             </button>
         </div>
     );
