@@ -82,7 +82,7 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
             fee
         };
 
-        // Persist to history
+        // 7. Record in History
         this.wallet.addOrderToHistory(order);
 
         return order;
