@@ -2,12 +2,57 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Users, DollarSign, Activity, Shield, Zap, Search, Settings, Check, UserPlus } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Users, DollarSign, Activity, Shield, Zap, Search, Settings, Check, UserPlus, ArrowRight } from "lucide-react";
 import { PnLChart } from "@/components/dashboard/copy-trading/PnLChart";
 import { WinRateChart } from "@/components/dashboard/copy-trading/WinRateChart";
 import { ActiveWallets } from "@/components/dashboard/copy-trading/ActiveWallets";
 import { CopyStats } from "@/components/dashboard/copy-trading/CopyStats";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Wallet Search Component
+function WalletSearch() {
+    const [address, setAddress] = useState('');
+    const router = useRouter();
+
+    const handleSearch = () => {
+        if (address.trim()) {
+            // Navigate to the trader detail page
+            router.push(`/dashboard/copy-trading/${address.trim()}`);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter') {
+            handleSearch();
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            <div className="relative group">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
+                <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="0x... wallet address"
+                    className="pl-9 pr-4 py-2 bg-[#171717] border border-[#262626] group-focus-within:border-blue-500/50 rounded-lg focus:outline-none text-sm w-56 transition-all"
+                />
+            </div>
+            <button
+                onClick={handleSearch}
+                disabled={!address.trim()}
+                className="p-2 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
+                title="View Trader Profile"
+            >
+                <ArrowRight className="w-4 h-4" />
+            </button>
+        </div>
+    );
+}
+
 
 export default function CopyTradingDashboard() {
     // Mode is now always Paper for this version
@@ -118,14 +163,7 @@ export default function CopyTradingDashboard() {
                     </Link>
 
                     {/* Search Component */}
-                    <div className="relative group">
-                        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-blue-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Find wallet..."
-                            className="pl-9 pr-4 py-2 bg-[#171717] border border-[#262626] group-focus-within:border-blue-500/50 rounded-lg focus:outline-none text-sm w-48 transition-all"
-                        />
-                    </div>
+                    <WalletSearch />
 
                     <button
                         onClick={() => setShowSettingsModal(true)}
@@ -277,8 +315,8 @@ export default function CopyTradingDashboard() {
                                         key={profile.id}
                                         onClick={() => switchProfile(profile.id)}
                                         className={`w-full text-left p-4 rounded-xl border transition-all flex items-center justify-between group ${activeProfileId === profile.id
-                                                ? 'bg-indigo-500/10 border-indigo-500/30 shadow-indigo-500/10 shadow-lg'
-                                                : 'bg-[#262626] border-transparent hover:border-[#404040]'
+                                            ? 'bg-indigo-500/10 border-indigo-500/30 shadow-indigo-500/10 shadow-lg'
+                                            : 'bg-[#262626] border-transparent hover:border-[#404040]'
                                             }`}
                                     >
                                         <div className="flex items-center gap-3">
