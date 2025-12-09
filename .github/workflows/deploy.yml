@@ -68,15 +68,19 @@ jobs:
             # Update required vars
             update_env "DATABASE_URL" "$DATABASE_URL"
             update_env "NEXT_PUBLIC_APP_URL" "https://polygraalx.com"
+            update_env "NEXT_PUBLIC_BOT_USERNAME" "PolyGraalXBot"
+            update_env "SESSION_SECRET" "polygraalx_super_secret_session_key_2024"
+            update_env "TELEGRAM_BOT_TOKEN" "8042171984:AAHQyOuxL47aDVtc41FKWfUCD3eMn7_0kp0"
+            update_env "TELEGRAM_ADMIN_CHAT_ID" "7139453099"
             
-            echo "✅ Env vars updated (existing vars preserved)"
+            echo "✅ Env vars updated (all tokens configured)"
             
             # Check if directory exists
             if [ -d "$APP_DIR" ]; then
               echo "✅ Directory exists. Navigating..."
               cd "$APP_DIR" || exit 1
               
-              echo "📥 [1/5] Syncing with GitHub..."
+              echo "📥 [1/6] Syncing with GitHub..."
               # Update remote to use current token (in case it changed)
               git remote set-url origin "$REPO_URL"
               
@@ -94,32 +98,47 @@ jobs:
               cd "$APP_DIR" || exit 1
             fi
             
-            echo "📦 [2/5] Installing dependencies..."
+            echo "📦 [2/6] Installing dependencies..."
             npm install
             
-            echo "🗄️ [3/5] Syncing database..."
+            echo "🗄️ [3/6] Syncing database..."
             npx prisma generate
             npx prisma db push
             
-            echo "🏗️ [4/5] Building Next.js app..."
+            echo "🏗️ [4/6] Building Next.js app..."
             npm run build
             
-            echo "♻️ [5/5] Restarting Application..."
+            echo "♻️ [5/6] Restarting Main Application..."
             # Check if pm2 is installed
             if ! command -v pm2 &> /dev/null; then
                 echo "❌ PM2 not found. Installing global pm2..."
                 npm install -g pm2
             fi
 
-            # Start or Restart using PM2
+            # Start or Restart Main App using PM2
             if pm2 describe polygraalx > /dev/null 2>&1; then
-                echo "🔄 Restarting existing process..."
+                echo "🔄 Restarting existing main app..."
                 pm2 restart polygraalx
             else
-                echo "▶️ Starting new process..."
+                echo "▶️ Starting new main app process..."
                 pm2 start npm --name polygraalx -- start
             fi
             
+            echo "📡 [6/6] Starting Listener Service..."
+            # Start or Restart Listener Service
+            if pm2 describe polylistener > /dev/null 2>&1; then
+                echo "🔄 Restarting listener service..."
+                pm2 restart polylistener
+            else
+                echo "▶️ Starting listener service..."
+                pm2 start scripts/listener-service.js --name polylistener
+            fi
+            
+            # Save PM2 config
+            pm2 save
+            
             echo "========================================"
             echo "✅ DEPLOYMENT SUCCESSFUL"
+            echo "🌐 Main App: polygraalx (port 3001)"
+            echo "📡 Listener: polylistener"
             echo "========================================"
