@@ -242,9 +242,26 @@ function logToFile(type, message, priority = 'low', metadata = {}) {
             source: 'listener',
             type,
             message,
-            priority,
-            ...metadata
+            priority
         };
+
+        // If metadata contains market data, structure it properly
+        if (metadata.relatedMarketId) {
+            newLog.relatedMarketId = metadata.relatedMarketId;
+            newLog.signalId = metadata.signalId;
+            newLog.relatedMarket = {
+                id: metadata.relatedMarketId,
+                title: message.split('|')[0].replace(/🎯|⚡|🔥/g, '').trim(),
+                score: metadata.score || 0,
+                volume: metadata.volume || '0',
+                probability: 50, // Default, would need to be passed if available
+                slug: metadata.slug,
+                image: '' // Would need to be passed if available
+            };
+        } else {
+            // For non-market logs, just spread metadata
+            Object.assign(newLog, metadata);
+        }
 
         logs.unshift(newLog);
         // Keep only last 100 logs
