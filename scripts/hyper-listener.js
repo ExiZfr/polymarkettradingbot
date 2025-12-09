@@ -24,6 +24,94 @@ if (!fs.existsSync(path.join(__dirname, '..', 'data'))) {
     fs.mkdirSync(path.join(__dirname, '..', 'data'));
 }
 
+// -- Signals History Database --
+const SIGNALS_HISTORY_PATH = path.join(__dirname, '..', 'data', 'signals-history.json');
+
+function loadSignalsHistory() {
+    try {
+        if (fs.existsSync(SIGNALS_HISTORY_PATH)) {
+            return JSON.parse(fs.readFileSync(SIGNALS_HISTORY_PATH, 'utf8'));
+        }
+    } catch (e) {
+        console.error('[SignalsDB] Failed to load:', e.message);
+    }
+    return { signals: [], lastCleanup: null };
+}
+
+function saveSignalsHistory(data) {
+    try {
+        fs.writeFileSync(SIGNALS_HISTORY_PATH, JSON.stringify(data, null, 2));
+    } catch (e) {
+        console.error('[SignalsDB] Failed to save:', e.message);
+    }
+}
+
+// Check if signal already sent (by marketId, within 24h)
+function isSignalAlreadySent(marketId) {
+    const db = loadSignalsHistory();
+    const existing = db.signals.find(s => s.marketId === marketId);
+    if (existing) {
+        const sentAt = new Date(existing.timestamp);
+        const hoursSince = (Date.now() - sentAt.getTime()) / (1000 * 60 * 60);
+        return hoursSince < 24; // Already sent in last 24h
+    }
+    return false;
+}
+
+// Save signal with ALL info that led to it
+function saveSignalToHistory(market) {
+    const db = loadSignalsHistory();
+
+    // Remove any existing entry for this market (will be replaced with fresh data)
+    db.signals = db.signals.filter(s => s.marketId !== market.market_id);
+
+    // Add new signal with complete info
+    const signalRecord = {
+        id: `sig_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        marketId: market.market_id,
+        question: market.question,
+        score: market.score,
+        timestamp: new Date().toISOString(),
+        // Info that led to signal:
+        volume: market.volume,
+        liquidity: market.liquidity,
+        newsCorrelation: market.newsCorrelation || false,
+        slug: market.slug,
+        // Scoring breakdown (if available)
+        scoringFactors: {
+            volumeScore: Math.min(30, (parseFloat(market.volume) / 100000) * 30),
+            liquidityScore: Math.min(25, (parseFloat(market.liquidity) / 50000) * 25),
+            newsBoost: market.newsCorrelation ? 'Yes' : 'No'
+        }
+    };
+
+    db.signals.unshift(signalRecord);
+
+    // Keep only last 500 signals
+    db.signals = db.signals.slice(0, 500);
+
+    saveSignalsHistory(db);
+    return signalRecord;
+}
+
+// Cleanup old signals (older than 48h)
+function cleanupOldSignals() {
+    const db = loadSignalsHistory();
+    const now = Date.now();
+    const originalCount = db.signals.length;
+
+    db.signals = db.signals.filter(s => {
+        const age = (now - new Date(s.timestamp).getTime()) / (1000 * 60 * 60);
+        return age < 48; // Keep signals from last 48h
+    });
+
+    if (db.signals.length < originalCount) {
+        db.lastCleanup = new Date().toISOString();
+        saveSignalsHistory(db);
+        console.log(`[SignalsDB] Cleaned up ${originalCount - db.signals.length} old signals`);
+    }
+}
+
 // -- Sniped Markets Tracking --
 function loadSnipedMarkets() {
     try {
@@ -303,14 +391,27 @@ async function run() {
         console.log(`[Scan] Processed ${markets.length} markets. Found ${topPicks.length} high-potential opportunities.`);
 
         for (const pick of topPicks) {
-            // Log signal to dashboard console with market_id for deduplication
+            // DEDUPLICATION: Check if signal already sent in last 24h
+            if (isSignalAlreadySent(pick.market_id)) {
+                console.log(`[Signal] Skipping duplicate: ${pick.question.slice(0, 30)}... (already sent)`);
+                continue; // Skip this signal entirely
+            }
+
+            // Save signal to history database WITH ALL INFO
+            const signalRecord = saveSignalToHistory(pick);
+            console.log(`[Signal] NEW: ${pick.question.slice(0, 40)}... (ID: ${signalRecord.id})`);
+
+            // Log signal to dashboard console
             logToFile('signal', `🎯 Signal Detected: ${pick.question.slice(0, 60)}... (Score: ${pick.score})`, 'high', {
                 relatedMarketId: pick.market_id,
+                signalId: signalRecord.id,
                 score: pick.score,
+                volume: pick.volume,
+                liquidity: pick.liquidity,
                 newsCorrelation: pick.newsCorrelation || false
             });
 
-            // Send Telegram (has its own deduplication via sniped-markets.json)
+            // Send Telegram (already has sniped-markets dedup, but now also blocked by signals check)
             await sendTelegramAlert(pick);
 
             // AUTO-TRADE INTEGRATION
@@ -364,5 +465,6 @@ async function executeAutoTrade(market) {
 
 // Cleanup old snipes on startup
 cleanupOldSnipes();
+cleanupOldSignals();
 
 run();
