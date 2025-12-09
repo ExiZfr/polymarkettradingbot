@@ -180,4 +180,8 @@ export class PaperWallet implements IWallet {
             this.save(); // Save updated valuation
         }
     }
+
+    public getHistory(): Order[] {
+        return this.history;
+    }
 }

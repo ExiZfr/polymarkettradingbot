@@ -8,7 +8,8 @@ export async function GET() {
     // Convert Map to Object for serialization
     const portfolioJson = {
         ...portfolio,
-        positions: Object.fromEntries(portfolio.positions)
+        positions: Object.fromEntries(portfolio.positions),
+        orders: wallet.getHistory()
     };
 
     return NextResponse.json(portfolioJson);
