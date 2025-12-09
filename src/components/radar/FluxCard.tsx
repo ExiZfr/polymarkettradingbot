@@ -76,8 +76,7 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
 
     return (
         <div
-            className="relative h-96 w-full cursor-pointer perspective-1000 group/card"
-            onClick={() => setIsFlipped(!isFlipped)}
+            className="relative h-96 w-full perspective-1000 group/card"
         >
             {/* Stack Effect Backgrounds */}
             {isGroup && !isFlipped && (
@@ -94,7 +93,10 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
                 style={{ transformStyle: "preserve-3d" }}
             >
                 {/* --- FRONT SIDE --- */}
-                <div className="absolute inset-0 h-full w-full backface-hidden">
+                <div
+                    className="absolute inset-0 h-full w-full backface-hidden cursor-pointer"
+                    onClick={() => setIsFlipped(!isFlipped)}
+                >
                     <div className={cn(
                         "h-full w-full overflow-hidden rounded-2xl border bg-[#0F1116] shadow-2xl transition-colors hover:border-white/20",
                         isTracked ? "border-yellow-500/50" : "border-white/10"
