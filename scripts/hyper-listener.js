@@ -205,12 +205,24 @@ function cleanupOldSnipes() {
 let settings = {
     enabled: true,
     scanInterval: 10,
-    minScore: 15,
+    minScore: 85,  // Increased for higher quality signals
     maxMarkets: 150,
     turboMode: false,
-    enableRss: false,
+    enableRss: true,
     rssUrls: [],
-    customKeywords: []
+    customKeywords: [],
+    // Smart filters to exclude low-quality markets
+    excludePatterns: [
+        'in 2025',        // Markets with year that's likely resolved/obvious
+        'by 2025',
+        'before 2025',
+        'released in',    // Release date speculation
+        'announce in',
+        'will.*win',      // Simple win/lose bets without nuance  
+        'will.*lose',
+        'gta vi',         // Specific overhyped topics
+        'gta 6',
+    ]
 };
 const parser = new Parser();
 const limit = pLimit(100); // Concurrency limit boosted to 100
@@ -321,9 +333,20 @@ function normalizeMarkets(polyMarkets, rssItems) {
             }
         }
 
+
         // Ensure market has minimum required fields (slug is optional, will use market_id as fallback)
         if (!m.question || !m.id) {
             return false;
+        }
+
+        // Apply exclude patterns filter
+        if (settings.excludePatterns && settings.excludePatterns.length > 0) {
+            const questionLower = m.question.toLowerCase();
+            for (const pattern of settings.excludePatterns) {
+                if (questionLower.includes(pattern.toLowerCase())) {
+                    return false; // Reject market matching exclude pattern
+                }
+            }
         }
 
         return true;
