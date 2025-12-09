@@ -37,7 +37,9 @@ export async function GET(request: Request) {
 
                 profile.history.forEach(order => {
                     totalTrades++;
-                    volume += (order.shares * order.avgPrice); // Approx volume
+                    // Approx volume: Use amount if available (USD), else shares * price
+                    const tradeVol = order.amount || ((order.shares || 0) * (order.avgPrice || 0));
+                    volume += tradeVol;
                     // Assuming order history tracks PnL on CLOSE orders or we calculate from closed positions
                     if (order.side === 'SELL' && order.realizedPnl) {
                         realizedPnl += order.realizedPnl;

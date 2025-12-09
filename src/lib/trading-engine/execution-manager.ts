@@ -48,21 +48,19 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
 
         const shares = netAmount / executionPrice;
 
+        let realizedPnl: number | undefined;
+        let sharesProcessed = 0;
+
         // 5. Update Wallet
         if (side === 'BUY') {
+            sharesProcessed = shares;
             this.wallet.addPosition(marketId, outcome, shares, executionPrice);
         } else {
-            // For SELL, we need to know how many shares 'amount' USD represents at current price?
-            // Or if amount is shares?
-            // Let's assume input 'amount' is always USD for this high level method
-            // Real exchange API often uses 'quantity' (shares).
-            // Let's adapt:
-            // If SELL, we execute sale of shares = amount / price (approx)
-            // Ideally interface should take quantity.
-            // For this simulation "amount" = USD size. 
+            // For SELL
             const sharesToSell = amount / executionPrice;
+            sharesProcessed = sharesToSell;
             try {
-                const realizedPnl = this.wallet.closePosition(marketId, outcome, sharesToSell, executionPrice);
+                realizedPnl = this.wallet.closePosition(marketId, outcome, sharesToSell, executionPrice);
                 console.log(`[SIMULATION] Realized PnL: $${realizedPnl.toFixed(2)}`);
             } catch (e: any) {
                 return this.createRejectedOrder(marketId, side, outcome, amount, currentPrice, e.message);
@@ -76,14 +74,17 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
             side,
             outcome,
             amount: amount,
+            shares: sharesProcessed,
             price: executionPrice,
-            timestamp: new Date(),
+            avgPrice: executionPrice,
+            timestamp: new Date().toISOString(),
             status: 'FILLED',
-            fee
+            fee,
+            realizedPnl
         };
 
         // 7. Record in History
-        this.wallet.addOrderToHistory(order);
+        this.wallet.addOrderToHistory?.(order);
 
         return order;
     }
@@ -96,7 +97,7 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
             outcome,
             amount,
             price,
-            timestamp: new Date(),
+            timestamp: new Date().toISOString(),
             status: 'REJECTED',
             fee: 0
         };

@@ -14,11 +14,16 @@ export interface Order {
     marketId: string;
     outcome: PositionSide;
     side: OrderSide;
-    shares: number;
+
+    // Support both 'shares' (quantity-based) and 'amount' (USD-based) for compatibility
+    shares?: number;
+    amount?: number;
+
     price: number;
-    avgPrice: number; // Avg price at execution
-    timestamp: string;
-    status: 'OPEN' | 'FILLED' | 'CANCELLED';
+    avgPrice?: number; // Optional - average execution price
+    timestamp: string; // Normalized to ISO string
+    status: 'OPEN' | 'FILLED' | 'CANCELLED' | 'REJECTED';
+    fee?: number;
     realizedPnl?: number; // Added for stat tracking
 }
 
@@ -51,4 +56,15 @@ export interface IWallet {
     // Trading
     addPosition(marketId: string, outcome: PositionSide, shares: number, price: number): void;
     closePosition(marketId: string, outcome: PositionSide, shares: number, price: number): number; // Returns realized PnL
+    addOrderToHistory?(order: Order): void; // Optional method for tracking orders
+}
+
+export interface IExecutionStrategy {
+    executeOrder(
+        marketId: string,
+        side: OrderSide,
+        outcome: PositionSide,
+        amount: number, // USD amount
+        currentPrice: number
+    ): Promise<Order>;
 }
