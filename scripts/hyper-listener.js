@@ -300,6 +300,37 @@ async function fetchRSS() {
 // -- Analysis Engine --
 
 function normalizeMarkets(polyMarkets, rssItems) {
+    // 0. CRITICAL: Filter out closed/resolved/expired markets FIRST
+    const now = Date.now();
+    const activeMarkets = polyMarkets.filter(m => {
+        // Check if market is explicitly closed/resolved
+        if (m.closed === true || m.active === false) {
+            return false;
+        }
+
+        // Check status field
+        if (m.status && ['closed', 'resolved', 'archived', 'inactive'].includes(m.status.toLowerCase())) {
+            return false;
+        }
+
+        // Check if end_date has passed
+        if (m.end_date) {
+            const endDate = new Date(m.end_date).getTime();
+            if (endDate < now) {
+                return false;
+            }
+        }
+
+        // Ensure market has minimum required fields
+        if (!m.question || !m.market_id || !m.slug) {
+            return false;
+        }
+
+        return true;
+    });
+
+    console.log(`[Filter] ${polyMarkets.length} total → ${activeMarkets.length} active markets`);
+
     // 1. Identify keywords from RSS/News to boost relevant markets
     const trendingKeywords = new Set();
     rssItems.forEach(item => {
@@ -310,7 +341,7 @@ function normalizeMarkets(polyMarkets, rssItems) {
     });
 
     // 2. Score Markets
-    return polyMarkets.map(m => {
+    return activeMarkets.map(m => {
         let score = 10; // Base
         const volume = parseFloat(m.volume) || 0;
         const liquidity = parseFloat(m.liquidity) || 0;
