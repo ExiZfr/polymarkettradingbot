@@ -508,14 +508,15 @@ export default function RadarView() {
             'win', 'lose', 'over', 'under', 'more', 'less', 'than', 'reach', 'hit', 'get',
             'by', 'in', 'on', 'at', 'to', 'of', 'be', 'is', 'it', 'an', 'a', 'or', 'as',
             '2024', '2025', '2026', 'january', 'february', 'march', 'april', 'may', 'june',
-            'july', 'august', 'september', 'october', 'november', 'december', 'end', 'year'
+            'july', 'august', 'september', 'october', 'november', 'december', 'end', 'year',
+            'close', 'between', 'above', 'below', 'during', 'within', 'million', 'billion'
         ]);
 
         filtered.forEach(item => {
-            // Extract key identifying words (first 3 significant words)
+            // Extract key identifying words - REMOVE ALL NUMBERS to group price variants together
             const words = item.market.title
                 .toLowerCase()
-                .replace(/[^a-z0-9\s]/g, '')
+                .replace(/[^a-z\s]/g, '') // Remove everything except letters and spaces
                 .split(/\s+/)
                 .filter(w => w.length > 2 && !stopWords.has(w))
                 .slice(0, 3); // Use only 3 key words for better grouping
