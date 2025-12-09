@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: Request, { params }: { params: { address: string } }) {
+export async function GET(
+    request: NextRequest,
+    { params }: { params: Promise<{ address: string }> }
+) {
     try {
-        const { address } = params;
+        const { address } = await params;
 
         // Check if we are already tracking this wallet
         // const trackedWallet = await prisma.trackedWallet.findUnique({
@@ -52,7 +55,7 @@ export async function GET(request: Request, { params }: { params: { address: str
             bets,
         });
     } catch (error) {
-        console.error(`[API/copy-trading/wallet] Error fetching ${params.address}:`, error);
+        console.error(`[API/copy-trading/wallet] Error:`, error);
         return NextResponse.json({ error: 'Failed to fetch wallet contents' }, { status: 500 });
     }
 }
