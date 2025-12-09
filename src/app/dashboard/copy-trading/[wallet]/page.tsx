@@ -16,13 +16,17 @@ import { WinRateChart } from "@/components/dashboard/copy-trading/WinRateChart";
 interface Bet {
     id: string;
     market: string;
-    outcome: string;
+    marketType: string;  // Sports, Politics, Crypto, etc.
+    outcome: string;     // YES or NO
+    side: string;        // BUY or SELL
     amount: number;
+    shares: number;
     buyPrice: number;
     sellPrice: number;
     pnl: number;
     status: 'WON' | 'LOST' | 'OPEN';
     date: string;
+    slug?: string;
 }
 
 interface WalletData {
@@ -421,6 +425,7 @@ export default function WalletProfilePage() {
                                 <thead className="bg-[#1a1a2e] text-gray-400 text-xs uppercase">
                                     <tr>
                                         <th className="px-5 py-3">Market</th>
+                                        <th className="px-5 py-3 text-center">Type</th>
                                         <th className="px-5 py-3 text-center">Side</th>
                                         <th className="px-5 py-3 text-right">Amount</th>
                                         <th className="px-5 py-3 text-right">Buy Price</th>
@@ -441,6 +446,17 @@ export default function WalletProfilePage() {
                                         >
                                             <td className="px-5 py-4 max-w-[180px] truncate group-hover:text-white transition-colors" title={bet.market}>
                                                 {bet.market}
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                                                <span className={`px-2 py-1 rounded-md text-xs font-medium ${bet.marketType === 'Sports' ? 'bg-orange-500/20 text-orange-400' :
+                                                        bet.marketType === 'Politics' ? 'bg-blue-500/20 text-blue-400' :
+                                                            bet.marketType === 'Crypto' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                bet.marketType === 'Tech' ? 'bg-purple-500/20 text-purple-400' :
+                                                                    bet.marketType === 'Economics' ? 'bg-green-500/20 text-green-400' :
+                                                                        'bg-gray-500/20 text-gray-400'
+                                                    }`}>
+                                                    {bet.marketType || 'Event'}
+                                                </span>
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 <span className={`px-2 py-1 rounded-md text-xs font-bold ${bet.outcome === 'YES'
