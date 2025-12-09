@@ -26,61 +26,227 @@ type EventGroup = {
     totalVolume: number;
 };
 
+
 const HelpModal = ({ onClose }: { onClose: () => void }) => (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
         <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#0F1115] border border-white/10 rounded-3xl max-w-lg w-full p-8 shadow-2xl relative overflow-hidden"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", damping: 25 }}
+            className="bg-gradient-to-b from-[#0F1115] to-[#0A0B0F] border border-white/10 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl relative"
         >
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500" />
-            <button onClick={onClose} className="absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
-                <X size={20} />
-            </button>
-
-            <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-xl">
-                    <Activity className="text-indigo-400" size={24} />
-                </div>
-                Metric Definitions
-            </h2>
-
-            <div className="space-y-4">
-                <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl hover:border-white/10 transition-colors">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Flame className="text-orange-500 fill-orange-500/20" size={18} />
-                        <span className="text-slate-200 font-bold tracking-wide text-sm">FLAME SCORE (0-100)</span>
+            {/* Header */}
+            <div className="sticky top-0 bg-[#0F1115]/95 backdrop-blur-sm border-b border-white/5 p-6 z-10">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500" />
+                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
+                    <X size={20} />
+                </button>
+                <h2 className="text-2xl font-black text-white flex items-center gap-3">
+                    <div className="p-3 bg-gradient-to-br from-orange-500/20 to-pink-500/20 rounded-2xl">
+                        <Flame className="text-orange-400" size={28} />
                     </div>
-                    <p className="text-xs text-slate-400 leading-relaxed">
-                        Our proprietary algorithm that combines <strong>Volume Velocity</strong>, <strong>Liquidity Gaps</strong>, and <strong>Probability Deviations</strong>.
-                        <br /><span className="text-orange-400 mt-1 block">🔥 80+ indicates a high-probability sniping opportunity.</span>
+                    Snipability Metrics Guide
+                </h2>
+                <p className="text-sm text-slate-400 mt-2">Comprendre comment nos algorithmes identifient les opportunités de sniping.</p>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-120px)] space-y-6">
+                {/* Flame Score Section */}
+                <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="p-5 bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20 rounded-2xl"
+                >
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="p-2 bg-orange-500/20 rounded-xl">
+                            <Flame className="text-orange-400 fill-orange-400/30" size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-white">FLAME SCORE</h3>
+                            <p className="text-xs text-slate-400">Score composite 0-100</p>
+                        </div>
+                    </div>
+                    <p className="text-sm text-slate-300 mb-4">
+                        Le Flame Score est notre algorithme propriétaire qui combine 5 facteurs pour déterminer la "snipabilité" d'un marché.
                     </p>
+
+                    {/* Score Factors */}
+                    <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-medium text-slate-400">⏱️ Time Score</span>
+                            <span className="text-xs text-orange-400">0-30 pts</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: "100%" }}
+                                transition={{ delay: 0.3, duration: 1 }}
+                                className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500">&lt;24h = 30pts | &lt;48h = 25pts | &lt;1 semaine = 18pts | &lt;1 mois = 10pts</p>
+
+                        <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs font-medium text-slate-400">📊 Volume Score</span>
+                            <span className="text-xs text-blue-400">0-30 pts</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: "100%" }}
+                                transition={{ delay: 0.5, duration: 1 }}
+                                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500">Basé sur $500k seuil. Plus le volume est élevé, plus le marché est actif.</p>
+
+                        <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs font-medium text-slate-400">💧 Liquidity Score</span>
+                            <span className="text-xs text-green-400">0-25 pts</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: "83%" }}
+                                transition={{ delay: 0.7, duration: 1 }}
+                                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500">Seuil de $200k. Une liquidité élevée permet des trades sans slippage.</p>
+
+                        <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs font-medium text-slate-400">🎯 Probability Score</span>
+                            <span className="text-xs text-purple-400">0-10 pts</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: "33%" }}
+                                transition={{ delay: 0.9, duration: 1 }}
+                                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500">Plus proche de 50% = meilleur potentiel de profit.</p>
+
+                        <div className="flex items-center justify-between mt-4">
+                            <span className="text-xs font-medium text-slate-400">🏷️ Category Score</span>
+                            <span className="text-xs text-yellow-400">0-15 pts</span>
+                        </div>
+                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: "50%" }}
+                                transition={{ delay: 1.1, duration: 1 }}
+                                className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
+                            />
+                        </div>
+                        <p className="text-xs text-slate-500">Bonus pour Politics, Crypto, Sports. Tags comme "election", "btc" ajoutent des points.</p>
+                    </div>
+                </motion.div>
+
+                {/* Urgency & Whale Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.2 }}
+                        className="p-4 bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-2xl"
+                    >
+                        <div className="flex items-center gap-2 mb-3">
+                            <Clock className="text-red-400" size={20} />
+                            <h4 className="font-bold text-white">Urgency Levels</h4>
+                        </div>
+                        <div className="space-y-2 text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded font-bold">CRITICAL</span>
+                                <span className="text-slate-400">&lt;24h ou Score &gt;85</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded font-bold">HIGH</span>
+                                <span className="text-slate-400">&lt;48h ou Score &gt;70</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded font-bold">MEDIUM</span>
+                                <span className="text-slate-400">&lt;1 sem ou Score &gt;50</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2 py-1 bg-slate-500/20 text-slate-400 rounded font-bold">LOW</span>
+                                <span className="text-slate-400">Long terme</span>
+                            </div>
+                        </div>
+                    </motion.div>
+
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3 }}
+                        className="p-4 bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20 rounded-2xl"
+                    >
+                        <div className="flex items-center gap-2 mb-3">
+                            <Zap className="text-yellow-400" size={20} />
+                            <h4 className="font-bold text-white">Whale Activity</h4>
+                        </div>
+                        <p className="text-xs text-slate-400 mb-3">
+                            Détecté quand:
+                        </p>
+                        <div className="space-y-2 text-xs">
+                            <div className="flex items-center gap-2">
+                                <span className="text-green-400">✓</span>
+                                <span className="text-slate-300">Volume &gt; $500k</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-green-400">✓</span>
+                                <span className="text-slate-300">Liquidité &gt; $100k</span>
+                            </div>
+                        </div>
+                        <p className="text-xs text-yellow-400/70 mt-3">
+                            ⚡ Indique des mouvements de gros portefeuilles.
+                        </p>
+                    </motion.div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Clock className="text-red-400" size={16} />
-                            <div className="text-sm font-bold text-slate-200">Urgency</div>
-                        </div>
-                        <p className="text-xs text-slate-400">
-                            Time-sensitivity. <span className="text-red-400 font-bold">HIGH</span> means the window is closing in seconds.
-                        </p>
+                {/* Event Types */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="p-4 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 rounded-2xl"
+                >
+                    <div className="flex items-center gap-2 mb-3">
+                        <Tag className="text-indigo-400" size={20} />
+                        <h4 className="font-bold text-white">Event Types</h4>
                     </div>
-                    <div className="p-4 bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/5 rounded-2xl">
-                        <div className="flex items-center gap-2 mb-2">
-                            <Zap className="text-yellow-400" size={16} />
-                            <div className="text-sm font-bold text-slate-200">Whale Activity</div>
+                    <div className="grid grid-cols-5 gap-2 text-center text-xs">
+                        <div className="p-2 bg-white/5 rounded-lg">
+                            <span className="block text-lg mb-1">🐦</span>
+                            <span className="text-slate-400">Tweet</span>
                         </div>
-                        <p className="text-xs text-slate-400">
-                            Detects large buy orders (&gt; $10k) causing immediate price impact.
-                        </p>
+                        <div className="p-2 bg-white/5 rounded-lg">
+                            <span className="block text-lg mb-1">📢</span>
+                            <span className="text-slate-400">Annonce</span>
+                        </div>
+                        <div className="p-2 bg-white/5 rounded-lg">
+                            <span className="block text-lg mb-1">🎪</span>
+                            <span className="text-slate-400">Event</span>
+                        </div>
+                        <div className="p-2 bg-white/5 rounded-lg">
+                            <span className="block text-lg mb-1">📰</span>
+                            <span className="text-slate-400">News</span>
+                        </div>
+                        <div className="p-2 bg-white/5 rounded-lg">
+                            <span className="block text-lg mb-1">❓</span>
+                            <span className="text-slate-400">Other</span>
+                        </div>
                     </div>
-                </div>
+                </motion.div>
             </div>
         </motion.div>
     </div>
 );
+
 
 // --- STACK COMPONENT ---
 const StackedGroup = ({ group, isExpanded, onToggle, onSnip, onToggleFavorite, favorites }: {
@@ -218,6 +384,7 @@ export default function RadarView() {
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
     const [showHelp, setShowHelp] = useState(false);
     const [openFilter, setOpenFilter] = useState<'category' | 'urgency' | 'type' | null>(null);
+    const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
     // Filter State
     const [activeCategory, setActiveCategory] = useState<FilterCategory>('All');
@@ -248,6 +415,9 @@ export default function RadarView() {
     const groupedMarkets = useMemo(() => {
         // 1. Filter
         const filtered = markets.filter(item => {
+            // Favorites filter
+            if (showFavoritesOnly && !favorites.has(item.market.id)) return false;
+
             // Search
             if (search && !item.market.title.toLowerCase().includes(search.toLowerCase())) return false;
 
@@ -422,7 +592,19 @@ export default function RadarView() {
                         )}
                     </div>
 
+                    {/* Favorites Toggle */}
                     <button
+                        onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                        className={`h-10 px-4 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${showFavoritesOnly ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-black shadow-lg shadow-yellow-500/30' : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-white'}`}
+                    >
+                        <Star size={14} className={showFavoritesOnly ? 'fill-current' : ''} />
+                        <span className="hidden sm:inline">Favorites</span>
+                        {favorites.size > 0 && (
+                            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${showFavoritesOnly ? 'bg-black/20 text-black' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                {favorites.size}
+                            </span>
+                        )}
+                    </button>                    <button
                         onClick={() => refreshMarkets()}
                         disabled={isLoading}
                         className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
