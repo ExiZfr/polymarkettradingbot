@@ -63,7 +63,7 @@ export default function Dashboard() {
         avgScore: 0,
         highestScore: 0
     });
-    const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'EXEC' | 'SCAN' | 'INFO' | 'WARN'>('ALL');
+    const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'ORDER' | 'SNIPE' | 'SIGNAL' | 'WARN'>('ALL');
     const [paperProfile, setPaperProfile] = useState<PaperProfile | null>(null);
 
     const { toasts, addToast, removeToast } = useToast();

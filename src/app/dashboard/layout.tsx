@@ -41,9 +41,19 @@ const navItems: NavItem[] = [
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
-// Notification Panel Component
+// Notification Panel Component - Only shows IMPORTANT notifications
 function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose: () => void; logs: ListenerLog[] }) {
-    const recentLogs = logs.slice(0, 10);
+    // Filter ONLY important notifications:
+    // - High priority
+    // - Signals (sniped info)
+    // - Alerts (orders, whale activity)
+    // - Errors
+    const importantLogs = logs.filter(log =>
+        log.priority === 'high' ||
+        log.type === 'signal' ||
+        log.type === 'alert' ||
+        log.type === 'error'
+    ).slice(0, 15);
 
     const getLogIcon = (type: string) => {
         switch (type) {
@@ -84,13 +94,14 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                 </div>
 
                 <div className="max-h-80 overflow-y-auto">
-                    {recentLogs.length === 0 ? (
+                    {importantLogs.length === 0 ? (
                         <div className="p-8 text-center text-slate-500 text-sm">
-                            No recent notifications
+                            <AlertTriangle size={24} className="mx-auto mb-2 opacity-50" />
+                            No important notifications
                         </div>
                     ) : (
                         <div className="p-2 space-y-2">
-                            {recentLogs.map((log) => (
+                            {importantLogs.map((log) => (
                                 <div
                                     key={log.id}
                                     className={`p-3 rounded-xl border ${getLogBg(log.priority)} transition-colors hover:bg-white/5`}
@@ -132,7 +143,12 @@ function DashboardHeader({ toggleSidebar, pathname }: { toggleSidebar: () => voi
     const [isNotifOpen, setIsNotifOpen] = useState(false);
     const { logs } = useRadar();
 
-    const unreadCount = logs.filter(l => l.priority === 'high').length;
+    // Count only IMPORTANT notifications (high priority, signals, alerts)
+    const unreadCount = logs.filter(l =>
+        l.priority === 'high' ||
+        l.type === 'signal' ||
+        l.type === 'alert'
+    ).length;
 
     return (
         <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-[#06070A]/80 backdrop-blur-xl z-20">
