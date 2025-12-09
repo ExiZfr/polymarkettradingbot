@@ -85,9 +85,50 @@ export default function SettingsPage() {
         enableReddit: false,
         enableTwitter: false,
         rssUrls: [
+            // Crypto News
             'https://cointelegraph.com/rss',
             'https://decrypt.co/feed',
-            'https://www.coindesk.com/arc/outboundfeeds/rss/'
+            'https://www.coindesk.com/arc/outboundfeeds/rss/',
+            'https://cryptoslate.com/feed/',
+            'https://bitcoinmagazine.com/.rss/full/',
+            'https://news.bitcoin.com/feed/',
+            'https://thedefiant.io/api/feed',
+            'https://blockworks.co/feed/',
+            'https://dailyhodl.com/feed/',
+            'https://u.today/rss',
+            'https://ambcrypto.com/feed/',
+            'https://cryptonews.com/news/feed',
+            'https://beincrypto.com/feed/',
+
+            // Major Finance & Tech
+            'https://feeds.bloomberg.com/crypto/news.xml',
+            'https://www.cnbc.com/id/19854910/device/rss/rss.html', // Tech
+            'https://www.cnbc.com/id/10000664/device/rss/rss.html', // Finance
+            'https://techcrunch.com/feed/',
+            'https://www.theverge.com/rss/index.xml',
+            'https://feeds.arstechnica.com/arstechnica/index',
+            'https://www.wired.com/feed/rss',
+            'https://www.engadget.com/rss.xml',
+            'https://mashable.com/feeds/rss/all',
+
+            // General News (Political/World)
+            'http://feeds.bbci.co.uk/news/world/rss.xml',
+            'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
+            'https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml',
+            'https://www.theguardian.com/world/rss',
+            'https://feeds.npr.org/1001/rss.xml',
+            'https://www.aljazeera.com/xml/rss/all.xml',
+            'https://www.politico.com/rss/politicopicks.xml',
+
+            // Gaming & Entertainment
+            'https://www.gamespot.com/feeds/news/',
+            'https://www.ign.com/rss/articles/news',
+            'https://kotaku.com/rss',
+            'https://www.polygon.com/rss/index.xml',
+            'https://www.eurogamer.net/?format=rss',
+            'https://variety.com/feed/',
+            'https://deadline.com/feed/',
+            'https://www.hollywoodreporter.com/feed/'
         ]
     });
 

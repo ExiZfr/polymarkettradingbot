@@ -13,9 +13,15 @@ const pLimit = require('p-limit');
 
 // -- Configuration --
 const CONFIG_PATH = path.join(__dirname, '..', 'listener-config.json');
+const LOGS_PATH = path.join(__dirname, '..', 'data', 'listener-logs.json');
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '7139453099';
+
+// Ensure data dir exists
+if (!fs.existsSync(path.join(__dirname, '..', 'data'))) {
+    fs.mkdirSync(path.join(__dirname, '..', 'data'));
+}
 
 // -- State --
 let settings = {
@@ -30,6 +36,35 @@ let settings = {
 };
 const parser = new Parser();
 const limit = pLimit(20); // Concurrency limit
+
+// -- Logging --
+function logToFile(type, message, priority = 'low', metadata = {}) {
+    try {
+        let logs = [];
+        if (fs.existsSync(LOGS_PATH)) {
+            const content = fs.readFileSync(LOGS_PATH, 'utf8');
+            logs = content ? JSON.parse(content) : [];
+        }
+
+        const newLog = {
+            id: Date.now().toString() + Math.random().toString().slice(2, 5),
+            timestamp: new Date().toISOString(),
+            source: 'listener',
+            type,
+            message,
+            priority,
+            ...metadata
+        };
+
+        logs.unshift(newLog);
+        // Keep only last 100 logs
+        logs = logs.slice(0, 100);
+
+        fs.writeFileSync(LOGS_PATH, JSON.stringify(logs, null, 2));
+    } catch (e) {
+        console.error('[Logger] Failed to write log:', e.message);
+    }
+}
 
 // -- Load Settings --
 function loadSettings() {
@@ -154,8 +189,16 @@ ${market.newsCorrelation ? '🔥 Validated by News/RSS' : ''}
             disable_web_page_preview: true
         });
         console.log(`[Telegram] Sent alert for: ${market.question.slice(0, 30)}...`);
+
+        // Log to file for Frontend UI
+        logToFile('alert', `High Score Opportunity: ${market.question.slice(0, 50)}...`, 'high', {
+            relatedMarketId: market.market_id,
+            score: market.score
+        });
+
     } catch (e) {
         console.error('[Telegram] Error:', e.message);
+        logToFile('error', `Failed to send Telegram alert: ${e.message}`, 'high');
     }
 }
 

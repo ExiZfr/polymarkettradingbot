@@ -145,15 +145,6 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
             setMarkets(viable);
             setLastUpdated(new Date());
 
-            // 6. Generate a "Scan Complete" log
-            const favCount = viable.filter(m => favorites.has(m.market.id)).length;
-            addLog({
-                source: 'polymarket',
-                type: 'info',
-                message: `Scan complete: ${viable.length} opportunities (${favCount} favorited).`,
-                priority: 'low'
-            });
-
         } catch (err) {
             console.error("Radar Loop Error:", err);
             addLog({
@@ -166,6 +157,40 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
             setIsLoading(false);
         }
     }, [listenerSettings, favorites]);
+
+    // Poll backend logs for Listener Alerts
+    useEffect(() => {
+        const fetchBackendLogs = async () => {
+            // Only poll if listener is enabled
+            if (!listenerSettings.enabled) return;
+
+            try {
+                const res = await fetch('/api/listener/logs');
+                if (res.ok) {
+                    const backendLogs = await res.json();
+                    if (backendLogs.length > 0) {
+                        setLogs(prev => {
+                            // Merge and de-duplicate based on ID
+                            const ids = new Set(prev.map(l => l.id));
+                            const newLogs = backendLogs.filter((l: any) => !ids.has(l.id));
+
+                            // If new PRIORITY log, trigger sound/toast (simulated here via log)
+                            if (newLogs.some((l: any) => l.priority === 'high')) {
+                                // In a real app, this would trigger a Toast();
+                            }
+
+                            return [...newLogs, ...prev].slice(0, 100);
+                        });
+                    }
+                }
+            } catch (e) {
+                // Silent fail for polling
+            }
+        };
+
+        const interval = setInterval(fetchBackendLogs, 5000); // Poll every 5s
+        return () => clearInterval(interval);
+    }, [listenerSettings.enabled]);
 
     // --- Listener Simulation Loop ---
     const addLog = (log: Omit<ListenerLog, 'id' | 'timestamp'>) => {
