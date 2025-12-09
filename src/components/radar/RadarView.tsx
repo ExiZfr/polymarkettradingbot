@@ -27,225 +27,279 @@ type EventGroup = {
 };
 
 
-const HelpModal = ({ onClose }: { onClose: () => void }) => (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", damping: 25 }}
-            className="bg-gradient-to-b from-[#0F1115] to-[#0A0B0F] border border-white/10 rounded-3xl max-w-2xl w-full max-h-[85vh] overflow-hidden shadow-2xl relative"
-        >
-            {/* Header */}
-            <div className="sticky top-0 bg-[#0F1115]/95 backdrop-blur-sm border-b border-white/5 p-6 z-10">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 via-pink-500 to-purple-500" />
-                <button onClick={onClose} className="absolute top-4 right-4 p-2 rounded-xl text-slate-500 hover:text-white hover:bg-white/10 transition-all">
-                    <X size={20} />
-                </button>
-                <h2 className="text-2xl font-black text-white flex items-center gap-3">
-                    <div className="p-3 bg-gradient-to-br from-orange-500/20 to-pink-500/20 rounded-2xl">
-                        <Flame className="text-orange-400" size={28} />
+const HelpModal = ({ onClose }: { onClose: () => void }) => {
+    const [activeTab, setActiveTab] = useState<'score' | 'urgency' | 'tips'>('score');
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/95 backdrop-blur-xl">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.85, y: 30 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.85, y: 30 }}
+                transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                className="bg-[#0A0B0F] border border-white/10 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.15)] relative"
+            >
+                {/* Animated Header */}
+                <div className="relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-90" />
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
+
+                    <div className="relative p-6 pb-4">
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all hover:rotate-90 duration-300"
+                        >
+                            <X size={18} />
+                        </button>
+
+                        <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: 0.2, type: "spring" }}
+                            className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 shadow-xl"
+                        >
+                            <HelpCircle className="text-white" size={32} />
+                        </motion.div>
+
+                        <h2 className="text-2xl font-black text-white mb-1">Comment ça marche ? 🤔</h2>
+                        <p className="text-white/70 text-sm">Explications simples pour tout comprendre !</p>
                     </div>
-                    Snipability Metrics Guide
-                </h2>
-                <p className="text-sm text-slate-400 mt-2">Comprendre comment nos algorithmes identifient les opportunités de sniping.</p>
-            </div>
 
-            {/* Scrollable Content */}
-            <div className="p-6 overflow-y-auto max-h-[calc(85vh-120px)] space-y-6">
-                {/* Flame Score Section */}
-                <motion.div
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="p-5 bg-gradient-to-r from-orange-500/10 to-transparent border border-orange-500/20 rounded-2xl"
-                >
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 bg-orange-500/20 rounded-xl">
-                            <Flame className="text-orange-400 fill-orange-400/30" size={24} />
-                        </div>
-                        <div>
-                            <h3 className="text-lg font-bold text-white">FLAME SCORE</h3>
-                            <p className="text-xs text-slate-400">Score composite 0-100</p>
-                        </div>
+                    {/* Tabs */}
+                    <div className="flex gap-1 px-4 pb-2">
+                        {[
+                            { id: 'score', label: '🔥 Score', desc: 'C\'est quoi ?' },
+                            { id: 'urgency', label: '⏰ Urgence', desc: 'Quand agir ?' },
+                            { id: 'tips', label: '💡 Astuces', desc: 'Pro tips' },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
+                                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all ${activeTab === tab.id
+                                    ? 'bg-white text-black shadow-lg'
+                                    : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                    }`}
+                            >
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
-                    <p className="text-sm text-slate-300 mb-4">
-                        Le Flame Score est notre algorithme propriétaire qui combine 5 facteurs pour déterminer la "snipabilité" d'un marché.
-                    </p>
-
-                    {/* Score Factors */}
-                    <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs font-medium text-slate-400">⏱️ Time Score</span>
-                            <span className="text-xs text-orange-400">0-30 pts</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: "100%" }}
-                                transition={{ delay: 0.3, duration: 1 }}
-                                className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">&lt;24h = 30pts | &lt;48h = 25pts | &lt;1 semaine = 18pts | &lt;1 mois = 10pts</p>
-
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-medium text-slate-400">📊 Volume Score</span>
-                            <span className="text-xs text-blue-400">0-30 pts</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: "100%" }}
-                                transition={{ delay: 0.5, duration: 1 }}
-                                className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">Basé sur $500k seuil. Plus le volume est élevé, plus le marché est actif.</p>
-
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-medium text-slate-400">💧 Liquidity Score</span>
-                            <span className="text-xs text-green-400">0-25 pts</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: "83%" }}
-                                transition={{ delay: 0.7, duration: 1 }}
-                                className="h-full bg-gradient-to-r from-green-500 to-emerald-500 rounded-full"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">Seuil de $200k. Une liquidité élevée permet des trades sans slippage.</p>
-
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-medium text-slate-400">🎯 Probability Score</span>
-                            <span className="text-xs text-purple-400">0-10 pts</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: "33%" }}
-                                transition={{ delay: 0.9, duration: 1 }}
-                                className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">Plus proche de 50% = meilleur potentiel de profit.</p>
-
-                        <div className="flex items-center justify-between mt-4">
-                            <span className="text-xs font-medium text-slate-400">🏷️ Category Score</span>
-                            <span className="text-xs text-yellow-400">0-15 pts</span>
-                        </div>
-                        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                            <motion.div
-                                initial={{ width: 0 }}
-                                animate={{ width: "50%" }}
-                                transition={{ delay: 1.1, duration: 1 }}
-                                className="h-full bg-gradient-to-r from-yellow-500 to-amber-500 rounded-full"
-                            />
-                        </div>
-                        <p className="text-xs text-slate-500">Bonus pour Politics, Crypto, Sports. Tags comme "election", "btc" ajoutent des points.</p>
-                    </div>
-                </motion.div>
-
-                {/* Urgency & Whale Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="p-4 bg-gradient-to-br from-red-500/10 to-transparent border border-red-500/20 rounded-2xl"
-                    >
-                        <div className="flex items-center gap-2 mb-3">
-                            <Clock className="text-red-400" size={20} />
-                            <h4 className="font-bold text-white">Urgency Levels</h4>
-                        </div>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded font-bold">CRITICAL</span>
-                                <span className="text-slate-400">&lt;24h ou Score &gt;85</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-1 bg-orange-500/20 text-orange-400 rounded font-bold">HIGH</span>
-                                <span className="text-slate-400">&lt;48h ou Score &gt;70</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded font-bold">MEDIUM</span>
-                                <span className="text-slate-400">&lt;1 sem ou Score &gt;50</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="px-2 py-1 bg-slate-500/20 text-slate-400 rounded font-bold">LOW</span>
-                                <span className="text-slate-400">Long terme</span>
-                            </div>
-                        </div>
-                    </motion.div>
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="p-4 bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/20 rounded-2xl"
-                    >
-                        <div className="flex items-center gap-2 mb-3">
-                            <Zap className="text-yellow-400" size={20} />
-                            <h4 className="font-bold text-white">Whale Activity</h4>
-                        </div>
-                        <p className="text-xs text-slate-400 mb-3">
-                            Détecté quand:
-                        </p>
-                        <div className="space-y-2 text-xs">
-                            <div className="flex items-center gap-2">
-                                <span className="text-green-400">✓</span>
-                                <span className="text-slate-300">Volume &gt; $500k</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-green-400">✓</span>
-                                <span className="text-slate-300">Liquidité &gt; $100k</span>
-                            </div>
-                        </div>
-                        <p className="text-xs text-yellow-400/70 mt-3">
-                            ⚡ Indique des mouvements de gros portefeuilles.
-                        </p>
-                    </motion.div>
                 </div>
 
-                {/* Event Types */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="p-4 bg-gradient-to-br from-indigo-500/10 to-transparent border border-indigo-500/20 rounded-2xl"
-                >
-                    <div className="flex items-center gap-2 mb-3">
-                        <Tag className="text-indigo-400" size={20} />
-                        <h4 className="font-bold text-white">Event Types</h4>
-                    </div>
-                    <div className="grid grid-cols-5 gap-2 text-center text-xs">
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <span className="block text-lg mb-1">🐦</span>
-                            <span className="text-slate-400">Tweet</span>
-                        </div>
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <span className="block text-lg mb-1">📢</span>
-                            <span className="text-slate-400">Annonce</span>
-                        </div>
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <span className="block text-lg mb-1">🎪</span>
-                            <span className="text-slate-400">Event</span>
-                        </div>
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <span className="block text-lg mb-1">📰</span>
-                            <span className="text-slate-400">News</span>
-                        </div>
-                        <div className="p-2 bg-white/5 rounded-lg">
-                            <span className="block text-lg mb-1">❓</span>
-                            <span className="text-slate-400">Other</span>
-                        </div>
-                    </div>
-                </motion.div>
-            </div>
-        </motion.div>
-    </div>
-);
+                {/* Content */}
+                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                    <AnimatePresence mode="wait">
+                        {activeTab === 'score' && (
+                            <motion.div
+                                key="score"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-4"
+                            >
+                                {/* Main Explanation */}
+                                <div className="p-4 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-2xl">
+                                    <div className="flex items-center gap-3 mb-3">
+                                        <span className="text-3xl">🔥</span>
+                                        <div>
+                                            <h3 className="text-lg font-black text-white">Le Flame Score</h3>
+                                            <p className="text-xs text-orange-300">Note de 0 à 100</p>
+                                        </div>
+                                    </div>
+                                    <p className="text-sm text-slate-300 leading-relaxed">
+                                        <strong className="text-white">C'est comme une note de restaurant !</strong> Plus le score est élevé,
+                                        plus le marché est "chaud" et intéressant pour faire un trade rapide.
+                                    </p>
+                                    <div className="mt-3 p-3 bg-black/30 rounded-xl">
+                                        <div className="flex justify-between text-xs mb-2">
+                                            <span className="text-slate-400">Exemple</span>
+                                            <span className="text-orange-400 font-bold">Score: 85/100</span>
+                                        </div>
+                                        <div className="h-3 bg-white/10 rounded-full overflow-hidden">
+                                            <motion.div
+                                                initial={{ width: 0 }}
+                                                animate={{ width: "85%" }}
+                                                transition={{ delay: 0.3, duration: 1.5, ease: "easeOut" }}
+                                                className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full"
+                                            />
+                                        </div>
+                                        <p className="text-xs text-green-400 mt-2">✨ Super opportunité !</p>
+                                    </div>
+                                </div>
+
+                                {/* Score Components */}
+                                <h4 className="text-sm font-bold text-white flex items-center gap-2 pt-2">
+                                    <span className="w-6 h-6 bg-indigo-500/20 rounded-lg flex items-center justify-center text-xs">📊</span>
+                                    Comment on calcule ?
+                                </h4>
+
+                                <div className="space-y-3">
+                                    {[
+                                        { emoji: '⏱️', name: 'Temps restant', pts: '30 pts', desc: 'Plus c\'est proche de la fin, plus c\'est urgent = plus de points !', color: 'orange' },
+                                        { emoji: '💰', name: 'Volume d\'argent', pts: '30 pts', desc: 'Beaucoup d\'argent qui circule = marché actif = plus de points !', color: 'blue' },
+                                        { emoji: '💧', name: 'Liquidité', pts: '25 pts', desc: 'Facile d\'acheter/vendre sans faire bouger le prix = parfait !', color: 'green' },
+                                        { emoji: '🎲', name: 'Probabilité', pts: '10 pts', desc: 'Proche de 50% = incertain = potentiel de gain !', color: 'purple' },
+                                        { emoji: '🏷️', name: 'Catégorie', pts: '15 pts', desc: 'Crypto, politique, sport = sujets qui bougent vite !', color: 'yellow' },
+                                    ].map((item, i) => (
+                                        <motion.div
+                                            key={item.name}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.1 * i }}
+                                            className={`p-3 bg-${item.color}-500/10 border border-${item.color}-500/20 rounded-xl`}
+                                            style={{
+                                                background: `linear-gradient(135deg, var(--tw-gradient-from) 0%, transparent 100%)`,
+                                                ['--tw-gradient-from' as any]: `rgb(var(--${item.color}-500) / 0.1)`
+                                            }}
+                                        >
+                                            <div className="flex items-center justify-between mb-1">
+                                                <span className="text-sm font-bold text-white flex items-center gap-2">
+                                                    <span>{item.emoji}</span> {item.name}
+                                                </span>
+                                                <span className="text-xs font-mono px-2 py-0.5 bg-white/10 rounded text-slate-300">{item.pts}</span>
+                                            </div>
+                                            <p className="text-xs text-slate-400">{item.desc}</p>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'urgency' && (
+                            <motion.div
+                                key="urgency"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-4"
+                            >
+                                <div className="p-4 bg-gradient-to-r from-red-500/20 to-orange-500/20 border border-red-500/30 rounded-2xl">
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2 mb-2">
+                                        <span>⏰</span> Niveaux d'urgence
+                                    </h3>
+                                    <p className="text-sm text-slate-300">
+                                        C'est comme un feu tricolore pour savoir quand agir !
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {[
+                                        { level: 'CRITICAL', color: 'red', emoji: '🚨', desc: 'FONCE ! Ça finit dans moins de 24h ou score > 85', action: 'Agir maintenant !' },
+                                        { level: 'HIGH', color: 'orange', emoji: '⚠️', desc: 'Bonne opportunité, se termine bientôt (< 48h)', action: 'À surveiller de près' },
+                                        { level: 'MEDIUM', color: 'yellow', emoji: '👀', desc: 'Intéressant mais tu as le temps (< 1 semaine)', action: 'Ajoute en favoris' },
+                                        { level: 'LOW', color: 'slate', emoji: '😴', desc: 'Pas urgent, c\'est dans longtemps', action: 'Reviens plus tard' },
+                                    ].map((item, i) => (
+                                        <motion.div
+                                            key={item.level}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: 0.1 * i }}
+                                            className="p-4 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-2xl">{item.emoji}</span>
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className={`px-2 py-0.5 text-xs font-black rounded bg-${item.color}-500/20 text-${item.color}-400`}
+                                                            style={{ backgroundColor: `var(--${item.color}-500, #64748b) / 0.2` }}
+                                                        >
+                                                            {item.level}
+                                                        </span>
+                                                        <span className="text-xs text-slate-500">{item.action}</span>
+                                                    </div>
+                                                    <p className="text-sm text-slate-300 mt-1">{item.desc}</p>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* Whale Activity */}
+                                <div className="p-4 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30 rounded-2xl mt-4">
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2 mb-2">
+                                        <span>🐋</span> Whale Activity
+                                    </h3>
+                                    <p className="text-sm text-slate-300 mb-3">
+                                        Une "baleine" = quelqu'un avec BEAUCOUP d'argent. Quand tu vois ce badge,
+                                        ça veut dire que de gros investisseurs bougent sur ce marché !
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <span className="px-3 py-1.5 bg-yellow-500/30 text-yellow-300 text-xs font-bold rounded-lg">
+                                            ⚡ Volume &gt; $500k
+                                        </span>
+                                        <span className="px-3 py-1.5 bg-green-500/30 text-green-300 text-xs font-bold rounded-lg">
+                                            💧 Liquidité &gt; $100k
+                                        </span>
+                                    </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'tips' && (
+                            <motion.div
+                                key="tips"
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                className="space-y-4"
+                            >
+                                <div className="p-4 bg-gradient-to-r from-emerald-500/20 to-green-500/20 border border-emerald-500/30 rounded-2xl">
+                                    <h3 className="text-lg font-black text-white flex items-center gap-2 mb-2">
+                                        <span>💡</span> Pro Tips
+                                    </h3>
+                                    <p className="text-sm text-slate-300">
+                                        Conseils pour maximiser tes gains !
+                                    </p>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {[
+                                        { tip: 'Utilise le bouton ⭐ Favoris', desc: 'Garde un œil sur les marchés qui t\'intéressent', icon: '⭐' },
+                                        { tip: 'Filtre par catégorie', desc: 'Concentre-toi sur ce que tu connais (crypto, sport, politique...)', icon: '🎯' },
+                                        { tip: 'Check les notifications', desc: 'La cloche 🔔 t\'alerte des opportunités chaudes', icon: '🔔' },
+                                        { tip: 'Score > 70 = Go', desc: 'En dessous de 70, c\'est moins intéressant', icon: '🔥' },
+                                        { tip: 'Attention à la liquidité', desc: 'Si elle est basse, tu risques du slippage (mauvais prix)', icon: '💧' },
+                                    ].map((item, i) => (
+                                        <motion.div
+                                            key={item.tip}
+                                            initial={{ opacity: 0, x: -20 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.1 * i }}
+                                            className="flex items-start gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-colors"
+                                        >
+                                            <span className="text-xl">{item.icon}</span>
+                                            <div>
+                                                <p className="text-sm font-bold text-white">{item.tip}</p>
+                                                <p className="text-xs text-slate-400">{item.desc}</p>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+
+                                {/* CTA */}
+                                <motion.div
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 }}
+                                    className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl text-center"
+                                >
+                                    <p className="text-white font-bold mb-2">🚀 Prêt à sniper ?</p>
+                                    <button
+                                        onClick={onClose}
+                                        className="px-6 py-2 bg-white text-indigo-600 font-bold rounded-xl hover:bg-white/90 transition-colors"
+                                    >
+                                        C'est parti !
+                                    </button>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
 
 
 // --- STACK COMPONENT ---
