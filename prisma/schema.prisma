@@ -19,6 +19,8 @@ model User {
   updatedAt   DateTime @updatedAt
 
   @@map("users") // Table name in DB
+
+  copySettings CopySetting[]
 }
 
 model Signal {
@@ -35,4 +37,54 @@ model Signal {
   status          String   @default("NEW") // NEW, TRADED, DISMISSED, EXPIRED
 
   @@map("signals")
+}
+
+model TrackedWallet {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  ens         String?
+  tags        String[] // ["Leaderboard Top 10", "Whale"]
+  isMonitored Boolean  @default(false)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  copySettings CopySetting[]
+  snapshots    WalletSnapshot[]
+
+  @@map("tracked_wallets")
+}
+
+model CopySetting {
+  id             String        @id @default(cuid())
+  userId         Int
+  user           User          @relation(fields: [userId], references: [id])
+  walletId       String
+  trackedWallet  TrackedWallet @relation(fields: [walletId], references: [id])
+  
+  enabled        Boolean       @default(true)
+  fixedAmount    Float?        // Fixed amount per bet
+  percentage     Float?        // Percentage of balance per bet
+  maxBetAmount   Float?        // Cap
+  dailyStopLoss  Float?
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([userId, walletId])
+  @@map("copy_settings")
+}
+
+model WalletSnapshot {
+  id              String        @id @default(cuid())
+  walletId        String
+  trackedWallet   TrackedWallet @relation(fields: [walletId], references: [id])
+  
+  date            DateTime      @default(now()) // Can be just date part effectively
+  totalPnl        Float
+  winRate         Float
+  totalVolume     Float
+  activePositions Int
+
+  @@map("wallet_snapshots")
 }
