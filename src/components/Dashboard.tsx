@@ -69,6 +69,7 @@ export default function Dashboard() {
     const mapLogLevel = (type: string): LogType['level'] => {
         switch (type) {
             case 'snipe': return 'SNIPE';
+            case 'alert': return 'SNIPE'; // High-score market detected
             case 'order': return 'ORDER';
             case 'error': return 'ERR';
             case 'warning': return 'WARN';
