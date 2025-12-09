@@ -54,7 +54,27 @@ const RadarContext = createContext<RadarContextType | undefined>(undefined);
 
 // --- Dummy Data Generator for Listener ---
 const MOCK_SOURCES: SourceType[] = ['twitter', 'reddit', 'news', 'polymarket'];
-const KEYWORDS = ['Trump', 'Biden', 'Crypto', 'Rate Cut', 'Inflation', 'SpaceX', 'ETF', 'Regulation'];
+
+// Default Listener Settings
+type ListenerSettings = {
+    enabled: boolean;
+    scanInterval: number;
+    minScore: number;
+    maxMarkets: number;
+    prioritizeFavorites: boolean;
+    customKeywords: string[];
+    enabledCategories: string[];
+};
+
+const DEFAULT_LISTENER_SETTINGS: ListenerSettings = {
+    enabled: true,
+    scanInterval: 60,
+    minScore: 15,
+    maxMarkets: 150,
+    prioritizeFavorites: true,
+    customKeywords: [],
+    enabledCategories: ['gaming', 'entertainment', 'tech', 'crypto', 'politics', 'sports', 'finance', 'science', 'trending', 'world']
+};
 
 // --- Provider ---
 
@@ -64,6 +84,7 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
     const [favorites, setFavorites] = useState<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+    const [listenerSettings, setListenerSettings] = useState<ListenerSettings>(DEFAULT_LISTENER_SETTINGS);
 
     // Load favorites from local storage on mount
     useEffect(() => {
@@ -72,6 +93,14 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
             try {
                 setFavorites(new Set(JSON.parse(saved)));
             } catch (e) { console.error('Error loading favorites', e); }
+        }
+
+        // Load listener settings
+        const savedSettings = localStorage.getItem('polybot_listener_settings');
+        if (savedSettings) {
+            try {
+                setListenerSettings({ ...DEFAULT_LISTENER_SETTINGS, ...JSON.parse(savedSettings) });
+            } catch (e) { console.error('Error loading listener settings', e); }
         }
     }, []);
 
@@ -94,20 +123,34 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
                 analysis: calculateSnipability(m)
             }));
 
-            // 3. Filter (Show more diverse markets - very inclusive)
-            const viable = analyzed
-                .filter(m => m.analysis.score >= 15) // Very low threshold for maximum variety
-                .sort((a, b) => b.analysis.score - a.analysis.score)
-                .slice(0, 150); // Top 150 markets
+            // 3. Filter using listener settings
+            let viable = analyzed
+                .filter(m => m.analysis.score >= listenerSettings.minScore);
+
+            // 4. Sort - prioritize favorites if enabled
+            if (listenerSettings.prioritizeFavorites) {
+                viable.sort((a, b) => {
+                    const aFav = favorites.has(a.market.id) ? 1 : 0;
+                    const bFav = favorites.has(b.market.id) ? 1 : 0;
+                    if (aFav !== bFav) return bFav - aFav; // Favorites first
+                    return b.analysis.score - a.analysis.score; // Then by score
+                });
+            } else {
+                viable.sort((a, b) => b.analysis.score - a.analysis.score);
+            }
+
+            // 5. Limit to maxMarkets
+            viable = viable.slice(0, listenerSettings.maxMarkets);
 
             setMarkets(viable);
             setLastUpdated(new Date());
 
-            // 5. Generate a "Scan Complete" log
+            // 6. Generate a "Scan Complete" log
+            const favCount = viable.filter(m => favorites.has(m.market.id)).length;
             addLog({
                 source: 'polymarket',
                 type: 'info',
-                message: `Scan complete: ${viable.length} opportunities found.`,
+                message: `Scan complete: ${viable.length} opportunities (${favCount} favorited).`,
                 priority: 'low'
             });
 
@@ -122,7 +165,7 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [listenerSettings, favorites]);
 
     // --- Listener Simulation Loop ---
     const addLog = (log: Omit<ListenerLog, 'id' | 'timestamp'>) => {
@@ -148,7 +191,12 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
             if (Math.random() > 0.3) {
                 const isSignal = Math.random() > 0.75;
                 const source = MOCK_SOURCES[Math.floor(Math.random() * MOCK_SOURCES.length)];
-                const keyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
+
+                // Use custom keywords from settings or fallback
+                const keywords = listenerSettings.customKeywords.length > 0
+                    ? listenerSettings.customKeywords
+                    : ['Trump', 'Biden', 'Bitcoin', 'ETH', 'SpaceX', 'AI', 'Election', 'Fed'];
+                const keyword = keywords[Math.floor(Math.random() * keywords.length)];
 
                 if (isSignal && markets.length > 0) {
                     // Find a matching market based on keyword
