@@ -1,16 +1,25 @@
-export type OrderSide = 'BUY' | 'SELL';
-export type PositionSide = 'YES' | 'NO';
+
+export enum OrderSide {
+    BUY = 'BUY',
+    SELL = 'SELL'
+}
+
+export enum PositionSide {
+    YES = 'YES',
+    NO = 'NO'
+}
 
 export interface Order {
     id: string;
     marketId: string;
-    side: OrderSide;
     outcome: PositionSide;
-    amount: number; // USD Amount
-    price: number; // Price per share
-    timestamp: Date;
-    status: 'FILLED' | 'REJECTED' | 'PENDING';
-    fee: number;
+    side: OrderSide;
+    shares: number;
+    price: number;
+    avgPrice: number; // Avg price at execution
+    timestamp: string;
+    status: 'OPEN' | 'FILLED' | 'CANCELLED';
+    realizedPnl?: number; // Added for stat tracking
 }
 
 export interface Position {
@@ -18,16 +27,16 @@ export interface Position {
     outcome: PositionSide;
     shares: number;
     avgPrice: number;
-    investedParams: number; // Total USD invested
-    currentValue: number; // Updated on tick
+    investedParams: number; // Total $ put in
+    currentValue: number;
     pnl: number;
     pnlPercent: number;
 }
 
 export interface WalletPortfolio {
-    balance: number; // Available USD
-    locked: number; // In orders
-    totalEquity: number; // Balance + Unrealized P&L
+    balance: number;
+    locked: number; // Funds in open orders
+    totalEquity: number;
     positions: Map<string, Position>;
 }
 
@@ -38,12 +47,8 @@ export interface IWallet {
     withdraw(amount: number): boolean;
     reserveFunds(amount: number): boolean;
     releaseFunds(amount: number): void;
-    addPosition(marketId: string, outcome: PositionSide, shares: number, price: number): void;
-    closePosition(marketId: string, outcome: PositionSide, shares: number, price: number): number; // Returns realized P&L
-    updatePositionValue(marketId: string, currentPrice: number): void;
-    addOrderToHistory(order: Order): void;
-}
 
-export interface IExecutionStrategy {
-    executeOrder(marketId: string, side: OrderSide, outcome: PositionSide, amount: number, currentPrice: number): Promise<Order>;
+    // Trading
+    addPosition(marketId: string, outcome: PositionSide, shares: number, price: number): void;
+    closePosition(marketId: string, outcome: PositionSide, shares: number, price: number): number; // Returns realized PnL
 }

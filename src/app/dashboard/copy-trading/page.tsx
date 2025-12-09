@@ -33,22 +33,20 @@ export default function CopyTradingDashboard() {
 
     // Effect to switch context/fetch data when mode changes
     useEffect(() => {
-        // Here we would fetch different stats for Paper vs Real
-        if (isPaperMode) {
-            setStats({
-                totalPnl: 250.00, // Mock paper stats
-                winRate: 0.85,
-                copiedWallets: 1, // Will be updated by ActiveWallets effectively, but this is high level stats
-                totalVolume: 1200,
-            });
-        } else {
-            setStats({
-                totalPnl: 12450.50,
-                winRate: 0.68,
-                copiedWallets: 3,
-                totalVolume: 45000,
-            });
-        }
+        const fetchStats = async () => {
+            try {
+                const mode = isPaperMode ? 'paper' : 'real';
+                const res = await fetch(`/api/copy-trading/stats?mode=${mode}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setStats(data);
+                }
+            } catch (error) {
+                console.error("Failed to fetch Copy Trading stats", error);
+            }
+        };
+
+        fetchStats();
     }, [isPaperMode]);
 
     return (
