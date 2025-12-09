@@ -75,7 +75,13 @@ export default function OrdersPage() {
                     closedTrades: data.orders.filter((o: any) => o.status === 'CLOSED').length,
                     winRate: 0, // Implement calc
                     totalPnL: data.orders.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
-                    profitFactor: 0 // Implement calc
+                    profitFactor: 0,
+                    realizedPnL: 0,
+                    unrealizedPnL: 0,
+                    avgWin: 0,
+                    avgLoss: 0,
+                    maxDrawdown: 0,
+                    sharpeRatio: 0
                 };
 
                 // Simple win rate calc
@@ -251,207 +257,219 @@ export default function OrdersPage() {
                                     ? (order.shares * order.currentPrice) - order.amount
                                     : undefined;
 
-                                <div className="text-xs text-slate-500">{formatDate(order.timestamp)}</div>
+                                return (
+                                    <motion.div
+                                        key={order.id}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="grid grid-cols-12 gap-4 p-4 items-center hover:bg-white/5 transition-colors cursor-pointer"
+                                        onClick={() => setSelectedOrder(order)}
+                                    >
+                                        {/* Market */}
+                                        <div className="col-span-4 lg:col-span-3">
+                                            <div className="font-medium text-white text-sm line-clamp-1">{order.marketTitle}</div>
+                                            <div className="text-xs text-slate-500">{formatDate(order.timestamp)}</div>
                                         </div>
 
-                {/* Type */}
-                <div className="col-span-2 lg:col-span-1">
-                    <span className={`px-2 py-1 text-xs font-bold rounded ${order.type === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                        }`}>
-                        {order.type}
-                    </span>
-                </div>
+                                        {/* Type */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            <span className={`px-2 py-1 text-xs font-bold rounded ${order.type === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                                }`}>
+                                                {order.type}
+                                            </span>
+                                        </div>
 
-                {/* Source */}
-                <div className="col-span-2 hidden lg:flex items-center gap-2">
-                    <div className={`p-1.5 rounded ${sourceColors[order.source]}`}>
-                        <SourceIcon size={14} />
-                    </div>
-                    <span className="text-xs text-slate-400">{order.source.replace('_', ' ')}</span>
-                </div>
+                                        {/* Source */}
+                                        <div className="col-span-2 hidden lg:flex items-center gap-2">
+                                            <div className={`p-1.5 rounded ${sourceColors[order.source]}`}>
+                                                <SourceIcon size={14} />
+                                            </div>
+                                            <span className="text-xs text-slate-400">{order.source.replace('_', ' ')}</span>
+                                        </div>
 
-                {/* Entry */}
-                <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
-                    ${order.entryPrice.toFixed(2)}
-                </div>
+                                        {/* Entry */}
+                                        <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
+                                            ${order.entryPrice.toFixed(2)}
+                                        </div>
 
-                {/* Exit */}
-                <div className="col-span-2 lg:col-span-1 hidden lg:block font-mono text-sm text-slate-400">
-                    {order.exitPrice ? `$${order.exitPrice.toFixed(2)}` : '—'}
-                </div>
+                                        {/* Exit */}
+                                        <div className="col-span-2 lg:col-span-1 hidden lg:block font-mono text-sm text-slate-400">
+                                            {order.exitPrice ? `$${order.exitPrice.toFixed(2)}` : '—'}
+                                        </div>
 
-                {/* Amount */}
-                <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
-                    ${order.amount.toFixed(2)}
-                </div>
+                                        {/* Amount */}
+                                        <div className="col-span-2 lg:col-span-1 font-mono text-sm text-white">
+                                            ${order.amount.toFixed(2)}
+                                        </div>
 
-                {/* PnL */}
-                <div className="col-span-2 lg:col-span-1">
-                    {order.pnl !== undefined ? (
-                        <div className={`font-mono text-sm font-bold ${order.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {order.pnl >= 0 ? '+' : ''}{order.pnl.toFixed(2)}
-                        </div>
-                    ) : unrealizedPnL !== undefined ? (
-                        <div className={`font-mono text-sm ${unrealizedPnL >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
-                            ~{unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
-                        </div>
-                    ) : (
-                        <span className="text-slate-500">—</span>
-                    )}
-                </div>
+                                        {/* PnL */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            {order.pnl !== undefined ? (
+                                                <div className={`font-mono text-sm font-bold ${order.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {order.pnl >= 0 ? '+' : ''}{order.pnl.toFixed(2)}
+                                                </div>
+                                            ) : unrealizedPnL !== undefined ? (
+                                                <div className={`font-mono text-sm ${unrealizedPnL >= 0 ? 'text-green-400/70' : 'text-red-400/70'}`}>
+                                                    ~{unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
+                                                </div>
+                                            ) : (
+                                                <span className="text-slate-500">—</span>
+                                            )}
+                                        </div>
 
-                {/* Status */}
-                <div className="col-span-2 lg:col-span-1">
-                    {getStatusBadge(order.status)}
-                </div>
+                                        {/* Status */}
+                                        <div className="col-span-2 lg:col-span-1">
+                                            {getStatusBadge(order.status)}
+                                        </div>
 
-                {/* Actions */}
-                <div className="col-span-1 text-right">
-                    <button
-                        onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
-                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-                    >
-                        <MoreVertical size={16} className="text-slate-400" />
-                    </button>
-                </div>
-            </motion.div>
-            );
+                                        {/* Actions */}
+                                        <div className="col-span-1 text-right">
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setSelectedOrder(order); }}
+                                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                                            >
+                                                <MoreVertical size={16} className="text-slate-400" />
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                );
                             })
                         )}
-        </AnimatePresence>
+                    </AnimatePresence>
                 </div >
             </div >
 
-        {/* Order Detail Modal */ }
-        <AnimatePresence>
-    {
-        selectedOrder && (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                onClick={() => setSelectedOrder(null)}
-            >
-                <motion.div
-                    initial={{ scale: 0.95, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.95, y: 20 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="bg-[#0C0D12] border border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
-                >
-                    <div className="flex items-start justify-between mb-6">
-                        <div>
-                            <h3 className="text-lg font-bold text-white">{selectedOrder.marketTitle}</h3>
-                            <p className="text-xs text-slate-500">Order ID: {selectedOrder.id}</p>
-                        </div>
-                        <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/10 rounded-lg">
-                            <X size={20} className="text-slate-400" />
-                        </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Type</div>
-                            <div className={`font-bold ${selectedOrder.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
-                                {selectedOrder.type} {selectedOrder.outcome}
-                            </div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Status</div>
-                            {getStatusBadge(selectedOrder.status)}
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Entry Price</div>
-                            <div className="font-mono font-bold text-white">${selectedOrder.entryPrice.toFixed(4)}</div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Exit Price</div>
-                            <div className="font-mono font-bold text-white">
-                                {selectedOrder.exitPrice ? `$${selectedOrder.exitPrice.toFixed(4)}` : '—'}
-                            </div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Amount</div>
-                            <div className="font-mono font-bold text-white">${selectedOrder.amount.toFixed(2)}</div>
-                        </div>
-                        <div className="bg-white/5 p-4 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-1">Shares</div>
-                            <div className="font-mono font-bold text-white">{selectedOrder.shares.toFixed(4)}</div>
-                        </div>
-                        {selectedOrder.pnl !== undefined && (
-                            <>
-                                <div className="bg-white/5 p-4 rounded-xl">
-                                    <div className="text-xs text-slate-500 mb-1">PnL</div>
-                                    <div className={`font-mono font-bold ${selectedOrder.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                        {selectedOrder.pnl >= 0 ? '+' : ''}${selectedOrder.pnl.toFixed(2)}
+            {/* Order Detail Modal */}
+            <AnimatePresence>
+                {
+                    selectedOrder && (
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                            onClick={() => setSelectedOrder(null)}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.95, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                exit={{ scale: 0.95, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-[#0C0D12] border border-white/10 rounded-2xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto"
+                            >
+                                <div className="flex items-start justify-between mb-6">
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white">{selectedOrder.marketTitle}</h3>
+                                        <p className="text-xs text-slate-500">Order ID: {selectedOrder.id}</p>
                                     </div>
+                                    <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-white/10 rounded-lg">
+                                        <X size={20} className="text-slate-400" />
+                                    </button>
                                 </div>
-                                <div className="bg-white/5 p-4 rounded-xl">
-                                    <div className="text-xs text-slate-500 mb-1">ROI</div>
-                                    <div className={`font-mono font-bold ${(selectedOrder.roi || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                        {(selectedOrder.roi || 0) >= 0 ? '+' : ''}{(selectedOrder.roi || 0).toFixed(2)}%
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
 
-                    {/* Risk Management */}
-                    {(selectedOrder.stopLoss || selectedOrder.takeProfit) && (
-                        <div className="mb-6 p-4 bg-white/5 rounded-xl">
-                            <div className="text-xs text-slate-500 mb-2">Risk Management</div>
-                            <div className="flex gap-4">
-                                {selectedOrder.stopLoss && (
-                                    <div className="flex items-center gap-2 text-red-400">
-                                        <TrendingDown size={14} />
-                                        <span className="font-mono text-sm">SL: ${selectedOrder.stopLoss.toFixed(4)}</span>
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Type</div>
+                                        <div className={`font-bold ${selectedOrder.type === 'BUY' ? 'text-green-400' : 'text-red-400'}`}>
+                                            {selectedOrder.type} {selectedOrder.outcome}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Status</div>
+                                        {getStatusBadge(selectedOrder.status)}
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Entry Price</div>
+                                        <div className="font-mono font-bold text-white">${selectedOrder.entryPrice.toFixed(4)}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Exit Price</div>
+                                        <div className="font-mono font-bold text-white">
+                                            {selectedOrder.exitPrice ? `$${selectedOrder.exitPrice.toFixed(4)}` : '—'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Amount</div>
+                                        <div className="font-mono font-bold text-white">${selectedOrder.amount.toFixed(2)}</div>
+                                    </div>
+                                    <div className="bg-white/5 p-4 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-1">Shares</div>
+                                        <div className="font-mono font-bold text-white">{selectedOrder.shares.toFixed(4)}</div>
+                                    </div>
+                                    {selectedOrder.pnl !== undefined && (
+                                        <>
+                                            <div className="bg-white/5 p-4 rounded-xl">
+                                                <div className="text-xs text-slate-500 mb-1">PnL</div>
+                                                <div className={`font-mono font-bold ${selectedOrder.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {selectedOrder.pnl >= 0 ? '+' : ''}${selectedOrder.pnl.toFixed(2)}
+                                                </div>
+                                            </div>
+                                            <div className="bg-white/5 p-4 rounded-xl">
+                                                <div className="text-xs text-slate-500 mb-1">ROI</div>
+                                                <div className={`font-mono font-bold ${(selectedOrder.roi || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                    {(selectedOrder.roi || 0) >= 0 ? '+' : ''}{(selectedOrder.roi || 0).toFixed(2)}%
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+
+                                {/* Risk Management */}
+                                {(selectedOrder.stopLoss || selectedOrder.takeProfit) && (
+                                    <div className="mb-6 p-4 bg-white/5 rounded-xl">
+                                        <div className="text-xs text-slate-500 mb-2">Risk Management</div>
+                                        <div className="flex gap-4">
+                                            {selectedOrder.stopLoss && (
+                                                <div className="flex items-center gap-2 text-red-400">
+                                                    <TrendingDown size={14} />
+                                                    <span className="font-mono text-sm">SL: ${selectedOrder.stopLoss.toFixed(4)}</span>
+                                                </div>
+                                            )}
+                                            {selectedOrder.takeProfit && (
+                                                <div className="flex items-center gap-2 text-green-400">
+                                                    <TrendingUp size={14} />
+                                                    <span className="font-mono text-sm">TP: ${selectedOrder.takeProfit.toFixed(4)}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
-                                {selectedOrder.takeProfit && (
-                                    <div className="flex items-center gap-2 text-green-400">
-                                        <TrendingUp size={14} />
-                                        <span className="font-mono text-sm">TP: ${selectedOrder.takeProfit.toFixed(4)}</span>
+
+                                {/* Actions for Open Orders */}
+                                {selectedOrder.status === 'OPEN' && (
+                                    <div className="flex gap-3">
+                                        <button
+                                            onClick={() => {
+                                                const price = prompt('Enter exit price:', selectedOrder.currentPrice?.toString() || selectedOrder.entryPrice.toString());
+                                                if (price) handleCloseOrder(selectedOrder.id, parseFloat(price));
+                                            }}
+                                            className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
+                                        >
+                                            Close Position
+                                        </button>
+                                        <button
+                                            onClick={() => handleCancelOrder(selectedOrder.id)}
+                                            className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                    )}
 
-                    {/* Actions for Open Orders */}
-                    {selectedOrder.status === 'OPEN' && (
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => {
-                                    const price = prompt('Enter exit price:', selectedOrder.currentPrice?.toString() || selectedOrder.entryPrice.toString());
-                                    if (price) handleCloseOrder(selectedOrder.id, parseFloat(price));
-                                }}
-                                className="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition-colors"
-                            >
-                                Close Position
-                            </button>
-                            <button
-                                onClick={() => handleCancelOrder(selectedOrder.id)}
-                                className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl font-medium transition-colors"
-                            >
-                                Cancel
-                            </button>
-                        </div>
-                    )}
-
-                    {/* View on Polymarket */}
-                    <a
-                        href={`https://polymarket.com/market/${selectedOrder.marketId}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-medium transition-colors"
-                    >
-                        View on Polymarket <ExternalLink size={16} />
-                    </a>
-                </motion.div>
-            </motion.div>
-        )
-    }
+                                {/* View on Polymarket */}
+                                <a
+                                    href={`https://polymarket.com/market/${selectedOrder.marketId}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-4 flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 text-slate-300 rounded-xl font-medium transition-colors"
+                                >
+                                    View on Polymarket <ExternalLink size={16} />
+                                </a>
+                            </motion.div>
+                        </motion.div>
+                    )
+                }
             </AnimatePresence >
         </div >
     );

@@ -38,6 +38,11 @@ type ListenerSettings = {
     prioritizeFavorites: boolean;
     customKeywords: string[];
     enabledCategories: string[];
+    turboMode: boolean;
+    enableRss: boolean;
+    enableReddit: boolean;
+    enableTwitter: boolean;
+    rssUrls: string[];
     // [NEW] Auto-Trade / Sniper
     autoTrade: boolean;
     minAutoScore: number;
