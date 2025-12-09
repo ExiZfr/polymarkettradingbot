@@ -23,32 +23,86 @@ import {
     MoreVertical,
     X
 } from "lucide-react";
-import { paperStore, PaperOrder, PaperStats } from "@/lib/paper-trading";
+
+// Unified Order type that handles both API and PaperOrder formats
+type UnifiedOrder = {
+    id: string;
+    marketId: string;
+    marketTitle: string;
+    type: 'BUY' | 'SELL';
+    outcome: 'YES' | 'NO';
+    amount: number;
+    entryPrice: number;
+    currentPrice?: number;
+    shares: number;
+    timestamp: number;
+    status: 'OPEN' | 'CLOSED' | 'CANCELLED' | 'PENDING' | 'FILLED' | 'REJECTED';
+    exitPrice?: number;
+    pnl?: number;
+    source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
+    fee?: number;
+};
+
+type PaperStats = {
+    totalTrades: number;
+    openTrades: number;
+    closedTrades: number;
+    winRate: number;
+    totalPnL: number;
+    profitFactor: number;
+    realizedPnL: number;
+    unrealizedPnL: number;
+    avgWin: number;
+    avgLoss: number;
+    maxDrawdown: number;
+    sharpeRatio: number;
+};
 
 type FilterStatus = 'ALL' | 'OPEN' | 'CLOSED' | 'CANCELLED';
 type FilterSource = 'ALL' | 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
 
-const sourceIcons: Record<PaperOrder['source'], React.ElementType> = {
+const sourceIcons: Record<string, React.ElementType> = {
     MANUAL: Target,
     SNIPER: Zap,
     COPY_TRADING: Users,
     ORACLE: Brain
 };
 
-const sourceColors: Record<PaperOrder['source'], string> = {
+const sourceColors: Record<string, string> = {
     MANUAL: 'text-slate-400 bg-slate-400/10',
     SNIPER: 'text-amber-400 bg-amber-400/10',
     COPY_TRADING: 'text-purple-400 bg-purple-400/10',
     ORACLE: 'text-blue-400 bg-blue-400/10'
 };
 
+// Map API Order to UnifiedOrder
+function mapApiOrder(apiOrder: any): UnifiedOrder {
+    return {
+        id: apiOrder.id || `ord_${Math.random().toString(36).substr(2, 9)}`,
+        marketId: apiOrder.marketId || 'unknown',
+        marketTitle: apiOrder.marketTitle || apiOrder.marketId || 'Unknown Market',
+        type: apiOrder.side || apiOrder.type || 'BUY',
+        outcome: apiOrder.outcome || 'YES',
+        amount: apiOrder.amount || 0,
+        entryPrice: apiOrder.price || apiOrder.entryPrice || 0,
+        currentPrice: apiOrder.currentPrice,
+        shares: apiOrder.shares || (apiOrder.amount && apiOrder.price ? apiOrder.amount / apiOrder.price : 0),
+        timestamp: apiOrder.timestamp ? new Date(apiOrder.timestamp).getTime() : Date.now(),
+        status: apiOrder.status || 'FILLED',
+        exitPrice: apiOrder.exitPrice,
+        pnl: apiOrder.pnl || 0,
+        source: apiOrder.source || 'MANUAL',
+        fee: apiOrder.fee || 0
+    };
+}
+
 export default function OrdersPage() {
-    const [orders, setOrders] = useState<PaperOrder[]>([]);
+    const [orders, setOrders] = useState<UnifiedOrder[]>([]);
     const [stats, setStats] = useState<PaperStats | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>('ALL');
     const [filterSource, setFilterSource] = useState<FilterSource>('ALL');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedOrder, setSelectedOrder] = useState<PaperOrder | null>(null);
+    const [selectedOrder, setSelectedOrder] = useState<UnifiedOrder | null>(null);
 
     useEffect(() => {
         loadData();
@@ -63,16 +117,18 @@ export default function OrdersPage() {
             const res = await fetch('/api/trading/wallet');
             if (res.ok) {
                 const data = await res.json();
-                const ordersData = data.orders || [];
-                setOrders(ordersData);
+                const rawOrders = data.orders || [];
+                // Map API orders to unified format
+                const mappedOrders = rawOrders.map(mapApiOrder);
+                setOrders(mappedOrders);
 
                 // Calculate stats from orders
                 const calculatedStats: PaperStats = {
-                    totalTrades: ordersData.length,
-                    openTrades: ordersData.filter((o: any) => o.status === 'OPEN').length,
-                    closedTrades: ordersData.filter((o: any) => o.status === 'CLOSED').length,
+                    totalTrades: mappedOrders.length,
+                    openTrades: mappedOrders.filter((o) => o.status === 'OPEN').length,
+                    closedTrades: mappedOrders.filter((o) => o.status === 'CLOSED' || o.status === 'FILLED').length,
                     winRate: 0,
-                    totalPnL: ordersData.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
+                    totalPnL: mappedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0),
                     profitFactor: 0,
                     realizedPnL: 0,
                     unrealizedPnL: 0,
@@ -83,7 +139,7 @@ export default function OrdersPage() {
                 };
 
                 const closed = calculatedStats.closedTrades;
-                const wins = ordersData.filter((o: any) => o.status === 'CLOSED' && (o.pnl || 0) > 0).length;
+                const wins = mappedOrders.filter((o) => (o.status === 'CLOSED' || o.status === 'FILLED') && (o.pnl || 0) > 0).length;
                 calculatedStats.winRate = closed > 0 ? (wins / closed) * 100 : 0;
 
                 setStats(calculatedStats);
@@ -94,14 +150,16 @@ export default function OrdersPage() {
     };
 
     const handleCloseOrder = (orderId: string, exitPrice: number) => {
-        paperStore.closeOrder(orderId, exitPrice);
+        // TODO: Implement via API
+        console.log('Close order:', orderId, exitPrice);
         loadData();
         setSelectedOrder(null);
     };
 
     const handleCancelOrder = (orderId: string) => {
         if (confirm('Cancel this order? Amount will be refunded.')) {
-            paperStore.cancelOrder(orderId);
+            // TODO: Implement via API
+            console.log('Cancel order:', orderId);
             loadData();
         }
     };
