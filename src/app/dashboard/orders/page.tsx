@@ -39,8 +39,11 @@ type UnifiedOrder = {
     status: 'OPEN' | 'CLOSED' | 'CANCELLED' | 'PENDING' | 'FILLED' | 'REJECTED';
     exitPrice?: number;
     pnl?: number;
+    roi?: number;
     source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
     fee?: number;
+    stopLoss?: number;
+    takeProfit?: number;
 };
 
 type PaperStats = {
@@ -172,7 +175,7 @@ export default function OrdersPage() {
         return true;
     });
 
-    const getStatusBadge = (status: PaperOrder['status']) => {
+    const getStatusBadge = (status: UnifiedOrder['status']) => {
         switch (status) {
             case 'OPEN':
                 return <span className="px-2 py-1 text-xs font-bold bg-blue-500/20 text-blue-400 rounded-full flex items-center gap-1"><Clock size={12} /> Open</span>;
@@ -307,7 +310,7 @@ export default function OrdersPage() {
                             </div>
                         ) : (
                             filteredOrders.map((order, index) => {
-                                const SourceIcon = sourceIcons[order.source];
+                                const SourceIcon = sourceIcons[order.source] || Target;
                                 const unrealizedPnL = order.status === 'OPEN' && order.currentPrice
                                     ? (order.shares * order.currentPrice) - order.amount
                                     : undefined;
@@ -337,10 +340,10 @@ export default function OrdersPage() {
 
                                         {/* Source */}
                                         <div className="col-span-2 hidden lg:flex items-center gap-2">
-                                            <div className={`p-1.5 rounded ${sourceColors[order.source]}`}>
+                                            <div className={`p-1.5 rounded ${sourceColors[order.source] || 'text-slate-400 bg-slate-400/10'}`}>
                                                 <SourceIcon size={14} />
                                             </div>
-                                            <span className="text-xs text-slate-400">{order.source.replace('_', ' ')}</span>
+                                            <span className="text-xs text-slate-400">{(order.source || 'MANUAL').replace('_', ' ')}</span>
                                         </div>
 
                                         {/* Entry */}
