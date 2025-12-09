@@ -63,18 +63,16 @@ export default function OrdersPage() {
             const res = await fetch('/api/trading/wallet');
             if (res.ok) {
                 const data = await res.json();
-                if (data.orders) {
-                    setOrders(data.orders);
-                }
-                // Calculate stats from data if needed, or if API provides them
-                // For now, let's recalculate stats client-side or assume paperStore is deprecated
-                // Ideally, create a helper to calc stats from orders list
+                const ordersData = data.orders || [];
+                setOrders(ordersData);
+
+                // Calculate stats from orders
                 const calculatedStats: PaperStats = {
-                    totalTrades: data.orders.length,
-                    openTrades: data.orders.filter((o: any) => o.status === 'OPEN').length,
-                    closedTrades: data.orders.filter((o: any) => o.status === 'CLOSED').length,
-                    winRate: 0, // Implement calc
-                    totalPnL: data.orders.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
+                    totalTrades: ordersData.length,
+                    openTrades: ordersData.filter((o: any) => o.status === 'OPEN').length,
+                    closedTrades: ordersData.filter((o: any) => o.status === 'CLOSED').length,
+                    winRate: 0,
+                    totalPnL: ordersData.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
                     profitFactor: 0,
                     realizedPnL: 0,
                     unrealizedPnL: 0,
@@ -84,9 +82,8 @@ export default function OrdersPage() {
                     sharpeRatio: 0
                 };
 
-                // Simple win rate calc
                 const closed = calculatedStats.closedTrades;
-                const wins = data.orders.filter((o: any) => o.status === 'CLOSED' && (o.pnl || 0) > 0).length;
+                const wins = ordersData.filter((o: any) => o.status === 'CLOSED' && (o.pnl || 0) > 0).length;
                 calculatedStats.winRate = closed > 0 ? (wins / closed) * 100 : 0;
 
                 setStats(calculatedStats);

@@ -30,7 +30,7 @@ const LogItem = ({ log }: { log: ListenerLog }) => {
             `}
         >
             <div className="shrink-0 w-20 text-xs text-slate-500 pt-0.5">
-                {log.timestamp.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
             </div>
 
             <div className="shrink-0 pt-0.5">
