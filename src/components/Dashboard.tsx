@@ -10,7 +10,7 @@ import { Radar, Zap, Users } from "lucide-react";
 import { fetchPolymarketMarkets } from "@/lib/polymarket";
 import { calculateSnipability } from "@/lib/snipability-algo";
 import { ToastNotification, useToast } from "@/components/ToastNotification";
-import { paperStore, PaperProfile } from "@/lib/paper-trading";
+import { useWallet } from "@/contexts/WalletContext";
 
 const MODULES_CONFIG: ModuleType[] = [
     {
@@ -53,10 +53,7 @@ const MODULES_CONFIG: ModuleType[] = [
 
 export default function Dashboard() {
     const [modules, setModules] = useState<ModuleType[]>(MODULES_CONFIG);
-    const [logs, setLogs] = useState<LogType[]>([
-        { id: 1, timestamp: new Date().toLocaleTimeString('en-GB'), level: "INFO", message: "🚀 PolyGraalX v2.3 initialized" },
-        { id: 2, timestamp: new Date().toLocaleTimeString('en-GB'), level: "INFO", message: "🔗 Connected to Polymarket API" },
-    ]);
+    const [logs, setLogs] = useState<LogType[]>([]);
     const [stats, setStats] = useState({
         marketsScanned: 0,
         snipableMarkets: 0,
@@ -64,45 +61,44 @@ export default function Dashboard() {
         highestScore: 0
     });
     const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'ORDER' | 'SNIPE' | 'SIGNAL' | 'WARN'>('ALL');
-    const [paperProfile, setPaperProfile] = useState<PaperProfile | null>(null);
 
+    const { wallet } = useWallet();
     const { toasts, addToast, removeToast } = useToast();
 
-    // Data Loading Logic
-    useEffect(() => {
-        loadRealMetrics();
-        setPaperProfile(paperStore.getProfile());
+    // Map log levels
+    const mapLogLevel = (type: string): LogType['level'] => {
+        switch (type) {
+            case 'snipe': return 'SNIPE';
+            case 'order': return 'ORDER';
+            case 'error': return 'ERR';
+            case 'warning': return 'WARN';
+            case 'new_market': return 'MARKET';
+            default: return 'INFO';
+        }
+    }
 
-        const interval = setInterval(() => {
-            loadRealMetrics();
-            setPaperProfile(paperStore.getProfile());
-        }, 60000);
-
-        // Mock Listener Connection (Replace with real listener logic if needed)
-        // For now, we simulate logs to show UI activity
-        const mockLogInterval = setInterval(() => {
-            if (Math.random() > 0.7) {
-                const types: LogType['level'][] = ['INFO', 'INFO', 'MARKET'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                addLog(type, `System check: ${type === 'INFO' ? 'Scanning batch #24' : 'Optimal latency verified'}`);
+    // Fetch Logs Logic
+    const fetchLogs = async () => {
+        try {
+            const res = await fetch('/api/listener/logs');
+            if (res.ok) {
+                const data = await res.json();
+                if (data && Array.isArray(data)) {
+                    const formattedLogs: LogType[] = data.map((l: any) => ({
+                        id: l.id,
+                        timestamp: l.timestamp,
+                        level: mapLogLevel(l.type),
+                        message: l.message
+                    }));
+                    setLogs(formattedLogs.slice(0, 100));
+                }
             }
-        }, 5000);
+        } catch (e) {
+            console.error("Failed to fetch logs", e);
+        }
+    }
 
-        return () => {
-            clearInterval(interval);
-            clearInterval(mockLogInterval);
-        };
-    }, []);
-
-    const addLog = (level: LogType['level'], message: string) => {
-        setLogs(prev => [{
-            id: Date.now() + Math.random(),
-            timestamp: new Date().toLocaleTimeString('en-GB', { hour12: false }),
-            level,
-            message
-        }, ...prev].slice(0, 100));
-    };
-
+    // Load Metrics Logic
     async function loadRealMetrics() {
         try {
             const rawMarkets = await fetchPolymarketMarkets();
@@ -123,7 +119,6 @@ export default function Dashboard() {
                 highestScore: highest
             });
 
-            // Update Module Stats
             setModules(prev => prev.map(m => {
                 if (m.name === "Sniper Engine") {
                     return { ...m, stats: [{ label: "Latency", value: "45ms" }, { label: "Markets", value: scored.length.toString() }] };
@@ -136,9 +131,23 @@ export default function Dashboard() {
 
         } catch (error) {
             console.error("Failed to load metrics", error);
-            addLog("ERR", "Failed to fetch market data");
         }
     }
+
+    // Effects
+    useEffect(() => {
+        loadRealMetrics();
+        fetchLogs();
+
+        const interval = setInterval(() => {
+            loadRealMetrics();
+            fetchLogs();
+        }, 5000);
+
+        return () => {
+            clearInterval(interval);
+        };
+    }, []);
 
     return (
         <div className="space-y-6">
@@ -154,7 +163,7 @@ export default function Dashboard() {
                     />
                 </div>
                 <div className="lg:col-span-1 h-full">
-                    <PaperTradingWidget profile={paperProfile} />
+                    <PaperTradingWidget wallet={wallet} />
                 </div>
             </div>
 

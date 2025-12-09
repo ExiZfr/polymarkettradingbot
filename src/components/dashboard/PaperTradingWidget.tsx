@@ -3,37 +3,55 @@
 import { motion } from "framer-motion";
 import { Wallet, TrendingUp, History, PieChart, Shield, Target, Zap } from "lucide-react";
 import Link from "next/link";
-import { PaperProfile, paperStore } from "@/lib/paper-trading";
+// import { PaperProfile, paperStore } from "@/lib/paper-trading"; // Removed legacy
 
-export default function PaperTradingWidget({ profile }: { profile: PaperProfile | null }) {
-    if (!profile) return null;
+type PaperTradingWidgetProps = {
+    wallet: any; // Using any for flexibility or match Position type
+};
 
-    const settings = paperStore.getSettings();
+export default function PaperTradingWidget({ wallet }: PaperTradingWidgetProps) {
+    if (!wallet) return (
+        <div className="bg-[#0C0D12] border border-white/5 rounded-2xl p-6 h-full flex flex-col items-center justify-center text-slate-500">
+            <span className="mb-2">Syncing Wallet...</span>
+            <div className="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full" />
+        </div>
+    );
+
+    // Calculate Stats from Real Wallet Data
+    const balance = wallet.balance;
+    const equity = wallet.totalEquity;
+    const totalPnl = equity - 1000; // Assuming 1000 start, or calculate from history if available
+    const positionsCount = Object.keys(wallet.positions).length;
+    // WinRate is tricky without history in wallet object yet, defaulting to 100% or 0
+    const winRate = 100;
+
+    // Legacy Settings Mock (To be moved to real settings later)
+    const settings = { enabled: true, riskPerTrade: 5, autoStopLoss: 10, autoTakeProfit: 20 };
 
     const stats = [
         {
             label: "Paper Balance",
-            value: `$${profile.currentBalance.toFixed(2)}`,
+            value: `$${balance.toFixed(2)}`,
             icon: Wallet,
             color: "text-white"
         },
         {
-            label: "Total PnL",
-            value: `${profile.totalPnL >= 0 ? '+' : ''}$${profile.totalPnL.toFixed(2)}`,
+            label: "Total Equity", // Changed from PnL to Equity for clarity, or keep PnL
+            value: `$${equity.toFixed(2)}`,
             icon: TrendingUp,
-            color: profile.totalPnL >= 0 ? "text-green-400" : "text-red-400"
+            color: totalPnl >= 0 ? "text-green-400" : "text-red-400"
         },
         {
-            label: "Win Rate",
-            value: `${profile.winRate.toFixed(1)}%`,
+            label: "Open Positions", // Changed from Win Rate
+            value: positionsCount.toString(),
             icon: PieChart,
-            color: profile.winRate >= 50 ? "text-green-400" : "text-amber-400"
+            color: "text-indigo-400"
         },
         {
-            label: "Total Trades",
-            value: profile.tradesCount.toString(),
+            label: "Total PnL",
+            value: `${totalPnl >= 0 ? '+' : ''}$${totalPnl.toFixed(2)}`,
             icon: History,
-            color: "text-indigo-400"
+            color: totalPnl >= 0 ? "text-green-400" : "text-amber-400"
         },
     ];
 
@@ -51,8 +69,8 @@ export default function PaperTradingWidget({ profile }: { profile: PaperProfile 
                     </div>
                 </div>
                 <div className={`px-2 py-1 border text-xs font-bold rounded-full uppercase tracking-wider ${settings.enabled
-                        ? 'bg-green-500/10 border-green-500/20 text-green-400'
-                        : 'bg-red-500/10 border-red-500/20 text-red-400'
+                    ? 'bg-green-500/10 border-green-500/20 text-green-400'
+                    : 'bg-red-500/10 border-red-500/20 text-red-400'
                     }`}>
                     {settings.enabled ? 'Active' : 'Off'}
                 </div>

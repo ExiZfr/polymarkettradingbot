@@ -38,12 +38,10 @@ type ListenerSettings = {
     prioritizeFavorites: boolean;
     customKeywords: string[];
     enabledCategories: string[];
-    // [NEW] Sources & Performance
-    turboMode: boolean;
-    enableRss: boolean;
-    enableReddit: boolean;
-    enableTwitter: boolean;
-    rssUrls: string[];
+    // [NEW] Auto-Trade / Sniper
+    autoTrade: boolean;
+    minAutoScore: number;
+    autoTradeAmount: number;
 };
 
 type ModuleConfig = {
@@ -84,6 +82,10 @@ export default function SettingsPage() {
         enableRss: false,
         enableReddit: false,
         enableTwitter: false,
+        // Auto-Trade Defaults
+        autoTrade: false,
+        minAutoScore: 90,
+        autoTradeAmount: 50,
         rssUrls: [
             // Crypto News
             'https://cointelegraph.com/rss',
@@ -669,6 +671,57 @@ export default function SettingsPage() {
 
                     {/* Sources & Performance Card */}
                     <div className="lg:col-span-2 bg-[#0C0D12]/50 border border-white/5 rounded-2xl p-6 space-y-6">
+                        {/* Auto-Trading / Sniper Configuration */}
+                        <div className="bg-[#0C0D12]/50 border border-white/5 rounded-xl p-6 mb-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-md font-bold text-white flex items-center gap-2">
+                                    <Zap className="text-indigo-400" size={18} />
+                                    Auto-Sniper Engine
+                                </h4>
+                                <button
+                                    onClick={() => setListenerSettings(prev => ({ ...prev, autoTrade: !prev.autoTrade }))}
+                                    className={`p-2 rounded-lg transition-colors ${listenerSettings.autoTrade ? 'bg-indigo-500/20 text-indigo-400' : 'bg-white/5 text-slate-500'}`}
+                                >
+                                    {listenerSettings.autoTrade ? <ToggleRight size={28} /> : <ToggleLeft size={28} />}
+                                </button>
+                            </div>
+
+                            {listenerSettings.autoTrade && (
+                                <div className="space-y-4 animate-in fade-in slide-in-from-top-2">
+                                    {/* Min Auto Score */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">
+                                            Minimum Consensus Score to Snipe
+                                        </label>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="range"
+                                                min="50"
+                                                max="99"
+                                                value={listenerSettings.minAutoScore || 90}
+                                                onChange={(e) => setListenerSettings(prev => ({ ...prev, minAutoScore: parseInt(e.target.value) }))}
+                                                className="flex-1 accent-indigo-500"
+                                            />
+                                            <span className="text-white font-mono w-12 text-right">{listenerSettings.minAutoScore || 90}</span>
+                                        </div>
+                                    </div>
+
+                                    {/* Trade Amount */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-400 mb-2">
+                                            Amount Per Snipe ($)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={listenerSettings.autoTradeAmount || 50}
+                                            onChange={(e) => setListenerSettings(prev => ({ ...prev, autoTradeAmount: parseFloat(e.target.value) }))}
+                                            className="w-full px-4 py-3 bg-black/30 border border-white/10 rounded-xl text-white font-mono focus:outline-none focus:border-indigo-500/50"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="flex items-center justify-between">
                             <h3 className="text-lg font-bold text-white flex items-center gap-2">
                                 <Zap className="text-yellow-400" size={20} />
@@ -676,7 +729,7 @@ export default function SettingsPage() {
                             </h3>
                             {/* Turbo Mode Toggle */}
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+                                <span className="text-sm font-bold text-transparent bg-clip-text bg-linear-to-r from-red-500 to-orange-500">
                                     TURBO MODE
                                 </span>
                                 <button

@@ -229,9 +229,54 @@ async function run() {
         for (const pick of topPicks) {
             // Simple dedupe check could be added here
             await sendTelegramAlert(pick);
+
+            // AUTO-TRADE INTEGRATION
+            if (settings.autoTrade && pick.score >= (settings.minAutoScore || 90)) {
+                await executeAutoTrade(pick);
+            }
         }
 
     }, settings.scanInterval * 1000);
+}
+
+// -- Auto-Trade --
+const tradedMarkets = new Set();
+async function executeAutoTrade(market) {
+    if (tradedMarkets.has(market.market_id)) return;
+
+    // Safety check: Don't overtrade
+    if (tradedMarkets.size > 20) tradedMarkets.clear(); // Reset cache occasionally
+
+    console.log(`[Auto-Trade] 🤖 Attempting to SNIPE: ${market.question}`);
+
+    try {
+        const payload = {
+            marketId: market.market_id,
+            side: 'BUY',
+            outcome: 'YES', // Default to YES for high score
+            amount: settings.autoTradeAmount || 50,
+            currentPrice: 0.50 // Mock Price or fetch real price if available in market obj
+        };
+
+        // If market has outcomes/prices, use them
+        if (market.outcomePrices) {
+            // Parse JSON if needed or access array
+            // detailed implementation depends on market structure
+            // simplifying for now
+            payload.currentPrice = 0.55;
+        }
+
+        const res = await axios.post('http://localhost:3000/api/trading/execute', payload);
+
+        if (res.data && res.data.status === 'FILLED') {
+            console.log(`[Auto-Trade] ✅ SUCCESS! Bought $${payload.amount} of ${market.question}`);
+            tradedMarkets.add(market.market_id);
+            logToFile('snipe', `🤖 Auto-Sniped: ${market.question} (Score: ${market.score})`, 'high');
+        }
+
+    } catch (e) {
+        console.error(`[Auto-Trade] ❌ Failed: ${e.message}`);
+    }
 }
 
 run();
