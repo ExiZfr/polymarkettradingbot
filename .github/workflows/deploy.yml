@@ -46,11 +46,20 @@ jobs:
               cd "$APP_DIR" || exit 1
               
               echo "📥 [1/5] Syncing with GitHub..."
+              # Trust GitHub host
+              mkdir -p ~/.ssh
+              ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+              
               # Reset any local changes to avoid conflicts
               git fetch origin main
               git reset --hard origin/main
             else
               echo "⚠️ Directory not found. Cloning repository..."
+              
+              # Trust GitHub host
+              mkdir -p ~/.ssh
+              ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+              
               # Ensure parent dir exists (unlikely needed for home but good practice)
               cd "$HOME"
               git clone git@github.com:ExiZfr/PolygraalX.git PolygraalX
