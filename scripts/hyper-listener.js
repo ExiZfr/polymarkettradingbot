@@ -86,12 +86,12 @@ function saveSignalToHistory(market) {
     const db = loadSignalsHistory();
 
     // Remove any existing entry for this market (will be replaced with fresh data)
-    db.signals = db.signals.filter(s => s.marketId !== market.market_id);
+    db.signals = db.signals.filter(s => s.marketId !== market.id);
 
     // Add new signal with complete info
     const signalRecord = {
         id: `sig_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        marketId: market.market_id,
+        marketId: market.id,
         question: market.question,
         score: market.score,
         timestamp: new Date().toISOString(),
@@ -322,7 +322,7 @@ function normalizeMarkets(polyMarkets, rssItems) {
         }
 
         // Ensure market has minimum required fields (slug is optional, will use market_id as fallback)
-        if (!m.question || !m.market_id) {
+        if (!m.question || !m.id) {
             return false;
         }
 
@@ -378,7 +378,7 @@ async function sendTelegramAlert(market, signalReason = '') {
     if (!TELEGRAM_BOT_TOKEN) return;
 
     // DEDUPLICATION: Check if we already sniped this market in the last 24h
-    if (isMarketAlreadySniped(market.market_id, market.score)) {
+    if (isMarketAlreadySniped(market.id, market.score)) {
         console.log(`[Telegram] Skipping duplicate alert for: ${market.question.slice(0, 30)}... (already sniped)`);
         return;
     }
@@ -394,7 +394,7 @@ ${market.newsCorrelation ? '🔥 Validated by News/RSS' : ''}
 💧 Liq: $${(parseFloat(market.liquidity) / 1000).toFixed(1)}k
 
 ${signalReason ? `\n📋 *Why this signal:*\n${signalReason}\n` : ''}
-🔗 [Open on Polymarket](https://polymarket.com/event/${market.slug || market.market_id})
+🔗 [Open on Polymarket](https://polymarket.com/event/${market.slug || market.id})
     `.trim();
 
     try {
@@ -407,11 +407,11 @@ ${signalReason ? `\n📋 *Why this signal:*\n${signalReason}\n` : ''}
         console.log(`[Telegram] Sent alert for: ${market.question.slice(0, 30)}...`);
 
         // Mark as sniped AFTER successful send
-        markMarketAsSniped(market.market_id, market.score);
+        markMarketAsSniped(market.id, market.score);
 
         // Log to file for Frontend UI
         logToFile('alert', `High Score Opportunity: ${market.question.slice(0, 50)}...`, 'high', {
-            relatedMarketId: market.market_id,
+            relatedMarketId: market.id,
             score: market.score
         });
 
@@ -447,7 +447,7 @@ async function run() {
 
         for (const pick of topPicks) {
             // DEDUPLICATION: Check if signal should be skipped
-            const skipCheck = shouldSkipSignal(pick.market_id, pick.score, pick.newsCorrelation);
+            const skipCheck = shouldSkipSignal(pick.id, pick.score, pick.newsCorrelation);
 
             if (skipCheck.skip) {
                 console.log(`[Signal] Skipping: ${pick.question.slice(0, 30)}... (${skipCheck.reason})`);
@@ -472,7 +472,7 @@ async function run() {
 
             // Log signal to dashboard console WITH EXPLANATION
             logToFile('signal', `🎯 ${pick.question.slice(0, 50)}... | Score: ${pick.score} | ${pick.newsCorrelation ? '🔥 NEWS' : ''}`, 'high', {
-                relatedMarketId: pick.market_id,
+                relatedMarketId: pick.id,
                 signalId: signalRecord.id,
                 score: pick.score,
                 volume: pick.volume,
@@ -497,7 +497,7 @@ async function run() {
 // -- Auto-Trade --
 const tradedMarkets = new Set();
 async function executeAutoTrade(market) {
-    if (tradedMarkets.has(market.market_id)) return;
+    if (tradedMarkets.has(market.id)) return;
 
     // Safety check: Don't overtrade
     if (tradedMarkets.size > 20) tradedMarkets.clear(); // Reset cache occasionally
@@ -506,7 +506,7 @@ async function executeAutoTrade(market) {
 
     try {
         const payload = {
-            marketId: market.market_id,
+            marketId: market.id,
             side: 'BUY',
             outcome: 'YES', // Default to YES for high score
             amount: settings.autoTradeAmount || 50,
@@ -525,7 +525,7 @@ async function executeAutoTrade(market) {
 
         if (res.data && res.data.status === 'FILLED') {
             console.log(`[Auto-Trade] ✅ SUCCESS! Bought $${payload.amount} of ${market.question}`);
-            tradedMarkets.add(market.market_id);
+            tradedMarkets.add(market.id);
             logToFile('snipe', `🤖 Auto-Sniped: ${market.question} (Score: ${market.score})`, 'high');
         }
 
