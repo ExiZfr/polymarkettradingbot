@@ -22,7 +22,16 @@ export type ListenerLog = {
     type: LogType;
     message: string;
     priority: 'low' | 'medium' | 'high';
-    relatedMarketId?: string; // Link to a market
+    relatedMarketId?: string;
+    // Enhanced: Include market data for direct display
+    relatedMarket?: {
+        id: string;
+        title: string;
+        image: string;
+        score: number;
+        probability: number;
+        volume: string;
+    };
 };
 
 type RadarContextType = {
@@ -133,26 +142,47 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
         // Market Loop (Every 60s)
         const marketInterval = setInterval(refreshMarkets, 60000);
 
-        // Listener Loop (Simulated noise + signals)
+        // Listener Loop (Simulated - links to real markets when signals detected)
         const listenerInterval = setInterval(() => {
-            // 10% chance to generate a log every 3 seconds
+            // 70% chance to generate activity every 3 seconds
             if (Math.random() > 0.3) {
-                const isSignal = Math.random() > 0.8;
+                const isSignal = Math.random() > 0.75;
                 const source = MOCK_SOURCES[Math.floor(Math.random() * MOCK_SOURCES.length)];
                 const keyword = KEYWORDS[Math.floor(Math.random() * KEYWORDS.length)];
 
-                // Prioritize favorites logic could go here
+                if (isSignal && markets.length > 0) {
+                    // Find a matching market based on keyword
+                    const matchingMarket = markets.find(m =>
+                        m.market.title.toLowerCase().includes(keyword.toLowerCase()) ||
+                        m.market.tags.some(t => t.toLowerCase().includes(keyword.toLowerCase()))
+                    ) || markets[Math.floor(Math.random() * markets.length)]; // Fallback to random market
 
-                addLog({
-                    source,
-                    type: isSignal ? 'signal' : 'info',
-                    message: isSignal
-                        ? `Significant volume spike detected for keyword: ${keyword}`
-                        : `Monitoring discussions related to ${keyword}...`,
-                    priority: isSignal ? 'high' : 'low'
-                });
+                    addLog({
+                        source,
+                        type: 'signal',
+                        message: `🔥 Volume spike detected: "${matchingMarket.market.title.slice(0, 50)}..."`,
+                        priority: 'high',
+                        relatedMarketId: matchingMarket.market.id,
+                        relatedMarket: {
+                            id: matchingMarket.market.id,
+                            title: matchingMarket.market.title,
+                            image: matchingMarket.market.image,
+                            score: matchingMarket.analysis.score,
+                            probability: matchingMarket.market.probability,
+                            volume: matchingMarket.market.volume
+                        }
+                    });
+                } else {
+                    // Regular info log without market link
+                    addLog({
+                        source,
+                        type: 'info',
+                        message: `Monitoring discussions: ${keyword}...`,
+                        priority: 'low'
+                    });
+                }
             }
-        }, 3000);
+        }, 4000);
 
         return () => {
             clearInterval(marketInterval);

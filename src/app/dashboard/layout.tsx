@@ -93,7 +93,7 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                     </button>
                 </div>
 
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-96 overflow-y-auto">
                     {importantLogs.length === 0 ? (
                         <div className="p-8 text-center text-slate-500 text-sm">
                             <AlertTriangle size={24} className="mx-auto mb-2 opacity-50" />
@@ -104,19 +104,77 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                             {importantLogs.map((log) => (
                                 <div
                                     key={log.id}
-                                    className={`p-3 rounded-xl border ${getLogBg(log.priority)} transition-colors hover:bg-white/5`}
+                                    className={`rounded-xl border ${getLogBg(log.priority)} transition-all hover:bg-white/5 overflow-hidden`}
                                 >
-                                    <div className="flex items-start gap-2">
-                                        <div className="mt-0.5">{getLogIcon(log.type)}</div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-slate-300 leading-relaxed">{log.message}</p>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <span className="text-[10px] text-slate-500 uppercase">{log.source}</span>
-                                                <span className="text-[10px] text-slate-600">
-                                                    {new Date(log.timestamp).toLocaleTimeString()}
-                                                </span>
+                                    {/* Market Card - if has relatedMarket */}
+                                    {log.relatedMarket && (
+                                        <div className="relative">
+                                            <img
+                                                src={log.relatedMarket.image}
+                                                alt=""
+                                                className="w-full h-20 object-cover opacity-80"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-[#0C0D12] to-transparent" />
+
+                                            {/* Score Badge */}
+                                            <div className={`absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-black flex items-center gap-1 ${log.relatedMarket.score >= 70 ? 'bg-green-500/90 text-black' :
+                                                    log.relatedMarket.score >= 50 ? 'bg-yellow-500/90 text-black' : 'bg-slate-500/80 text-white'
+                                                }`}>
+                                                🔥 {log.relatedMarket.score}
+                                            </div>
+
+                                            {/* Title */}
+                                            <div className="absolute bottom-2 left-2 right-2">
+                                                <p className="text-xs font-medium text-white line-clamp-2 leading-tight">
+                                                    {log.relatedMarket.title.slice(0, 60)}...
+                                                </p>
                                             </div>
                                         </div>
+                                    )}
+
+                                    {/* Log Info */}
+                                    <div className="p-3">
+                                        <div className="flex items-start gap-2">
+                                            <div className="mt-0.5">{getLogIcon(log.type)}</div>
+                                            <div className="flex-1 min-w-0">
+                                                {!log.relatedMarket && (
+                                                    <p className="text-xs text-slate-300 leading-relaxed">{log.message}</p>
+                                                )}
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="text-[10px] text-slate-500 uppercase">{log.source}</span>
+                                                    <span className="text-[10px] text-slate-600">
+                                                        {new Date(log.timestamp).toLocaleTimeString()}
+                                                    </span>
+                                                    {log.relatedMarket && (
+                                                        <>
+                                                            <span className="text-[10px] text-indigo-400">Vol: {log.relatedMarket.volume}</span>
+                                                            <span className="text-[10px] text-green-400">{log.relatedMarket.probability}%</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Action Buttons for markets */}
+                                        {log.relatedMarket && (
+                                            <div className="flex gap-2 mt-2">
+                                                <Link
+                                                    href={`/dashboard/radar`}
+                                                    onClick={onClose}
+                                                    className="flex-1 py-1.5 px-3 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-medium rounded-lg text-center transition-colors"
+                                                >
+                                                    View in Radar
+                                                </Link>
+                                                <button
+                                                    className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg text-center transition-all ${log.relatedMarket.score >= 70
+                                                            ? 'bg-green-500 hover:bg-green-400 text-black'
+                                                            : 'bg-white/10 hover:bg-white/20 text-white'
+                                                        }`}
+                                                >
+                                                    {log.relatedMarket.score >= 70 ? '⚡ SNIPE' : 'Analyze'}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             ))}
