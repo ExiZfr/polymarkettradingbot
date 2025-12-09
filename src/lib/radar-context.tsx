@@ -94,11 +94,11 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
                 analysis: calculateSnipability(m)
             }));
 
-            // 3. Filter (Keep only quality opportunities)
+            // 3. Filter (Show more diverse markets)
             const viable = analyzed
-                .filter(m => m.analysis.score >= 50) // Strict threshold
+                .filter(m => m.analysis.score >= 25) // Lowered threshold for more variety
                 .sort((a, b) => b.analysis.score - a.analysis.score)
-                .slice(0, 30); // Top 30 only
+                .slice(0, 100); // Top 100 markets
 
             setMarkets(viable);
             setLastUpdated(new Date());

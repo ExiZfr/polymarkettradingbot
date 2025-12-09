@@ -13,7 +13,7 @@ import { FluxCard } from "@/components/radar/FluxCard";
 import { EventType, UrgencyLevel } from "@/lib/snipability-algo";
 
 // Types for Filters
-type FilterCategory = 'All' | 'Crypto' | 'Politics' | 'Sports' | 'Business' | 'Science' | 'Other';
+type FilterCategory = 'All' | 'Gaming' | 'Entertainment' | 'Tech' | 'Crypto' | 'Politics' | 'Sports' | 'Finance' | 'Science' | 'Trending' | 'Other';
 type FilterType = 'ALL' | EventType;
 type FilterUrgency = 'ALL' | UrgencyLevel;
 
@@ -605,9 +605,12 @@ export default function RadarView() {
                             <ChevronDown size={14} className={`opacity-50 transition-transform ${openFilter === 'category' ? 'rotate-180' : ''}`} />
                         </button>
                         {openFilter === 'category' && (
-                            <div className="absolute top-full left-0 mt-2 w-40 bg-[#15171E] border border-white/10 rounded-xl shadow-xl p-1 z-[9999] pointer-events-auto">
-                                {(['All', 'Crypto', 'Politics', 'Sports', 'Business'] as FilterCategory[]).map(cat => (
-                                    <button key={cat} onClick={() => { setActiveCategory(cat); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${activeCategory === cat ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>{cat}</button>
+                            <div className="absolute top-full left-0 mt-2 w-44 max-h-80 overflow-y-auto bg-[#15171E] border border-white/10 rounded-xl shadow-xl p-1 z-[9999] pointer-events-auto">
+                                {(['All', 'Gaming', 'Entertainment', 'Tech', 'Crypto', 'Politics', 'Sports', 'Finance', 'Science', 'Trending', 'Other'] as FilterCategory[]).map(cat => (
+                                    <button key={cat} onClick={() => { setActiveCategory(cat); setOpenFilter(null); }} className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors flex items-center gap-2 ${activeCategory === cat ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+                                        <span>{cat === 'Gaming' ? '🎮' : cat === 'Entertainment' ? '🎬' : cat === 'Tech' ? '💻' : cat === 'Crypto' ? '₿' : cat === 'Politics' ? '🏛️' : cat === 'Sports' ? '⚽' : cat === 'Finance' ? '📈' : cat === 'Science' ? '🔬' : cat === 'Trending' ? '🔥' : cat === 'Other' ? '📦' : '🎯'}</span>
+                                        {cat}
+                                    </button>
                                 ))}
                             </div>
                         )}

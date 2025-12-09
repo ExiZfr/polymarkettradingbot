@@ -57,31 +57,57 @@ export async function GET() {
 
 function detectCategory(title: string, originalCategory: string, tags: string[]): string {
     // If we have a valid category, use it
-    if (originalCategory && originalCategory !== 'Other') {
+    if (originalCategory && originalCategory !== 'Other' && originalCategory !== 'Unknown') {
         return originalCategory;
     }
 
     const lower = title.toLowerCase();
     const tagStr = tags.join(' ').toLowerCase();
+    const combined = lower + ' ' + tagStr;
 
-    // Crypto
-    if (lower.match(/bitcoin|btc|ethereum|eth|crypto|solana|sol|dogecoin|doge|nft|defi|blockchain/)) {
+    // Gaming / Video Games
+    if (combined.match(/gta|gta 6|rockstar|playstation|xbox|nintendo|switch|gaming|esports|twitch|streamer|valorant|fortnite|minecraft|roblox|steam|epic games|call of duty|cod|league of legends|lol|dota|csgo|counter-strike|elden ring|zelda|mario|pokemon|diablo|world of warcraft|wow|fifa game|ea sports|ubisoft|activision|blizzard/)) {
+        return 'Gaming';
+    }
+
+    // Entertainment / Pop Culture / Celebrities
+    if (combined.match(/movie|film|oscar|emmy|grammy|netflix|disney|hollywood|actor|actress|celebrity|kardashian|taylor swift|kanye|drake|beyonce|rihanna|elon musk|mrbeast|logan paul|jake paul|ksi|pewdiepie|youtube|tiktok|instagram|influencer|viral|meme|scandal|breakup|dating|wedding|divorce|baby|pregnant|album|concert|tour|box office|streaming|hulu|hbo|amazon prime|spotify|apple music/)) {
+        return 'Entertainment';
+    }
+
+    // Tech / AI / Companies
+    if (combined.match(/apple|iphone|google|microsoft|amazon|meta|facebook|openai|chatgpt|ai|artificial intelligence|gpt|claude|gemini|nvidia|amd|intel|tesla|spacex|starlink|launch|rocket|satellite|neuralink|robot|automation|self-driving|autonomous|vr|ar|metaverse|web3|startup|ipo|acquisition|merger|layoff|ceo|founder/)) {
+        return 'Tech';
+    }
+
+    // Crypto / DeFi
+    if (combined.match(/bitcoin|btc|ethereum|eth|crypto|solana|sol|dogecoin|doge|nft|defi|blockchain|binance|coinbase|ftx|tether|usdt|usdc|altcoin|memecoin|shiba|pepe coin|ape|stablecoin|mining|halving|airdrop|token|wallet|exchange|rug pull/)) {
         return 'Crypto';
     }
 
-    // Politics
-    if (lower.match(/trump|biden|election|president|congress|senate|vote|政治|政府|minister|parliament/)) {
+    // Politics / Government
+    if (combined.match(/trump|biden|election|president|congress|senate|vote|democrat|republican|governor|mayor|law|bill|legislation|supreme court|impeach|indictment|trial|ukraine|russia|china|war|nato|military|sanction|tariff|border|immigration|abortion|gun|policy|minister|parliament|brexit|eu|un|summit/)) {
         return 'Politics';
     }
 
     // Sports
-    if (lower.match(/nfl|nba|nhl|mlb|fifa|world cup|olympics|championship|super bowl|playoff|league|team|sport/)) {
+    if (combined.match(/nfl|nba|nhl|mlb|mls|fifa|world cup|olympics|championship|super bowl|playoff|league|team|soccer|football|basketball|baseball|hockey|tennis|golf|boxing|ufc|mma|f1|formula 1|nascar|winner|champion|mvp|injury|trade|draft|transfer|coach|player/)) {
         return 'Sports';
     }
 
-    // Finance
-    if (lower.match(/stock|market|fed|rate|inflation|gdp|earnings|nasdaq|s&p|dow|treasury|bond|economy/)) {
+    // Finance / Economy
+    if (combined.match(/stock|market|fed|rate|inflation|gdp|earnings|nasdaq|s&p|dow|treasury|bond|economy|recession|bull|bear|crash|rally|ipo|dividend|wall street|hedge fund|etf|mutual fund|401k|mortgage|housing|real estate|oil|gold|commodity|forex|currency/)) {
         return 'Finance';
+    }
+
+    // Science / Health / Nature
+    if (combined.match(/vaccine|covid|virus|pandemic|disease|health|fda|drug|medicine|cancer|cure|climate|weather|hurricane|earthquake|wildfire|flood|drought|temperature|nasa|space|mars|moon|asteroid|ufo|alien|discovery|research|study|scientist/)) {
+        return 'Science';
+    }
+
+    // Memes / Internet Culture / Viral
+    if (combined.match(/meme|viral|trend|challenge|drama|beef|diss|fight|controversy|cancelled|canceled|exposed|leak|hack|prank|stunt|record|world record|guinness|first|biggest|smallest|oldest|youngest|most|least/)) {
+        return 'Trending';
     }
 
     return 'Other';
