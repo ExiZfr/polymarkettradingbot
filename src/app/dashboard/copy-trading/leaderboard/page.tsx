@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -38,6 +38,10 @@ function LeaderboardContent() {
     const [expandedTrader, setExpandedTrader] = useState<string | null>(null);
     const [period, setPeriod] = useState<'24h' | '7d' | '30d'>('7d');
 
+    // Sort State
+    const [sortField, setSortField] = useState<'winRate' | 'pnl' | 'volume' | 'tradesCount' | 'roi'>('pnl');
+    const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
     // Copy Modal State
     const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
     const [showCopyModal, setShowCopyModal] = useState(false);
@@ -62,7 +66,21 @@ function LeaderboardContent() {
         fetchData();
     }, [period]);
 
-    const traders = activeTab === 'top' ? topTraders : worstTraders;
+    // Sort traders based on sortField and sortOrder
+    const traders = useMemo(() => {
+        const unsorted = activeTab === 'top' ? topTraders : worstTraders;
+        const sorted = [...unsorted].sort((a, b) => {
+            const aVal = a[sortField];
+            const bVal = b[sortField];
+
+            if (sortOrder === 'desc') {
+                return bVal > aVal ? 1 : -1;
+            } else {
+                return aVal > bVal ? 1 : -1;
+            }
+        });
+        return sorted;
+    }, [activeTab, topTraders, worstTraders, sortField, sortOrder]);
 
     const toggleExpand = (address: string) => {
         setExpandedTrader(expandedTrader === address ? null : address);
@@ -208,6 +226,39 @@ function LeaderboardContent() {
                     <TrendingDown className="w-5 h-5" />
                     Worst 25 Traders
                 </button>
+            </div>
+
+            {/* Sort Filters */}
+            <div className="mb-6 p-4 bg-[#171717] border border-[#262626] rounded-xl">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-bold text-gray-400">Sort By</h3>
+                    <button
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-[#262626] hover:bg-[#333] text-gray-300 rounded-lg text-xs font-medium transition-colors"
+                    >
+                        {sortOrder === 'desc' ? '↓ High to Low' : '↑ Low to High'}
+                    </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                    {[
+                        { value: 'pnl', label: '💰 P&L', color: 'blue' },
+                        { value: 'winRate', label: '🎯 Win Rate', color: 'green' },
+                        { value: 'volume', label: '📊 Volume', color: 'purple' },
+                        { value: 'tradesCount', label: '🔢 Trades', color: 'indigo' },
+                        { value: 'roi', label: '📈 ROI', color: 'yellow' }
+                    ].map((filter) => (
+                        <button
+                            key={filter.value}
+                            onClick={() => setSortField(filter.value as any)}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${sortField === filter.value
+                                    ? `bg-${filter.color}-600 text-white border border-${filter.color}-500`
+                                    : 'bg-[#262626] text-gray-400 hover:text-white hover:bg-[#333] border border-transparent'
+                                }`}
+                        >
+                            {filter.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* Trader List */}
