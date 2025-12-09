@@ -128,10 +128,10 @@ export default function OrdersPage() {
                 // Calculate stats from orders
                 const calculatedStats: PaperStats = {
                     totalTrades: mappedOrders.length,
-                    openTrades: mappedOrders.filter((o) => o.status === 'OPEN').length,
-                    closedTrades: mappedOrders.filter((o) => o.status === 'CLOSED' || o.status === 'FILLED').length,
+                    openTrades: mappedOrders.filter((o: UnifiedOrder) => o.status === 'OPEN').length,
+                    closedTrades: mappedOrders.filter((o: UnifiedOrder) => o.status === 'CLOSED' || o.status === 'FILLED').length,
                     winRate: 0,
-                    totalPnL: mappedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0),
+                    totalPnL: mappedOrders.reduce((sum: number, o: UnifiedOrder) => sum + (o.pnl || 0), 0),
                     profitFactor: 0,
                     realizedPnL: 0,
                     unrealizedPnL: 0,
@@ -142,7 +142,7 @@ export default function OrdersPage() {
                 };
 
                 const closed = calculatedStats.closedTrades;
-                const wins = mappedOrders.filter((o) => (o.status === 'CLOSED' || o.status === 'FILLED') && (o.pnl || 0) > 0).length;
+                const wins = mappedOrders.filter((o: UnifiedOrder) => (o.status === 'CLOSED' || o.status === 'FILLED') && (o.pnl || 0) > 0).length;
                 calculatedStats.winRate = closed > 0 ? (wins / closed) * 100 : 0;
 
                 setStats(calculatedStats);
