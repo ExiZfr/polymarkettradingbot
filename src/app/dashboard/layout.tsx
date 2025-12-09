@@ -219,15 +219,6 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
  * Header Component
  */
 function DashboardHeader({ toggleSidebar, pathname }: { toggleSidebar: () => void; pathname: string }) {
-    const [isNotifOpen, setIsNotifOpen] = useState(false);
-    const { logs } = useRadar();
-
-    const unreadCount = logs.filter(l =>
-        l.priority === 'high' ||
-        l.type === 'signal' ||
-        l.type === 'alert'
-    ).length;
-
     return (
         <header className="h-20 flex items-center justify-between px-6 border-b border-white/5 bg-[#06070A]/80 backdrop-blur-xl z-20">
             <div className="flex items-center gap-4">
@@ -251,30 +242,6 @@ function DashboardHeader({ toggleSidebar, pathname }: { toggleSidebar: () => voi
                         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                     </span>
                     <span className="text-xs font-medium text-green-400">System Online</span>
-                </div>
-
-                <div className="relative">
-                    <button
-                        onClick={() => setIsNotifOpen(!isNotifOpen)}
-                        className="relative p-2 text-slate-400 hover:text-white transition-colors bg-white/5 rounded-full hover:bg-white/10"
-                    >
-                        <Bell size={20} />
-                        {unreadCount > 0 && (
-                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-indigo-500 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-[#06070A]">
-                                {unreadCount > 9 ? '9+' : unreadCount}
-                            </span>
-                        )}
-                    </button>
-
-                    <AnimatePresence>
-                        {isNotifOpen && (
-                            <NotificationPanel
-                                isOpen={isNotifOpen}
-                                onClose={() => setIsNotifOpen(false)}
-                                logs={logs}
-                            />
-                        )}
-                    </AnimatePresence>
                 </div>
             </div>
         </header>
