@@ -303,7 +303,14 @@ async function run() {
         console.log(`[Scan] Processed ${markets.length} markets. Found ${topPicks.length} high-potential opportunities.`);
 
         for (const pick of topPicks) {
-            // Simple dedupe check could be added here
+            // Log signal to dashboard console with market_id for deduplication
+            logToFile('signal', `🎯 Signal Detected: ${pick.question.slice(0, 60)}... (Score: ${pick.score})`, 'high', {
+                relatedMarketId: pick.market_id,
+                score: pick.score,
+                newsCorrelation: pick.newsCorrelation || false
+            });
+
+            // Send Telegram (has its own deduplication via sniped-markets.json)
             await sendTelegramAlert(pick);
 
             // AUTO-TRADE INTEGRATION

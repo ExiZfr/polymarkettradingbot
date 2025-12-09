@@ -70,6 +70,7 @@ export default function Dashboard() {
         switch (type) {
             case 'snipe': return 'SNIPE';
             case 'alert': return 'SNIPE'; // High-score market detected
+            case 'signal': return 'SIGNAL'; // Signal detected
             case 'order': return 'ORDER';
             case 'error': return 'ERR';
             case 'warning': return 'WARN';
