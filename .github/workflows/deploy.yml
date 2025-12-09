@@ -46,11 +46,30 @@ jobs:
             
             echo "🎯 Target: $APP_DIR"
             
-            # Create/Update .env file
+            # Update specific env vars without overwriting the whole file
             echo "📝 Updating .env file..."
             mkdir -p "$APP_DIR"
-            echo "DATABASE_URL=$DATABASE_URL" > "$APP_DIR/.env"
-            echo "NEXT_PUBLIC_APP_URL=https://polygraalx.com" >> "$APP_DIR/.env"
+            
+            # Create .env if doesn't exist
+            touch "$APP_DIR/.env"
+            
+            # Function to update or add env var
+            update_env() {
+              local key="$1"
+              local value="$2"
+              local file="$APP_DIR/.env"
+              if grep -q "^${key}=" "$file"; then
+                sed -i "s|^${key}=.*|${key}=${value}|" "$file"
+              else
+                echo "${key}=${value}" >> "$file"
+              fi
+            }
+            
+            # Update required vars
+            update_env "DATABASE_URL" "$DATABASE_URL"
+            update_env "NEXT_PUBLIC_APP_URL" "https://polygraalx.com"
+            
+            echo "✅ Env vars updated (existing vars preserved)"
             
             # Check if directory exists
             if [ -d "$APP_DIR" ]; then
