@@ -64,9 +64,13 @@ function LeaderboardContent() {
         setExpandedTrader(expandedTrader === address ? null : address);
     };
 
-    const startCopy = (trader: Trader, e: React.MouseEvent) => {
+    // State for inverse mode
+    const [isInverseMode, setIsInverseMode] = useState(false);
+
+    const startCopy = (trader: Trader, e: React.MouseEvent, inverse: boolean = false) => {
         e.stopPropagation();
         setSelectedTrader(trader);
+        setIsInverseMode(inverse);
         setShowCopyModal(true);
     };
 
@@ -79,15 +83,17 @@ function LeaderboardContent() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     walletAddress: selectedTrader.address,
-                    label: selectedTrader.username || selectedTrader.address.slice(0, 8),
+                    label: `${isInverseMode ? '🔄 ' : ''}${selectedTrader.username || selectedTrader.address.slice(0, 8)}`,
                     copyMode: 'fixed',
                     fixedAmount: copyAmount,
+                    inverse: isInverseMode,
                     enabled: true
                 })
             });
 
             if (res.ok) {
-                alert(`✅ Started copying ${selectedTrader.username}!`);
+                const mode = isInverseMode ? 'INVERSE copying' : 'copying';
+                alert(`✅ Started ${mode} ${selectedTrader.username}!`);
                 setShowCopyModal(false);
                 router.push('/dashboard/copy-trading');
             }
@@ -135,8 +141,8 @@ function LeaderboardContent() {
                             key={p}
                             onClick={() => setPeriod(p)}
                             className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${period === p
-                                    ? 'bg-blue-600 text-white'
-                                    : 'text-gray-400 hover:text-white'
+                                ? 'bg-blue-600 text-white'
+                                : 'text-gray-400 hover:text-white'
                                 }`}
                         >
                             {p}
@@ -150,8 +156,8 @@ function LeaderboardContent() {
                 <button
                     onClick={() => { setActiveTab('top'); setExpandedTrader(null); }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'top'
-                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                            : 'bg-[#171717] text-gray-400 border border-[#262626] hover:border-gray-600'
+                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                        : 'bg-[#171717] text-gray-400 border border-[#262626] hover:border-gray-600'
                         }`}
                 >
                     <TrendingUp className="w-5 h-5" />
@@ -160,8 +166,8 @@ function LeaderboardContent() {
                 <button
                     onClick={() => { setActiveTab('worst'); setExpandedTrader(null); }}
                     className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'worst'
-                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                            : 'bg-[#171717] text-gray-400 border border-[#262626] hover:border-gray-600'
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        : 'bg-[#171717] text-gray-400 border border-[#262626] hover:border-gray-600'
                         }`}
                 >
                     <TrendingDown className="w-5 h-5" />
@@ -188,8 +194,8 @@ function LeaderboardContent() {
                                 <div className="flex items-center gap-4">
                                     {/* Rank Badge */}
                                     <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${activeTab === 'top'
-                                            ? trader.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-[#262626] text-gray-400'
-                                            : 'bg-red-500/20 text-red-400'
+                                        ? trader.rank <= 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-[#262626] text-gray-400'
+                                        : 'bg-red-500/20 text-red-400'
                                         }`}>
                                         #{trader.rank}
                                     </div>
@@ -306,14 +312,22 @@ function LeaderboardContent() {
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#262626] hover:bg-[#333] text-white rounded-lg transition-colors"
                                             >
                                                 <ExternalLink className="w-4 h-4" />
-                                                View Full Profile
+                                                View Profile
                                             </button>
                                             <button
-                                                onClick={(e) => startCopy(trader, e)}
+                                                onClick={(e) => startCopy(trader, e, false)}
                                                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold transition-colors"
                                             >
                                                 <Zap className="w-4 h-4" />
-                                                Start Copy Trading
+                                                Copy
+                                            </button>
+                                            <button
+                                                onClick={(e) => startCopy(trader, e, true)}
+                                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-orange-600 hover:bg-orange-500 text-white rounded-lg font-bold transition-colors"
+                                                title="Bet OPPOSITE to this trader's positions"
+                                            >
+                                                <TrendingDown className="w-4 h-4" />
+                                                Inverse Copy
                                             </button>
                                             <a
                                                 href={`https://polymarket.com/profile/${trader.address}`}
@@ -351,9 +365,25 @@ function LeaderboardContent() {
                             onClick={(e) => e.stopPropagation()}
                         >
                             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                                <Zap className="w-5 h-5 text-blue-500" />
-                                Copy {selectedTrader.username || selectedTrader.address.slice(0, 8)}
+                                {isInverseMode ? (
+                                    <TrendingDown className="w-5 h-5 text-orange-500" />
+                                ) : (
+                                    <Zap className="w-5 h-5 text-blue-500" />
+                                )}
+                                {isInverseMode ? '🔄 Inverse Copy' : 'Copy'} {selectedTrader.username || selectedTrader.address.slice(0, 8)}
                             </h2>
+
+                            {isInverseMode && (
+                                <div className="p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg mb-4">
+                                    <div className="flex items-center gap-2 text-orange-400 text-sm font-medium">
+                                        <AlertTriangle className="w-4 h-4" />
+                                        Inverse Mode: Bet OPPOSITE to this trader
+                                    </div>
+                                    <p className="text-orange-300/70 text-xs mt-1">
+                                        When they buy YES, you buy NO. When they buy NO, you buy YES.
+                                    </p>
+                                </div>
+                            )}
 
                             <div className="mb-4">
                                 <label className="block text-sm text-gray-400 mb-2">Copy Amount (USD per trade)</label>
