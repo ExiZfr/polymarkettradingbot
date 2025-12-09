@@ -37,7 +37,7 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.85, y: 30 }}
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                className="bg-[#0A0B0F] border border-white/10 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.15)] relative"
+                className="bg-[#0A0B0F] border border-white/10 rounded-3xl max-w-xl w-full max-h-[85vh] overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.15)] relative flex flex-col"
             >
                 {/* Animated Header - Improved styling */}
                 <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
@@ -86,8 +86,8 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                     </div>
                 </div>
 
-                {/* Content */}
-                <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                {/* Content - Scrollable */}
+                <div className="flex-1 p-6 overflow-y-auto">
                     <AnimatePresence mode="wait">
                         {activeTab === 'score' && (
                             <motion.div
