@@ -14,6 +14,7 @@ const pLimit = require('p-limit');
 // -- Configuration --
 const CONFIG_PATH = path.join(__dirname, '..', 'listener-config.json');
 const LOGS_PATH = path.join(__dirname, '..', 'data', 'listener-logs.json');
+const SNIPED_MARKETS_PATH = path.join(__dirname, '..', 'data', 'sniped-markets.json');
 const GAMMA_API = 'https://gamma-api.polymarket.com';
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '7139453099';
@@ -21,6 +22,72 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID || '7139453099';
 // Ensure data dir exists
 if (!fs.existsSync(path.join(__dirname, '..', 'data'))) {
     fs.mkdirSync(path.join(__dirname, '..', 'data'));
+}
+
+// -- Sniped Markets Tracking --
+function loadSnipedMarkets() {
+    try {
+        if (fs.existsSync(SNIPED_MARKETS_PATH)) {
+            const content = fs.readFileSync(SNIPED_MARKETS_PATH, 'utf8');
+            return JSON.parse(content);
+        }
+    } catch (e) {
+        console.error('[SnipedMarkets] Failed to load:', e.message);
+    }
+    return {};
+}
+
+function saveSnipedMarkets(markets) {
+    try {
+        fs.writeFileSync(SNIPED_MARKETS_PATH, JSON.stringify(markets, null, 2));
+    } catch (e) {
+        console.error('[SnipedMarkets] Failed to save:', e.message);
+    }
+}
+
+function isMarketAlreadySniped(marketId, score) {
+    const snipedMarkets = loadSnipedMarkets();
+    if (snipedMarkets[marketId]) {
+        const snipedAt = new Date(snipedMarkets[marketId].timestamp);
+        const now = new Date();
+        const hoursSince = (now - snipedAt) / (1000 * 60 * 60);
+
+        // If sniped less than 24h ago, skip
+        if (hoursSince < 24) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function markMarketAsSniped(marketId, score) {
+    const snipedMarkets = loadSnipedMarkets();
+    snipedMarkets[marketId] = {
+        timestamp: new Date().toISOString(),
+        score: score
+    };
+    saveSnipedMarkets(snipedMarkets);
+}
+
+function cleanupOldSnipes() {
+    const snipedMarkets = loadSnipedMarkets();
+    const now = new Date();
+    let cleaned = false;
+
+    for (const [marketId, data] of Object.entries(snipedMarkets)) {
+        const snipedAt = new Date(data.timestamp);
+        const hoursSince = (now - snipedAt) / (1000 * 60 * 60);
+
+        if (hoursSince >= 24) {
+            delete snipedMarkets[marketId];
+            cleaned = true;
+        }
+    }
+
+    if (cleaned) {
+        saveSnipedMarkets(snipedMarkets);
+        console.log('[SnipedMarkets] Cleaned up old entries');
+    }
 }
 
 // -- State --
@@ -168,6 +235,12 @@ function normalizeMarkets(polyMarkets, rssItems) {
 async function sendTelegramAlert(market) {
     if (!TELEGRAM_BOT_TOKEN) return;
 
+    // DEDUPLICATION: Check if we already sniped this market in the last 24h
+    if (isMarketAlreadySniped(market.market_id, market.score)) {
+        console.log(`[Telegram] Skipping duplicate alert for: ${market.question.slice(0, 30)}... (already sniped)`);
+        return;
+    }
+
     const message = `
 🚀 *HYPER-LISTENER ALERT* 🚀
 
@@ -189,6 +262,9 @@ ${market.newsCorrelation ? '🔥 Validated by News/RSS' : ''}
             disable_web_page_preview: true
         });
         console.log(`[Telegram] Sent alert for: ${market.question.slice(0, 30)}...`);
+
+        // Mark as sniped AFTER successful send
+        markMarketAsSniped(market.market_id, market.score);
 
         // Log to file for Frontend UI
         logToFile('alert', `High Score Opportunity: ${market.question.slice(0, 50)}...`, 'high', {
@@ -278,5 +354,8 @@ async function executeAutoTrade(market) {
         console.error(`[Auto-Trade] ❌ Failed: ${e.message}`);
     }
 }
+
+// Cleanup old snipes on startup
+cleanupOldSnipes();
 
 run();

@@ -3,16 +3,62 @@ import fs from 'fs';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const WALLET_FILE = path.join(DATA_DIR, 'wallet.json');
+const PROFILES_FILE = path.join(DATA_DIR, 'paper-profiles.json');
+
+// Profile Data Structure
+export interface ProfileSettings {
+    riskPerTrade: number;
+    autoStopLoss: number;
+    autoTakeProfit: number;
+}
+
+export interface PaperProfile {
+    id: string;
+    name: string;
+    balance: number;
+    positions: Record<string, Position>;
+    history: Order[];
+    settings: ProfileSettings;
+    createdAt: string;
+}
+
+export interface ProfilesData {
+    activeProfileId: string;
+    profiles: Record<string, PaperProfile>;
+}
+
+// Default profile template
+const DEFAULT_PROFILE: PaperProfile = {
+    id: 'default',
+    name: 'Main Account',
+    balance: 1000,
+    positions: {},
+    history: [],
+    settings: {
+        riskPerTrade: 5,
+        autoStopLoss: 15,
+        autoTakeProfit: 30
+    },
+    createdAt: new Date().toISOString()
+};
+
+const DEFAULT_PROFILES_DATA: ProfilesData = {
+    activeProfileId: 'default',
+    profiles: {
+        default: { ...DEFAULT_PROFILE }
+    }
+};
 
 export class PaperWallet implements IWallet {
-    private balance: number;
-    private positions: Map<string, Position> = new Map();
-    private history: Order[] = [];
+    private profileId: string;
+    private profile: PaperProfile;
 
-    constructor(initialBalance: number = 1000) {
-        this.balance = initialBalance;
-        this.load(); // Load state if exists
+    constructor(profileId?: string) {
+        this.ensureDataDir();
+        PaperWallet.ensureProfilesFileExists();
+        const data = this.loadAllProfiles();
+        this.profileId = profileId || data.activeProfileId;
+        this.profile = data.profiles[this.profileId] || { ...DEFAULT_PROFILE };
     }
 
     private ensureDataDir() {
@@ -21,64 +67,152 @@ export class PaperWallet implements IWallet {
         }
     }
 
-    private load() {
-        if (fs.existsSync(WALLET_FILE)) {
-            try {
-                const data = JSON.parse(fs.readFileSync(WALLET_FILE, 'utf-8'));
-                this.balance = data.balance;
-                // Convert object back to Map
-                this.positions = new Map(Object.entries(data.positions));
-                this.history = data.history || [];
-            } catch (err) {
-                console.error("Failed to load wallet data:", err);
-            }
-        } else {
-            this.save(); // Initialize file
+    // CRITICAL: Ensure file exists with valid structure
+    static ensureProfilesFileExists() {
+        const dataDir = path.join(process.cwd(), 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+        if (!fs.existsSync(PROFILES_FILE)) {
+            fs.writeFileSync(PROFILES_FILE, JSON.stringify(DEFAULT_PROFILES_DATA, null, 2));
         }
     }
 
-    public save() {
-        this.ensureDataDir();
-        const data = {
-            balance: this.balance,
-            // Convert Map to Object for JSON
-            positions: Object.fromEntries(this.positions),
-            history: this.history
-        };
-        fs.writeFileSync(WALLET_FILE, JSON.stringify(data, null, 2));
+    private loadAllProfiles(): ProfilesData {
+        try {
+            const content = fs.readFileSync(PROFILES_FILE, 'utf-8');
+            const data = JSON.parse(content);
+            // Validate structure
+            if (!data || !data.profiles || !data.activeProfileId) {
+                throw new Error('Invalid profiles data structure');
+            }
+            return data;
+        } catch (err) {
+            console.error("Failed to load profiles, using defaults:", err);
+            // Reset to default
+            this.saveAllProfiles(DEFAULT_PROFILES_DATA);
+            return DEFAULT_PROFILES_DATA;
+        }
     }
 
+    private saveAllProfiles(data: ProfilesData) {
+        this.ensureDataDir();
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2));
+    }
+
+    public save() {
+        const data = this.loadAllProfiles();
+        data.profiles[this.profileId] = this.profile;
+        this.saveAllProfiles(data);
+    }
+
+    // Static Helpers for Profile Management
+    static getActiveProfileId(): string {
+        PaperWallet.ensureProfilesFileExists();
+        try {
+            const data = JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf-8'));
+            return data.activeProfileId || 'default';
+        } catch {
+            return 'default';
+        }
+    }
+
+    static setActiveProfile(profileId: string): boolean {
+        PaperWallet.ensureProfilesFileExists();
+        try {
+            const data = JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf-8'));
+            if (data.profiles[profileId]) {
+                data.activeProfileId = profileId;
+                fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2));
+                return true;
+            }
+        } catch { }
+        return false;
+    }
+
+    static getAllProfiles(): ProfilesData {
+        PaperWallet.ensureProfilesFileExists();
+        try {
+            const data = JSON.parse(fs.readFileSync(PROFILES_FILE, 'utf-8'));
+            // Guarantee valid structure
+            if (!data || !data.profiles) {
+                return DEFAULT_PROFILES_DATA;
+            }
+            return data;
+        } catch {
+            return DEFAULT_PROFILES_DATA;
+        }
+    }
+
+    static createProfile(name: string, balance: number, settings: Partial<ProfileSettings>): PaperProfile {
+        PaperWallet.ensureProfilesFileExists();
+        const data = PaperWallet.getAllProfiles();
+        const id = `profile_${Date.now()}`;
+        const newProfile: PaperProfile = {
+            id,
+            name,
+            balance,
+            positions: {},
+            history: [],
+            settings: {
+                riskPerTrade: settings.riskPerTrade ?? 5,
+                autoStopLoss: settings.autoStopLoss ?? 15,
+                autoTakeProfit: settings.autoTakeProfit ?? 30
+            },
+            createdAt: new Date().toISOString()
+        };
+        data.profiles[id] = newProfile;
+        fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2));
+        return newProfile;
+    }
+
+    static deleteProfile(profileId: string): boolean {
+        if (profileId === 'default') return false;
+        PaperWallet.ensureProfilesFileExists();
+        const data = PaperWallet.getAllProfiles();
+        if (data.profiles[profileId]) {
+            delete data.profiles[profileId];
+            if (data.activeProfileId === profileId) {
+                data.activeProfileId = 'default';
+            }
+            fs.writeFileSync(PROFILES_FILE, JSON.stringify(data, null, 2));
+            return true;
+        }
+        return false;
+    }
+
+    // IWallet Implementation
     getBalance(): number {
-        return this.balance;
+        return this.profile.balance;
     }
 
     getPortfolio(): WalletPortfolio {
         let unrealizedPnl = 0;
         let positionsValue = 0;
+        const positionsMap = new Map<string, Position>();
 
-        this.positions.forEach(pos => {
+        Object.entries(this.profile.positions).forEach(([key, pos]) => {
+            positionsMap.set(key, pos);
             positionsValue += pos.currentValue;
             unrealizedPnl += pos.pnl;
         });
 
-        // Convert Map to plain object for API response if needed, but internally keeps Map
-        // For Interface compliance returning Map is fine, but for JSON serializing APIs need care.
         return {
-            balance: this.balance,
+            balance: this.profile.balance,
             locked: 0,
-            totalEquity: this.balance + positionsValue,
-            positions: this.positions
+            totalEquity: this.profile.balance + positionsValue,
+            positions: positionsMap
         };
     }
 
     deposit(amount: number): void {
-        this.balance += amount;
+        this.profile.balance += amount;
         this.save();
     }
 
     withdraw(amount: number): boolean {
-        if (this.balance >= amount) {
-            this.balance -= amount;
+        if (this.profile.balance >= amount) {
+            this.profile.balance -= amount;
             this.save();
             return true;
         }
@@ -86,9 +220,7 @@ export class PaperWallet implements IWallet {
     }
 
     reserveFunds(amount: number): boolean {
-        // In this simple model, check balance immediately. 
-        // Real implementation might lock funds here.
-        return this.balance >= amount;
+        return this.profile.balance >= amount;
     }
 
     releaseFunds(amount: number): void {
@@ -96,12 +228,11 @@ export class PaperWallet implements IWallet {
     }
 
     addPosition(marketId: string, outcome: PositionSide, shares: number, price: number): void {
-        // Deduct cost from balance
         const cost = shares * price;
-        this.balance -= cost;
+        this.profile.balance -= cost;
 
         const key = `${marketId}-${outcome}`;
-        let pos = this.positions.get(key);
+        let pos = this.profile.positions[key];
 
         if (!pos) {
             pos = {
@@ -116,43 +247,39 @@ export class PaperWallet implements IWallet {
             };
         }
 
-        // Weighted Average Price
         const totalShares = pos.shares + shares;
         const totalInvested = pos.investedParams + cost;
         pos.avgPrice = totalInvested / totalShares;
         pos.shares = totalShares;
         pos.investedParams = totalInvested;
-        pos.currentValue = totalShares * price; // Initially worth what we paid
+        pos.currentValue = totalShares * price;
 
-        this.positions.set(key, pos);
+        this.profile.positions[key] = pos;
         this.save();
     }
 
     closePosition(marketId: string, outcome: PositionSide, shares: number, price: number): number {
         const key = `${marketId}-${outcome}`;
-        const pos = this.positions.get(key);
+        const pos = this.profile.positions[key];
 
         if (!pos || pos.shares < shares) {
             throw new Error(`Insufficient position to close. Own: ${pos?.shares || 0}, Requested: ${shares}`);
         }
 
-        // Calculate P&L
         const costBasis = shares * pos.avgPrice;
         const proceedValue = shares * price;
         const realizedPnl = proceedValue - costBasis;
 
-        // Update Position
         pos.shares -= shares;
         pos.investedParams -= costBasis;
-        pos.currentValue = pos.shares * price; // Update remaining value estimate
+        pos.currentValue = pos.shares * price;
 
-        // Credit Balance
-        this.balance += proceedValue;
+        this.profile.balance += proceedValue;
 
-        if (pos.shares <= 0.0001) { // Floating point tolerance
-            this.positions.delete(key);
+        if (pos.shares <= 0.0001) {
+            delete this.profile.positions[key];
         } else {
-            this.positions.set(key, pos);
+            this.profile.positions[key] = pos;
         }
 
         this.save();
@@ -160,33 +287,39 @@ export class PaperWallet implements IWallet {
     }
 
     updatePositionValue(marketId: string, currentPrice: number): void {
-        // Update all usage of this marketId (YES and NO)
-        // Note: Prices for YES and NO are different, so this simplified method signature 
-        // implies we need to pass outcome or the specific price map. 
-        // For simplicity, let's assume we update by key explicitly outside or pass map
-
-        // This method strictly updates P&L calculation based on external price feed
+        // Update all positions for this market
     }
 
-    // Helper to update specific holding
     updateMarkPrice(marketId: string, outcome: PositionSide, currentPrice: number) {
         const key = `${marketId}-${outcome}`;
-        const pos = this.positions.get(key);
+        const pos = this.profile.positions[key];
         if (pos) {
             pos.currentValue = pos.shares * currentPrice;
             pos.pnl = pos.currentValue - pos.investedParams;
             pos.pnlPercent = (pos.pnl / pos.investedParams) * 100;
-            this.positions.set(key, pos);
-            this.save(); // Save updated valuation
+            this.profile.positions[key] = pos;
+            this.save();
         }
     }
 
     public addOrderToHistory(order: Order): void {
-        this.history.unshift(order);
+        this.profile.history.unshift(order);
         this.save();
     }
 
     public getHistory(): Order[] {
-        return this.history;
+        return this.profile.history;
+    }
+
+    public getProfileId(): string {
+        return this.profileId;
+    }
+
+    public getProfileName(): string {
+        return this.profile.name;
+    }
+
+    public getProfileSettings(): ProfileSettings {
+        return this.profile.settings;
     }
 }

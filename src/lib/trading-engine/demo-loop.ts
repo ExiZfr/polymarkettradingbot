@@ -5,7 +5,7 @@ async function runDemoLoop() {
     console.log("🚀 Starting PAPER TRADING Simulation Loop...");
 
     // 1. Initialize
-    const wallet = new PaperWallet(2000); // $2000 start
+    const wallet = new PaperWallet(); // Uses default profile
     const executor = new SimulatedExecutionManager(wallet);
 
     console.log(`Initial Balance: $${wallet.getBalance()}`);
