@@ -184,4 +184,9 @@ export class PaperWallet implements IWallet {
     public getHistory(): Order[] {
         return this.history;
     }
+
+    public addOrderToHistory(order: Order): void {
+        this.history.unshift(order); // Add new order to start
+        this.save();
+    }
 }

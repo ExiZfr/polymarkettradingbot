@@ -41,6 +41,7 @@ export interface IWallet {
     addPosition(marketId: string, outcome: PositionSide, shares: number, price: number): void;
     closePosition(marketId: string, outcome: PositionSide, shares: number, price: number): number; // Returns realized P&L
     updatePositionValue(marketId: string, currentPrice: number): void;
+    addOrderToHistory(order: Order): void;
 }
 
 export interface IExecutionStrategy {

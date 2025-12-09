@@ -70,7 +70,7 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
         }
 
         // 6. Return Filled Order
-        return {
+        const order: Order = {
             id: `ord_${Math.random().toString(36).substr(2, 9)}`,
             marketId,
             side,
@@ -81,6 +81,11 @@ export class SimulatedExecutionManager implements IExecutionStrategy {
             status: 'FILLED',
             fee
         };
+
+        // Persist to history
+        this.wallet.addOrderToHistory(order);
+
+        return order;
     }
 
     private createRejectedOrder(marketId: string, side: OrderSide, outcome: PositionSide, amount: number, price: number, reason: string): Order {
