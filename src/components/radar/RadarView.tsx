@@ -39,50 +39,53 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 className="bg-[#0A0B0F] border border-white/10 rounded-3xl max-w-xl w-full max-h-[85vh] overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.15)] relative flex flex-col"
             >
-                {/* Animated Header - Improved styling */}
-                <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
-                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
+                {/* Animated Header */}
+                <div className="shrink-0">
+                    {/* Gradient Header Section */}
+                    <div className="relative bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                        <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-                    <div className="relative px-6 pt-12 pb-4">
-                        <button
-                            onClick={onClose}
-                            className="absolute top-4 right-4 p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all hover:rotate-90 duration-300 z-10"
-                        >
-                            <X size={18} />
-                        </button>
-
-                        <motion.div
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                            className="w-14 h-14 bg-white/25 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg border border-white/20"
-                        >
-                            <HelpCircle className="text-white" size={28} />
-                        </motion.div>
-
-                        <h2 className="text-2xl font-black text-white mb-2 drop-shadow-lg">Comment ça marche ? 🤔</h2>
-                        <p className="text-white/80 text-sm font-medium mb-4">Explications simples pour tout comprendre !</p>
-                    </div>
-
-                    {/* Tabs - Ensure clickable */}
-                    <div className="relative z-20 flex gap-2 px-6 pb-4">
-                        {[
-                            { id: 'score', label: '🔥 Score' },
-                            { id: 'urgency', label: '⏰ Urgence' },
-                            { id: 'tips', label: '💡 Astuces' },
-                        ].map((tab) => (
+                        <div className="relative px-6 pt-10 pb-4">
                             <button
-                                key={tab.id}
-                                type="button"
-                                onClick={() => setActiveTab(tab.id as 'score' | 'urgency' | 'tips')}
-                                className={`flex-1 py-2.5 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer ${activeTab === tab.id
-                                    ? 'bg-white text-black shadow-lg'
-                                    : 'bg-white/20 text-white hover:bg-white/30 border border-white/20'
-                                    }`}
+                                onClick={onClose}
+                                className="absolute top-3 right-3 p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all hover:rotate-90 duration-300 z-10"
                             >
-                                {tab.label}
+                                <X size={18} />
                             </button>
-                        ))}
+
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                className="w-12 h-12 bg-white/25 backdrop-blur-sm rounded-xl flex items-center justify-center mb-3 shadow-lg border border-white/20"
+                            >
+                                <HelpCircle className="text-white" size={24} />
+                            </motion.div>
+
+                            <h2 className="text-xl font-black text-white mb-1 drop-shadow-lg">Comment ça marche ? 🤔</h2>
+                            <p className="text-white/80 text-sm font-medium">Explications simples pour tout comprendre !</p>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="relative z-10 flex gap-2 px-4 pb-3">
+                            {[
+                                { id: 'score', label: '🔥 Score' },
+                                { id: 'urgency', label: '⏰ Urgence' },
+                                { id: 'tips', label: '💡 Astuces' },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    onClick={() => setActiveTab(tab.id as 'score' | 'urgency' | 'tips')}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-all cursor-pointer ${activeTab === tab.id
+                                        ? 'bg-white text-black shadow-lg'
+                                        : 'bg-white/20 text-white hover:bg-white/30'
+                                        }`}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
