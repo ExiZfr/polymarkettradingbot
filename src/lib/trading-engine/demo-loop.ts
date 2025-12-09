@@ -1,5 +1,6 @@
 import { PaperWallet } from './paper-wallet';
 import { SimulatedExecutionManager } from './execution-manager';
+import { OrderSide, PositionSide } from './interfaces';
 
 async function runDemoLoop() {
     console.log("🚀 Starting PAPER TRADING Simulation Loop...");
@@ -16,10 +17,10 @@ async function runDemoLoop() {
 
     // 3. Buy Loop
     console.log("\n--- SIGNAL DETECTED: BUY YES ---");
-    const buyOrder = await executor.executeOrder(marketId, 'BUY', 'YES', 500, currentPrice);
+    const buyOrder = await executor.executeOrder(marketId, OrderSide.BUY, PositionSide.YES, 500, currentPrice);
 
     if (buyOrder.status === 'FILLED') {
-        console.log(`✅ Order FILLED: BUY $500 @ ${buyOrder.price.toFixed(4)} (Fee: $${buyOrder.fee.toFixed(2)})`);
+        console.log(`✅ Order FILLED: BUY $500 @ ${buyOrder.price.toFixed(4)}`);
     } else {
         console.log(`❌ Order REJECTED`);
     }
@@ -29,16 +30,16 @@ async function runDemoLoop() {
     // 4. Simulation of Price Move (Price goes up to 0.65)
     console.log("\n--- MARKET MOVE: Price 0.60 -> 0.65 ---");
     currentPrice = 0.65;
-    wallet.updateMarkPrice(marketId, 'YES', currentPrice);
+    wallet.updateMarkPrice(marketId, PositionSide.YES, currentPrice);
 
     const portfolio = wallet.getPortfolio();
-    const position = portfolio.positions.get(`${marketId}-YES`);
+    const position = portfolio.positions.get(`${marketId}-${PositionSide.YES}`);
     console.log(`Unrealized PnL: $${position?.pnl.toFixed(2)} (${position?.pnlPercent.toFixed(2)}%)`);
 
     // 5. Sell Loop (Take Profit)
     console.log("\n--- SIGNAL DETECTED: TAKE PROFIT ---");
     // Sell $200 worth (not full position)
-    const sellOrder = await executor.executeOrder(marketId, 'SELL', 'YES', 200, currentPrice);
+    const sellOrder = await executor.executeOrder(marketId, OrderSide.SELL, PositionSide.YES, 200, currentPrice);
 
     if (sellOrder.status === 'FILLED') {
         console.log(`✅ Order FILLED: SELL $200 @ ${sellOrder.price.toFixed(4)}`);
