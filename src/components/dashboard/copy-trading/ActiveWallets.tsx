@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Copy, Trash2, Edit2, Shield, Zap, TrendingUp, AlertTriangle, ChevronDown, ChevronUp } from "lucide-react";
+import { Copy, Trash2, Edit2, Shield, Zap, TrendingUp, AlertTriangle, ChevronDown, ChevronUp, Activity } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface CopySetting {
@@ -296,8 +296,8 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
                                                             <div className="flex-1 min-w-0">
                                                                 <div className="flex items-center gap-2 mb-1">
                                                                     <span className={`px-2 py-0.5 rounded-md text-xs font-bold ${trade.side === 'YES'
-                                                                            ? 'bg-green-500/20 text-green-400'
-                                                                            : 'bg-red-500/20 text-red-400'
+                                                                        ? 'bg-green-500/20 text-green-400'
+                                                                        : 'bg-red-500/20 text-red-400'
                                                                         }`}>
                                                                         {trade.side}
                                                                     </span>
