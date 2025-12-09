@@ -39,7 +39,9 @@ function LeaderboardContent() {
     // Copy Modal State
     const [selectedTrader, setSelectedTrader] = useState<Trader | null>(null);
     const [showCopyModal, setShowCopyModal] = useState(false);
+    const [copyMode, setCopyMode] = useState<'fixed' | 'percentage'>('fixed');
     const [copyAmount, setCopyAmount] = useState(10);
+    const [copyPercentage, setCopyPercentage] = useState(10);
 
     useEffect(() => {
         async function fetchData() {
@@ -78,22 +80,32 @@ function LeaderboardContent() {
         if (!selectedTrader) return;
 
         try {
+            const payload: any = {
+                walletAddress: selectedTrader.address,
+                label: `${isInverseMode ? '🔄 ' : ''}${selectedTrader.username || selectedTrader.address.slice(0, 8)}`,
+                copyMode: copyMode,
+                inverse: isInverseMode,
+                enabled: true
+            };
+
+            if (copyMode === 'fixed') {
+                payload.fixedAmount = copyAmount;
+            } else {
+                payload.percentageAmount = copyPercentage;
+            }
+
             const res = await fetch('/api/paper/copy', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    walletAddress: selectedTrader.address,
-                    label: `${isInverseMode ? '🔄 ' : ''}${selectedTrader.username || selectedTrader.address.slice(0, 8)}`,
-                    copyMode: 'fixed',
-                    fixedAmount: copyAmount,
-                    inverse: isInverseMode,
-                    enabled: true
-                })
+                body: JSON.stringify(payload)
             });
 
             if (res.ok) {
                 const mode = isInverseMode ? 'INVERSE copying' : 'copying';
-                alert(`✅ Started ${mode} ${selectedTrader.username}!`);
+                const amountStr = copyMode === 'fixed'
+                    ? `$${copyAmount}/trade`
+                    : `${copyPercentage}% match`;
+                alert(`✅ Started ${mode} ${selectedTrader.username} (${amountStr})!`);
                 setShowCopyModal(false);
                 router.push('/dashboard/copy-trading');
             }
@@ -385,15 +397,71 @@ function LeaderboardContent() {
                                 </div>
                             )}
 
+                            {/* Copy Mode Toggle */}
                             <div className="mb-4">
-                                <label className="block text-sm text-gray-400 mb-2">Copy Amount (USD per trade)</label>
-                                <input
-                                    type="number"
-                                    value={copyAmount}
-                                    onChange={(e) => setCopyAmount(Number(e.target.value))}
-                                    className="w-full px-4 py-3 bg-[#262626] border border-[#333] rounded-lg focus:outline-none focus:border-blue-500"
-                                    placeholder="10"
-                                />
+                                <label className="block text-sm text-gray-400 mb-2">Copy Mode</label>
+                                <div className="flex gap-2 bg-[#0a0a0a] rounded-lg p-1">
+                                    <button
+                                        onClick={() => setCopyMode('fixed')}
+                                        className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${copyMode === 'fixed'
+                                                ? 'bg-blue-600 text-white'
+                                                : 'text-gray-400 hover:text-white'
+                                            }`}
+                                    >
+                                        💵 Fixed Amount
+                                    </button>
+                                    <button
+                                        onClick={() => setCopyMode('percentage')}
+                                        className={`flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all ${copyMode === 'percentage'
+                                                ? 'bg-purple-600 text-white'
+                                                : 'text-gray-400 hover:text-white'
+                                            }`}
+                                    >
+                                        📊 % Match
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Dynamic Input */}
+                            <div className="mb-4">
+                                {copyMode === 'fixed' ? (
+                                    <>
+                                        <label className="block text-sm text-gray-400 mb-2">
+                                            Fixed Amount (USD per trade)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={copyAmount}
+                                            onChange={(e) => setCopyAmount(Number(e.target.value))}
+                                            className="w-full px-4 py-3 bg-[#262626] border border-[#333] rounded-lg focus:outline-none focus:border-blue-500"
+                                            placeholder="10"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            You'll bet this exact amount on every trade
+                                        </p>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="block text-sm text-gray-400 mb-2">
+                                            Percentage Match (% of their position size)
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                value={copyPercentage}
+                                                onChange={(e) => setCopyPercentage(Number(e.target.value))}
+                                                className="flex-1 px-4 py-3 bg-[#262626] border border-[#333] rounded-lg focus:outline-none focus:border-purple-500"
+                                                placeholder="10"
+                                                min="1"
+                                                max="100"
+                                            />
+                                            <span className="text-2xl font-bold text-purple-400">%</span>
+                                        </div>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            If they bet 10% of their balance, you bet {copyPercentage}% of YOUR balance
+                                        </p>
+                                    </>
+                                )}
                             </div>
 
                             <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-lg mb-4">
