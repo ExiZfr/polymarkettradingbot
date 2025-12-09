@@ -46,13 +46,39 @@ const navItems: NavItem[] = [
  * Notification Panel Component - Only shows IMPORTANT notifications
  */
 function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose: () => void; logs: ListenerLog[] }) {
-    // Filter ONLY important notifications
+    // Normalize logs to handle both old (flat) and new (nested) formats
+    const normalizeLog = (log: ListenerLog) => {
+        // If relatedMarket already exists and has slug, return as-is
+        if (log.relatedMarket?.slug) return log;
+
+        // Check if log has flat structure (old format)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const rawLog = log as any;
+        if (rawLog.slug || rawLog.relatedMarketId) {
+            return {
+                ...log,
+                relatedMarket: {
+                    id: rawLog.relatedMarketId || rawLog.marketId || log.relatedMarket?.id || '',
+                    slug: rawLog.slug || '',
+                    score: rawLog.score || log.relatedMarket?.score || 0,
+                    title: rawLog.question || log.message?.split('|')[0]?.replace(/🎯|⚡|🔥/g, '').trim() || 'Market Signal',
+                    volume: rawLog.volume || log.relatedMarket?.volume || '0',
+                    probability: log.relatedMarket?.probability || 50,
+                    image: log.relatedMarket?.image || ''
+                }
+            };
+        }
+
+        return log;
+    };
+
+    // Filter ONLY important notifications and normalize them
     const importantLogs = logs.filter(log =>
         log.priority === 'high' ||
         log.type === 'signal' ||
         log.type === 'alert' ||
         log.type === 'error'
-    ).slice(0, 15);
+    ).map(normalizeLog).slice(0, 15);
 
     const getLogIcon = (type: string) => {
         switch (type) {
