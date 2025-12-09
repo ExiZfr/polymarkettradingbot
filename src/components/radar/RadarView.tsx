@@ -498,17 +498,29 @@ export default function RadarView() {
             return true;
         });
 
-        // 2. Group
+        // 2. Group - Improved similarity detection
         const groups = new Map<string, EventGroup>();
+
+        // Extended stop words list for better grouping
+        const stopWords = new Set([
+            'will', 'the', 'and', 'for', 'this', 'that', 'with', 'from', 'have', 'has',
+            'been', 'are', 'was', 'were', 'yes', 'no', 'market', 'price', 'before', 'after',
+            'win', 'lose', 'over', 'under', 'more', 'less', 'than', 'reach', 'hit', 'get',
+            'by', 'in', 'on', 'at', 'to', 'of', 'be', 'is', 'it', 'an', 'a', 'or', 'as',
+            '2024', '2025', '2026', 'january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december', 'end', 'year'
+        ]);
+
         filtered.forEach(item => {
-            // Heuristic for event grouping
+            // Extract key identifying words (first 3 significant words)
             const words = item.market.title
                 .toLowerCase()
-                .replace(/[^\w\s]/g, '')
+                .replace(/[^a-z0-9\s]/g, '')
                 .split(/\s+/)
-                .filter(w => w.length > 2 && !['will', 'the', 'and', 'for', 'this', 'that', 'with', 'from', 'have', 'has', 'been', 'are', 'was', 'were', 'yes', 'no', 'market', 'price'].includes(w))
-                .slice(0, 4);
-            const eventSlug = words.join('_') || item.market.id;
+                .filter(w => w.length > 2 && !stopWords.has(w))
+                .slice(0, 3); // Use only 3 key words for better grouping
+
+            const eventSlug = words.length >= 2 ? words.join('_') : item.market.id;
 
             if (!groups.has(eventSlug)) {
                 groups.set(eventSlug, {

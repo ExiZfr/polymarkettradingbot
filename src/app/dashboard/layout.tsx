@@ -118,7 +118,7 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
 
                                             {/* Score Badge */}
                                             <div className={`absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-black flex items-center gap-1 ${log.relatedMarket.score >= 70 ? 'bg-green-500/90 text-black' :
-                                                    log.relatedMarket.score >= 50 ? 'bg-yellow-500/90 text-black' : 'bg-slate-500/80 text-white'
+                                                log.relatedMarket.score >= 50 ? 'bg-yellow-500/90 text-black' : 'bg-slate-500/80 text-white'
                                                 }`}>
                                                 🔥 {log.relatedMarket.score}
                                             </div>
@@ -167,8 +167,8 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                                                 </Link>
                                                 <button
                                                     className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg text-center transition-all ${log.relatedMarket.score >= 70
-                                                            ? 'bg-green-500 hover:bg-green-400 text-black'
-                                                            : 'bg-white/10 hover:bg-white/20 text-white'
+                                                        ? 'bg-green-500 hover:bg-green-400 text-black'
+                                                        : 'bg-white/10 hover:bg-white/20 text-white'
                                                         }`}
                                                 >
                                                     {log.relatedMarket.score >= 70 ? '⚡ SNIPE' : 'Analyze'}
@@ -349,7 +349,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                             </div>
                         </div>
 
-                        <button className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                        <button
+                            onClick={async () => {
+                                // Clear session cookie
+                                document.cookie = 'session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+                                // Redirect to login
+                                window.location.href = '/';
+                            }}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm font-medium text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                        >
                             <LogOut size={16} />
                             Sign Out
                         </button>
