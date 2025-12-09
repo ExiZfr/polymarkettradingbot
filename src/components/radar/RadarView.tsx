@@ -39,30 +39,29 @@ const HelpModal = ({ onClose }: { onClose: () => void }) => {
                 transition={{ type: "spring", damping: 20, stiffness: 300 }}
                 className="bg-[#0A0B0F] border border-white/10 rounded-3xl max-w-xl w-full max-h-[90vh] overflow-hidden shadow-[0_0_100px_rgba(99,102,241,0.15)] relative"
             >
-                {/* Animated Header */}
-                <div className="relative overflow-hidden">
-                    <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 opacity-90" />
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30" />
+                {/* Animated Header - Improved styling */}
+                <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+                    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px)', backgroundSize: '20px 20px' }} />
 
-                    <div className="relative p-6 pb-4">
+                    <div className="relative px-6 pt-8 pb-4">
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all hover:rotate-90 duration-300"
+                            className="absolute top-3 right-3 p-2 rounded-xl bg-white/20 hover:bg-white/30 text-white transition-all hover:rotate-90 duration-300"
                         >
                             <X size={18} />
                         </button>
 
                         <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            transition={{ delay: 0.2, type: "spring" }}
-                            className="w-16 h-16 bg-white/20 backdrop-blur rounded-2xl flex items-center justify-center mb-4 shadow-xl"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                            className="w-14 h-14 bg-white/25 backdrop-blur-sm rounded-2xl flex items-center justify-center mb-4 shadow-lg border border-white/20"
                         >
-                            <HelpCircle className="text-white" size={32} />
+                            <HelpCircle className="text-white" size={28} />
                         </motion.div>
 
-                        <h2 className="text-2xl font-black text-white mb-1">Comment ça marche ? 🤔</h2>
-                        <p className="text-white/70 text-sm">Explications simples pour tout comprendre !</p>
+                        <h2 className="text-2xl font-black text-white mb-2 drop-shadow-lg">Comment ça marche ? 🤔</h2>
+                        <p className="text-white/80 text-sm font-medium">Explications simples pour tout comprendre !</p>
                     </div>
 
                     {/* Tabs */}
