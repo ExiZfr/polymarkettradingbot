@@ -155,6 +155,7 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
                                 </div>
 
                                 <button
+                                    type="button"
                                     onMouseDown={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
@@ -162,9 +163,11 @@ export function FluxCard({ market, sniping, variants, onSnip, onTrackGroup, onTo
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         e.preventDefault();
+                                        console.log('Like button clicked', market.id);
                                         onToggleFavorite?.(market.id);
                                     }}
-                                    className={cn("h-8 w-8 rounded-full flex items-center justify-center transition hover:scale-110 relative z-20", isTracked ? "bg-yellow-500 text-black" : "bg-white/5 text-slate-400 hover:bg-white/10")}
+                                    onPointerDown={(e) => e.stopPropagation()}
+                                    className={cn("h-8 w-8 rounded-full flex items-center justify-center transition hover:scale-110 relative z-50 pointer-events-auto", isTracked ? "bg-yellow-500 text-black" : "bg-white/5 text-slate-400 hover:bg-white/10")}
                                 >
                                     <Star className={cn("h-4 w-4", isTracked && "fill-current")} />
                                 </button>
