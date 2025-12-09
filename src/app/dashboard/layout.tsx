@@ -165,14 +165,16 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                                                 >
                                                     View in Radar
                                                 </Link>
-                                                <button
+                                                <Link
+                                                    href={`/dashboard/market/${log.relatedMarket.id}`}
+                                                    onClick={onClose}
                                                     className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg text-center transition-all ${log.relatedMarket.score >= 70
                                                         ? 'bg-green-500 hover:bg-green-400 text-black'
                                                         : 'bg-white/10 hover:bg-white/20 text-white'
                                                         }`}
                                                 >
                                                     {log.relatedMarket.score >= 70 ? '⚡ SNIPE' : 'Analyze'}
-                                                </button>
+                                                </Link>
                                             </div>
                                         )}
                                     </div>
@@ -385,4 +387,3 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </RadarProvider >
     );
 }
-
