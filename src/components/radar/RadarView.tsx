@@ -614,22 +614,68 @@ export default function RadarView() {
                 </div>
             </div>
 
-            {/* CONTENT GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-                <AnimatePresence>
-                    {groupedMarkets.map(group => (
-                        <StackedGroup
-                            key={group.eventSlug}
-                            group={group}
-                            isExpanded={expandedGroups.has(group.eventSlug)}
-                            onToggle={() => toggleGroup(group.eventSlug)}
-                            onSnip={handleSnip}
-                            onToggleFavorite={toggleFavorite}
-                            favorites={favorites}
-                        />
-                    ))}
-                </AnimatePresence>
-            </div>
+            {/* CONTENT - GROUPED BY CATEGORY */}
+            {(() => {
+                // Group markets by category
+                const categoryGroups = new Map<string, typeof groupedMarkets>();
+                const categoryIcons: Record<string, string> = {
+                    'Crypto': '₿',
+                    'Politics': '🏛️',
+                    'Sports': '⚽',
+                    'Business': '📈',
+                    'Science': '🔬',
+                    'Other': '🌍'
+                };
+                const categoryColors: Record<string, string> = {
+                    'Crypto': 'from-orange-500 to-yellow-500',
+                    'Politics': 'from-blue-500 to-indigo-500',
+                    'Sports': 'from-green-500 to-emerald-500',
+                    'Business': 'from-purple-500 to-pink-500',
+                    'Science': 'from-cyan-500 to-teal-500',
+                    'Other': 'from-slate-500 to-gray-500'
+                };
+
+                groupedMarkets.forEach(group => {
+                    const cat = group.markets[0]?.market.category || 'Other';
+                    if (!categoryGroups.has(cat)) {
+                        categoryGroups.set(cat, []);
+                    }
+                    categoryGroups.get(cat)!.push(group);
+                });
+
+                return Array.from(categoryGroups.entries()).map(([category, groups]) => (
+                    <div key={category} className="mb-10">
+                        {/* Category Header */}
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${categoryColors[category] || categoryColors['Other']} flex items-center justify-center text-lg shadow-lg`}>
+                                {categoryIcons[category] || '🌍'}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">{category}</h2>
+                                <p className="text-xs text-slate-500">{groups.length} events • {groups.reduce((sum, g) => sum + g.markets.length, 0)} markets</p>
+                            </div>
+                            <div className="flex-1 h-px bg-gradient-to-r from-white/10 to-transparent ml-4" />
+                        </div>
+
+                        {/* Markets Grid for this category */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            <AnimatePresence>
+                                {groups.map(group => (
+                                    <StackedGroup
+                                        key={group.eventSlug}
+                                        group={group}
+                                        isExpanded={expandedGroups.has(group.eventSlug)}
+                                        onToggle={() => toggleGroup(group.eventSlug)}
+                                        onSnip={handleSnip}
+                                        onToggleFavorite={toggleFavorite}
+                                        favorites={favorites}
+                                    />
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    </div>
+                ));
+            })()}
 
             {groupedMarkets.length === 0 && !isLoading && (
                 <div className="flex flex-col items-center justify-center py-24 text-slate-500 opacity-50">
