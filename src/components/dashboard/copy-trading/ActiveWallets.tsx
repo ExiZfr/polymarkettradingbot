@@ -64,6 +64,30 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
         }
     };
 
+    const handleToggleInverse = async (wallet: CopySetting) => {
+        if (isPaperMode) {
+            try {
+                // Update the wallet with inverse flag toggled
+                const res = await fetch('/api/paper/copy', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ...wallet,
+                        inverse: !wallet.inverse
+                    })
+                });
+
+                if (res.ok) {
+                    fetchWallets();
+                }
+            } catch (error) {
+                console.error("Failed to toggle inverse mode", error);
+            }
+        } else {
+            alert('Real mode not implemented yet');
+        }
+    };
+
     if (loading) {
         return <div className="p-10 text-center text-gray-500 animate-pulse">Loading active wallets...</div>;
     }
@@ -148,6 +172,16 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleToggleInverse(wallet)}
+                                        title={wallet.inverse ? "Switch to Normal Copy" : "Switch to Inverse Copy"}
+                                        className={`p-2 rounded-lg transition-colors ${wallet.inverse
+                                                ? 'bg-orange-500/20 text-orange-400 hover:bg-orange-500/30'
+                                                : 'bg-[#262626] text-slate-400 hover:bg-orange-500/20 hover:text-orange-400'
+                                            }`}
+                                    >
+                                        <TrendingUp size={16} className={wallet.inverse ? 'rotate-180' : ''} />
+                                    </button>
                                     <button className="p-2 bg-[#262626] hover:bg-[#333] rounded-lg text-slate-400 hover:text-white transition-colors">
                                         <Edit2 size={16} />
                                     </button>
