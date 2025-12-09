@@ -38,6 +38,12 @@ type ListenerSettings = {
     prioritizeFavorites: boolean;
     customKeywords: string[];
     enabledCategories: string[];
+    // [NEW] Sources & Performance
+    turboMode: boolean;
+    enableRss: boolean;
+    enableReddit: boolean;
+    enableTwitter: boolean;
+    rssUrls: string[];
 };
 
 type ModuleConfig = {
@@ -63,6 +69,7 @@ export default function SettingsPage() {
     const [saved, setSaved] = useState(false);
     const [activeTab, setActiveTab] = useState<'trading' | 'modules' | 'listener' | 'account'>('trading');
     const [newKeyword, setNewKeyword] = useState("");
+    const [newRssUrl, setNewRssUrl] = useState("");
 
     // Listener Settings State
     const [listenerSettings, setListenerSettings] = useState<ListenerSettings>({
@@ -72,7 +79,16 @@ export default function SettingsPage() {
         maxMarkets: 150,
         prioritizeFavorites: true,
         customKeywords: [],
-        enabledCategories: Object.keys(LISTENER_KEYWORDS)
+        enabledCategories: Object.keys(LISTENER_KEYWORDS),
+        turboMode: false,
+        enableRss: false,
+        enableReddit: false,
+        enableTwitter: false,
+        rssUrls: [
+            'https://cointelegraph.com/rss',
+            'https://decrypt.co/feed',
+            'https://www.coindesk.com/arc/outboundfeeds/rss/'
+        ]
     });
 
     useEffect(() => {
@@ -105,12 +121,24 @@ export default function SettingsPage() {
         setSaved(false);
     };
 
-    const saveAllSettings = () => {
+    const saveAllSettings = async () => {
         if (settings) {
             paperStore.saveSettings(settings);
         }
         localStorage.setItem('polybot_modules_config', JSON.stringify(modules));
         localStorage.setItem('polybot_listener_settings', JSON.stringify(listenerSettings));
+
+        // Sync to backend for the listener script
+        try {
+            await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(listenerSettings)
+            });
+        } catch (e) {
+            console.error("Failed to sync settings to backend", e);
+        }
+
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
     };
@@ -140,6 +168,25 @@ export default function SettingsPage() {
             enabledCategories: prev.enabledCategories.includes(categoryId)
                 ? prev.enabledCategories.filter(c => c !== categoryId)
                 : [...prev.enabledCategories, categoryId]
+        }));
+        setSaved(false);
+    };
+
+    const addRssUrl = () => {
+        if (newRssUrl.trim() && !listenerSettings.rssUrls?.includes(newRssUrl.trim())) {
+            setListenerSettings(prev => ({
+                ...prev,
+                rssUrls: [...(prev.rssUrls || []), newRssUrl.trim()]
+            }));
+            setNewRssUrl("");
+            setSaved(false);
+        }
+    };
+
+    const removeRssUrl = (url: string) => {
+        setListenerSettings(prev => ({
+            ...prev,
+            rssUrls: (prev.rssUrls || []).filter(u => u !== url)
         }));
         setSaved(false);
     };
@@ -568,8 +615,8 @@ export default function SettingsPage() {
                                     key={cat.id}
                                     onClick={() => toggleCategory(cat.id)}
                                     className={`p-3 rounded-xl text-left transition-all ${listenerSettings.enabledCategories.includes(cat.id)
-                                            ? 'bg-indigo-500/20 border border-indigo-500/30 text-white'
-                                            : 'bg-white/5 border border-white/5 text-slate-500 hover:bg-white/10'
+                                        ? 'bg-indigo-500/20 border border-indigo-500/30 text-white'
+                                        : 'bg-white/5 border border-white/5 text-slate-500 hover:bg-white/10'
                                         }`}
                                 >
                                     <div className="text-sm font-bold">{cat.label}</div>
@@ -577,6 +624,114 @@ export default function SettingsPage() {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Sources & Performance Card */}
+                    <div className="lg:col-span-2 bg-[#0C0D12]/50 border border-white/5 rounded-2xl p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Zap className="text-yellow-400" size={20} />
+                                Hyper-Listener Performance
+                            </h3>
+                            {/* Turbo Mode Toggle */}
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-500">
+                                    TURBO MODE
+                                </span>
+                                <button
+                                    onClick={() => setListenerSettings(prev => ({ ...prev, turboMode: !prev.turboMode }))}
+                                    className={`p-1 rounded-lg transition-colors ${listenerSettings.turboMode ? 'bg-red-500/20 text-red-500' : 'bg-white/5 text-slate-500'}`}
+                                >
+                                    {listenerSettings.turboMode ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Source Toggles */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* RSS Toggle */}
+                            <button
+                                onClick={() => setListenerSettings(prev => ({ ...prev, enableRss: !prev.enableRss }))}
+                                className={`p-4 rounded-xl border flex flex-col items-center gap-3 transition-all ${listenerSettings.enableRss
+                                    ? 'bg-orange-500/10 border-orange-500/50 text-white'
+                                    : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                                    }`}
+                            >
+                                <Radio size={24} className={listenerSettings.enableRss ? "text-orange-400" : ""} />
+                                <div className="text-center">
+                                    <div className="font-bold">RSS Feeds</div>
+                                    <div className="text-xs opacity-70">Monitor news & blogs</div>
+                                </div>
+                            </button>
+
+                            {/* Reddit Toggle */}
+                            <button
+                                onClick={() => setListenerSettings(prev => ({ ...prev, enableReddit: !prev.enableReddit }))}
+                                className={`p-4 rounded-xl border flex flex-col items-center gap-3 transition-all ${listenerSettings.enableReddit
+                                    ? 'bg-orange-600/10 border-orange-600/50 text-white'
+                                    : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                                    }`}
+                            >
+                                <span className="text-2xl">🤖</span>
+                                <div className="text-center">
+                                    <div className="font-bold">Reddit</div>
+                                    <div className="text-xs opacity-70">Subreddit monitoring</div>
+                                </div>
+                            </button>
+
+                            {/* Twitter Toggle */}
+                            <button
+                                onClick={() => setListenerSettings(prev => ({ ...prev, enableTwitter: !prev.enableTwitter }))}
+                                className={`p-4 rounded-xl border flex flex-col items-center gap-3 transition-all ${listenerSettings.enableTwitter
+                                    ? 'bg-blue-500/10 border-blue-500/50 text-white'
+                                    : 'bg-white/5 border-white/5 text-slate-500 hover:bg-white/10'
+                                    }`}
+                            >
+                                <span className="text-2xl">🐦</span>
+                                <div className="text-center">
+                                    <div className="font-bold">Twitter/X</div>
+                                    <div className="text-xs opacity-70">Nitter RSS Bridge</div>
+                                </div>
+                            </button>
+                        </div>
+
+                        {/* RSS Feed Management */}
+                        {listenerSettings.enableRss && (
+                            <div className="space-y-4 pt-4 border-t border-white/5 animate-in fade-in slide-in-from-top-4">
+                                <h4 className="text-sm font-bold text-slate-300">Active RSS Feeds</h4>
+
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newRssUrl}
+                                        onChange={(e) => setNewRssUrl(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && addRssUrl()}
+                                        placeholder="https://example.com/feed.xml"
+                                        className="flex-1 px-4 py-2 bg-black/30 border border-white/10 rounded-lg text-sm text-white focus:outline-none focus:border-orange-500/50"
+                                    />
+                                    <button
+                                        onClick={addRssUrl}
+                                        className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        Add
+                                    </button>
+                                </div>
+
+                                <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                                    {listenerSettings.rssUrls?.map((url, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-2 bg-white/5 rounded-lg border border-white/5 group hover:border-white/10">
+                                            <span className="text-xs text-slate-300 truncate">{url}</span>
+                                            <button
+                                                onClick={() => removeRssUrl(url)}
+                                                className="p-1 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                                            >
+                                                <X size={14} />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Custom Keywords Card */}

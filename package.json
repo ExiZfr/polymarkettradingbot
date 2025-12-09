@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start -p 3001",
     "lint": "eslint",
-    "listener": "node scripts/listener-service.js"
+    "listener": "node scripts/hyper-listener.js"
   },
   "dependencies": {
     "@prisma/client": "5.13.0",
@@ -19,7 +19,10 @@
     "prisma": "5.13.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "rss-parser": "^3.13.0",
+    "p-limit": "^5.0.0",
+    "axios": "^1.6.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

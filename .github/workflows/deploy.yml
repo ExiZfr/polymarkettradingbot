@@ -131,7 +131,7 @@ jobs:
                 pm2 restart polylistener
             else
                 echo "▶️ Starting listener service..."
-                pm2 start scripts/listener-service.js --name polylistener
+                pm2 start scripts/hyper-listener.js --name polylistener
             fi
             
             # Save PM2 config
