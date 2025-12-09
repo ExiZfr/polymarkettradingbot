@@ -15,11 +15,14 @@ jobs:
 
       - name: 🔐 Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
+          envs: GITHUB_TOKEN
           script_stop: false
           debug: true
           script: |
@@ -36,8 +39,10 @@ jobs:
             echo "🏠 Home: $HOME"
             echo "📂 PWD: $(pwd)"
             
-            # Application Directory (Use $HOME instead of ~)
+            # Configuration
             APP_DIR="$HOME/PolygraalX"
+            REPO_URL="https://${GITHUB_TOKEN}@github.com/ExiZfr/PolygraalX.git"
+            
             echo "🎯 Target: $APP_DIR"
             
             # Check if directory exists
@@ -46,23 +51,20 @@ jobs:
               cd "$APP_DIR" || exit 1
               
               echo "📥 [1/5] Syncing with GitHub..."
-              # Trust GitHub host
-              mkdir -p ~/.ssh
-              ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
+              # Update remote to use current token (in case it changed)
+              git remote set-url origin "$REPO_URL"
               
-              # Reset any local changes to avoid conflicts
+              # Fetch and Reset
               git fetch origin main
               git reset --hard origin/main
             else
               echo "⚠️ Directory not found. Cloning repository..."
               
-              # Trust GitHub host
-              mkdir -p ~/.ssh
-              ssh-keyscan -H github.com >> ~/.ssh/known_hosts 2>/dev/null || true
-              
-              # Ensure parent dir exists (unlikely needed for home but good practice)
+              # Ensure parent dir exists
               cd "$HOME"
-              git clone git@github.com:ExiZfr/PolygraalX.git PolygraalX
+              
+              # Clone using HTTPS + Token
+              git clone "$REPO_URL" PolygraalX
               cd "$APP_DIR" || exit 1
             fi
             
