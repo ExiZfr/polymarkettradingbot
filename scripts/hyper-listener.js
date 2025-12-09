@@ -35,7 +35,7 @@ let settings = {
     customKeywords: []
 };
 const parser = new Parser();
-const limit = pLimit(20); // Concurrency limit
+const limit = pLimit(100); // Concurrency limit boosted to 100
 
 // -- Logging --
 function logToFile(type, message, priority = 'low', metadata = {}) {
@@ -72,8 +72,8 @@ function loadSettings() {
         if (fs.existsSync(CONFIG_PATH)) {
             const data = fs.readFileSync(CONFIG_PATH, 'utf8');
             settings = { ...settings, ...JSON.parse(data) };
-            // Adjust scan interval based on Turbo Mode
-            if (settings.turboMode) settings.scanInterval = 10;
+            // Adjust scan interval based on Turbo Mode - GOD SPEED
+            if (settings.turboMode) settings.scanInterval = 2;
         }
     } catch (e) {
         console.error('Failed to load settings:', e.message);

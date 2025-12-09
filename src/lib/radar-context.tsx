@@ -34,6 +34,8 @@ export type ListenerLog = {
     };
 };
 
+// --- Context ---
+
 type RadarContextType = {
     // Data
     markets: MarketData[];
@@ -212,9 +214,9 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
 
         // Listener Loop (Simulated - links to real markets when signals detected)
         const listenerInterval = setInterval(() => {
-            // 70% chance to generate activity every 3 seconds
+            // High Speed Simulation
             if (Math.random() > 0.3) {
-                const isSignal = Math.random() > 0.75;
+                const isSignal = Math.random() > 0.95; // Rare signal
                 const source = MOCK_SOURCES[Math.floor(Math.random() * MOCK_SOURCES.length)];
 
                 // Use custom keywords from settings or fallback
@@ -228,7 +230,7 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
                     const matchingMarket = markets.find(m =>
                         m.market.title.toLowerCase().includes(keyword.toLowerCase()) ||
                         m.market.tags.some(t => t.toLowerCase().includes(keyword.toLowerCase()))
-                    ) || markets[Math.floor(Math.random() * markets.length)]; // Fallback to random market
+                    ) || markets[Math.floor(Math.random() * markets.length)];
 
                     addLog({
                         source,
@@ -255,13 +257,13 @@ export function RadarProvider({ children }: { children: React.ReactNode }) {
                     });
                 }
             }
-        }, 4000);
+        }, 150); // Matrix Speed Simulation
 
         return () => {
             clearInterval(marketInterval);
             clearInterval(listenerInterval);
         };
-    }, [refreshMarkets]);
+    }, [listenerSettings, markets, refreshMarkets]);
 
     // Actions
     const toggleFavorite = (id: string) => {
