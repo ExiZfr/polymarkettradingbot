@@ -15,7 +15,7 @@ interface TraderMetrics {
     username: string;
     pnl: number;
     volume: number;
-    trades: number;
+    tradesCount: number;
     winRate: number;
     roi: number;
     maxDrawdown: number;
@@ -109,8 +109,8 @@ export default function LeaderboardPage() {
                                         key={p}
                                         onClick={() => setPeriod(p)}
                                         className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${period === p
-                                                ? 'bg-blue-600 text-white'
-                                                : `${textSecondary} hover:${textPrimary}`
+                                            ? 'bg-blue-600 text-white'
+                                            : `${textSecondary} hover:${textPrimary}`
                                             }`}
                                     >
                                         {p}
@@ -136,8 +136,8 @@ export default function LeaderboardPage() {
                     <button
                         onClick={() => setTab('top')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all ${tab === 'top'
-                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                : textSecondary
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                            : textSecondary
                             }`}
                     >
                         <Trophy className="w-4 h-4" />
@@ -146,8 +146,8 @@ export default function LeaderboardPage() {
                     <button
                         onClick={() => setTab('worst')}
                         className={`flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium transition-all ${tab === 'worst'
-                                ? 'bg-red-500/20 text-red-400 border border-red-500/30'
-                                : textSecondary
+                            ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                            : textSecondary
                             }`}
                     >
                         <TrendingDown className="w-4 h-4" />
@@ -177,10 +177,10 @@ export default function LeaderboardPage() {
                                     <div className="flex items-center gap-4">
                                         {/* Rank */}
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${idx < 3 && tab === 'top'
-                                                ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-black'
-                                                : idx < 3 && tab === 'worst'
-                                                    ? 'bg-gradient-to-br from-red-400 to-red-600 text-white'
-                                                    : darkMode ? 'bg-[#262626] text-gray-400' : 'bg-gray-100 text-gray-600'
+                                            ? 'bg-gradient-to-br from-yellow-400 to-orange-500 text-black'
+                                            : idx < 3 && tab === 'worst'
+                                                ? 'bg-gradient-to-br from-red-400 to-red-600 text-white'
+                                                : darkMode ? 'bg-[#262626] text-gray-400' : 'bg-gray-100 text-gray-600'
                                             }`}>
                                             #{idx + 1}
                                         </div>
@@ -199,7 +199,7 @@ export default function LeaderboardPage() {
                                                 )}
                                             </div>
                                             <div className={`text-sm ${textSecondary}`}>
-                                                {trader.trades} trades · ${(trader.volume / 1000).toFixed(1)}K vol
+                                                {trader.tradesCount} trades · ${(trader.volume / 1000).toFixed(1)}K vol
                                             </div>
                                         </div>
                                     </div>
@@ -401,10 +401,10 @@ export default function LeaderboardPage() {
                                                         </td>
                                                         <td className="px-4 py-3 text-right">
                                                             <span className={`px-2 py-0.5 rounded text-xs ${trade.status === 'WON'
-                                                                    ? 'bg-green-500/20 text-green-500'
-                                                                    : trade.status === 'LOST'
-                                                                        ? 'bg-red-500/20 text-red-500'
-                                                                        : 'bg-blue-500/20 text-blue-500'
+                                                                ? 'bg-green-500/20 text-green-500'
+                                                                : trade.status === 'LOST'
+                                                                    ? 'bg-red-500/20 text-red-500'
+                                                                    : 'bg-blue-500/20 text-blue-500'
                                                                 }`}>
                                                                 {trade.status}
                                                             </span>

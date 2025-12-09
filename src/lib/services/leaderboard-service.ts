@@ -10,7 +10,7 @@ export interface TraderMetrics {
     username: string;
     pnl: number;
     volume: number;
-    trades: number;
+    tradesCount: number;
     winRate: number;
     roi: number;
     maxDrawdown: number;
@@ -49,7 +49,7 @@ function calculateFarmScore(trader: Partial<TraderMetrics>, allTraders: Partial<
     let score = 0;
 
     // 1. Micro-Trades: Average trade size < $50
-    const avgTradeSize = (trader.volume || 0) / Math.max(trader.trades || 1, 1);
+    const avgTradeSize = (trader.volume || 0) / Math.max(trader.tradesCount || 1, 1);
     if (avgTradeSize < 50) score += 25;
     else if (avgTradeSize < 100) score += 10;
 
@@ -63,7 +63,7 @@ function calculateFarmScore(trader: Partial<TraderMetrics>, allTraders: Partial<
     if (wr > 0.95 || wr < 0.05) score += 15;
 
     // 4. High trade count with low volume (grinding)
-    if ((trader.trades || 0) > 100 && (trader.volume || 0) < 50000) score += 20;
+    if ((trader.tradesCount || 0) > 100 && (trader.volume || 0) < 50000) score += 20;
 
     // 5. Suspiciously consistent returns (low variance)
     // This would require more data, simplified for now
@@ -181,7 +181,7 @@ async function calculateTraderMetrics(
         username,
         pnl: Math.round(totalPnl),
         volume: Math.round(totalVolume),
-        trades: events.length,
+        tradesCount: events.length,
         winRate,
         roi,
         maxDrawdown: maxDrawdown * 100,
@@ -310,7 +310,7 @@ function generateFallbackTraders(type: 'top' | 'worst', count: number): TraderMe
             username: `trader_${i + 1}`,
             pnl: Math.round(pnl),
             volume: Math.round(Math.abs(pnl) * 10),
-            trades: Math.floor(Math.random() * 200) + 10,
+            tradesCount: Math.floor(Math.random() * 200) + 10,
             winRate: type === 'top' ? 0.55 + Math.random() * 0.35 : 0.1 + Math.random() * 0.35,
             roi: pnl / 10000,
             maxDrawdown: Math.random() * 30,
