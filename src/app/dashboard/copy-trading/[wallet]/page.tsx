@@ -117,6 +117,117 @@ export default function WalletProfilePage() {
     const avgWin = wonBets > 0 ? totalGains / wonBets : 0;
     const avgLoss = lostBets > 0 ? totalLosses / lostBets : 0;
 
+    // 🏷️ Trader Classification Algorithm
+    type TraderTag = {
+        label: string;
+        emoji: string;
+        color: string;
+        bgColor: string;
+        borderColor: string;
+    };
+
+    function classifyTrader(): TraderTag[] {
+        const tags: TraderTag[] = [];
+        const winRate = data!.metrics.winRate;
+        const pnl = data!.metrics.totalPnl;
+        const volume = data!.metrics.totalVolume;
+
+        // 🐋 Whale: High volume trader
+        if (volume > 500000) {
+            tags.push({
+                label: 'Whale',
+                emoji: '🐋',
+                color: 'text-yellow-400',
+                bgColor: 'bg-yellow-500/20',
+                borderColor: 'border-yellow-500/30'
+            });
+        }
+
+        // 🏆 Winner: High win rate + positive PnL
+        if (winRate > 0.65 && pnl > 10000) {
+            tags.push({
+                label: 'Winner',
+                emoji: '🏆',
+                color: 'text-green-400',
+                bgColor: 'bg-green-500/20',
+                borderColor: 'border-green-500/30'
+            });
+        }
+
+        // 🛡️ Safe: Consistent performer, moderate risk
+        if (winRate > 0.55 && winRate <= 0.65 && pnl > 0 && avgLoss < avgWin * 1.5) {
+            tags.push({
+                label: 'Safe',
+                emoji: '🛡️',
+                color: 'text-blue-400',
+                bgColor: 'bg-blue-500/20',
+                borderColor: 'border-blue-500/30'
+            });
+        }
+
+        // ⚠️ Risk: High variance trader
+        if ((avgWin > 1000 || avgLoss > 1000) && totalBets > 10) {
+            tags.push({
+                label: 'Risk',
+                emoji: '⚠️',
+                color: 'text-orange-400',
+                bgColor: 'bg-orange-500/20',
+                borderColor: 'border-orange-500/30'
+            });
+        }
+
+        // 📉 Loser: Poor performance
+        if (winRate < 0.4 && pnl < 0) {
+            tags.push({
+                label: 'Loser',
+                emoji: '📉',
+                color: 'text-red-400',
+                bgColor: 'bg-red-500/20',
+                borderColor: 'border-red-500/30'
+            });
+        }
+
+        // 🔥 Hot Streak: Recent wins
+        const recentBets = data!.bets.slice(0, 5);
+        const recentWins = recentBets.filter(b => b.status === 'WON').length;
+        if (recentWins >= 4) {
+            tags.push({
+                label: 'Hot',
+                emoji: '🔥',
+                color: 'text-orange-400',
+                bgColor: 'bg-orange-500/20',
+                borderColor: 'border-orange-500/30'
+            });
+        }
+
+        // 🆕 New: Few bets
+        if (totalBets < 10) {
+            tags.push({
+                label: 'New',
+                emoji: '🆕',
+                color: 'text-purple-400',
+                bgColor: 'bg-purple-500/20',
+                borderColor: 'border-purple-500/30'
+            });
+        }
+
+        // Default tag if none apply
+        if (tags.length === 0) {
+            tags.push({
+                label: 'Neutral',
+                emoji: '⚖️',
+                color: 'text-gray-400',
+                bgColor: 'bg-gray-500/20',
+                borderColor: 'border-gray-500/30'
+            });
+        }
+
+        return tags;
+    }
+
+    const traderTags = classifyTrader();
+
+
     return (
         <div className="p-6 min-h-screen bg-[#0a0a0a] text-gray-100">
             {/* Back Button */}
@@ -146,13 +257,20 @@ export default function WalletProfilePage() {
                             {data.ens ? data.ens[0].toUpperCase() : data.address[2].toUpperCase()}
                         </motion.div>
                         <div>
-                            <h1 className="text-2xl font-bold flex items-center gap-2">
+                            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
                                 {data.ens || `${data.address.slice(0, 6)}...${data.address.slice(-4)}`}
-                                {data.metrics.totalPnl > 100000 && (
-                                    <span className="text-xs bg-yellow-500/20 text-yellow-500 px-2 py-0.5 rounded-full border border-yellow-500/30 shadow-sm">
-                                        🐋 Whale
-                                    </span>
-                                )}
+                                {traderTags.map((tag, idx) => (
+                                    <motion.span
+                                        key={tag.label}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.3 + idx * 0.1 }}
+                                        className={`text-xs ${tag.bgColor} ${tag.color} px-2.5 py-1 rounded-full border ${tag.borderColor} shadow-sm flex items-center gap-1`}
+                                    >
+                                        <span>{tag.emoji}</span>
+                                        <span>{tag.label}</span>
+                                    </motion.span>
+                                ))}
                             </h1>
                             <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                                 <button
@@ -272,8 +390,8 @@ export default function WalletProfilePage() {
                                         key={tf}
                                         onClick={() => setTimeframe(tf as any)}
                                         className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${timeframe === tf
-                                                ? 'bg-blue-600 text-white shadow-lg'
-                                                : 'text-gray-400 hover:text-white'
+                                            ? 'bg-blue-600 text-white shadow-lg'
+                                            : 'text-gray-400 hover:text-white'
                                             }`}
                                     >
                                         {tf}
@@ -326,8 +444,8 @@ export default function WalletProfilePage() {
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 <span className={`px-2 py-1 rounded-md text-xs font-bold ${bet.outcome === 'YES'
-                                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                        : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                    : 'bg-red-500/20 text-red-400 border border-red-500/30'
                                                     }`}>
                                                     {bet.outcome}
                                                 </span>
@@ -347,10 +465,10 @@ export default function WalletProfilePage() {
                                             </td>
                                             <td className="px-5 py-4 text-center">
                                                 <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${bet.status === 'WON'
-                                                        ? 'bg-green-500/20 text-green-400'
-                                                        : bet.status === 'LOST'
-                                                            ? 'bg-red-500/20 text-red-400'
-                                                            : 'bg-yellow-500/20 text-yellow-400'
+                                                    ? 'bg-green-500/20 text-green-400'
+                                                    : bet.status === 'LOST'
+                                                        ? 'bg-red-500/20 text-red-400'
+                                                        : 'bg-yellow-500/20 text-yellow-400'
                                                     }`}>
                                                     {bet.status === 'WON' && <CheckCircle className="w-3 h-3" />}
                                                     {bet.status === 'LOST' && <XCircle className="w-3 h-3" />}
