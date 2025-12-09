@@ -34,7 +34,8 @@ type NavItem = {
 
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Market Radar", href: "/dashboard/radar", icon: Radar, badge: "Live" },
+    { label: "Live Signals", href: "/dashboard/signals", icon: TrendingUp, badge: "New" },
+    { label: "Market Radar", href: "/dashboard/radar", icon: Radar },
     { label: "Listener", href: "/dashboard/listener", icon: Radio },
     { label: "Orders", href: "/dashboard/orders", icon: Receipt },
     { label: "Copy Trading", href: "/dashboard/copy-trading", icon: Users },

@@ -20,3 +20,19 @@ model User {
 
   @@map("users") // Table name in DB
 }
+
+model Signal {
+  id              String   @id @default(cuid())
+  marketId        String   @unique
+  question        String
+  slug            String
+  score           Int
+  reason          String
+  volume          Float
+  liquidity       Float
+  newsCorrelation Boolean
+  timestamp       DateTime @default(now())
+  status          String   @default("NEW") // NEW, TRADED, DISMISSED, EXPIRED
+
+  @@map("signals")
+}
