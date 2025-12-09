@@ -20,9 +20,11 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          script_stop: true
+          script_stop: false
           debug: true
           script: |
+            set -x
+            set -e
             export PATH=$PATH:/usr/local/bin
             
             echo "========================================"
