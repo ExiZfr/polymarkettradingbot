@@ -148,23 +148,22 @@ function NotificationPanel({ isOpen, onClose, logs }: { isOpen: boolean; onClose
                                         {log.relatedMarket && (
                                             <div className="flex gap-2 mt-2">
                                                 <Link
-                                                    href={`/dashboard/radar`}
-                                                    onClick={onClose}
-                                                    className="flex-1 py-1.5 px-3 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-medium rounded-lg text-center transition-colors"
-                                                >
-                                                    View in Radar
-                                                </Link>
-                                                <a
-                                                    href={`https://polymarket.com/event/${log.relatedMarket.slug || log.relatedMarket.id}`}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                                    href={`/dashboard/signal/${log.signalId || log.relatedMarket.id}`}
                                                     onClick={onClose}
                                                     className={`flex-1 py-1.5 px-3 text-xs font-bold rounded-lg text-center transition-all ${log.relatedMarket.score >= 70
                                                         ? 'bg-green-500 hover:bg-green-400 text-black'
                                                         : 'bg-white/10 hover:bg-white/20 text-white'
                                                         }`}
                                                 >
-                                                    {log.relatedMarket.score >= 70 ? '⚡ SNIPE' : 'Analyze'}
+                                                    {log.relatedMarket.score >= 70 ? '⚡ Analyze Signal' : 'View Analysis'}
+                                                </Link>
+                                                <a
+                                                    href={`https://polymarket.com/event/${log.relatedMarket.slug || log.relatedMarket.id}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="py-1.5 px-3 bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-400 text-xs font-medium rounded-lg text-center transition-colors"
+                                                >
+                                                    Polymarket ↗
                                                 </a>
                                             </div>
                                         )}
