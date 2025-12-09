@@ -17,9 +17,9 @@ interface Trader {
 }
 
 function LeaderboardContent() {
-    const searchParams = useSearchParams();
+    // Force Paper Mode
+    const isPaperMode = true;
     const router = useRouter();
-    const isPaperMode = searchParams.get('mode') === 'paper';
 
     const [topTraders, setTopTraders] = useState<Trader[]>([]);
     const [worstTraders, setWorstTraders] = useState<Trader[]>([]);
