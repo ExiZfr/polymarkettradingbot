@@ -12,6 +12,19 @@ export interface ProfileSettings {
     autoTakeProfit: number;
 }
 
+export interface PaperCopySetting {
+    walletAddress: string; // The ID/Address of the wallet being copied
+    enabled: boolean;
+    label?: string; // Custom name for the wallet
+    copyMode: 'fixed' | 'percentage' | 'smart_mirror';
+    fixedAmount?: number; // For 'fixed' mode
+    percentageAmount?: number; // For 'percentage' mode (e.g., 5% of my balance)
+    maxCap?: number; // Max $ per trade safety cap
+    stopLoss?: number; // Stop copying if position drops X%
+    inverse?: boolean; // "Inverse Kramer" mode - bet opposite
+    createdAt: string;
+}
+
 export interface PaperProfile {
     id: string;
     name: string;
@@ -19,6 +32,7 @@ export interface PaperProfile {
     positions: Record<string, Position>;
     history: Order[];
     settings: ProfileSettings;
+    copySettings: Record<string, PaperCopySetting>; // Map address -> settings
     createdAt: string;
 }
 
@@ -39,6 +53,7 @@ const DEFAULT_PROFILE: PaperProfile = {
         autoStopLoss: 15,
         autoTakeProfit: 30
     },
+    copySettings: {},
     createdAt: new Date().toISOString()
 };
 
@@ -159,6 +174,7 @@ export class PaperWallet implements IWallet {
                 autoStopLoss: settings.autoStopLoss ?? 15,
                 autoTakeProfit: settings.autoTakeProfit ?? 30
             },
+            copySettings: {},
             createdAt: new Date().toISOString()
         };
         data.profiles[id] = newProfile;
