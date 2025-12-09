@@ -321,8 +321,8 @@ function normalizeMarkets(polyMarkets, rssItems) {
             }
         }
 
-        // Ensure market has minimum required fields
-        if (!m.question || !m.market_id || !m.slug) {
+        // Ensure market has minimum required fields (slug is optional, will use market_id as fallback)
+        if (!m.question || !m.market_id) {
             return false;
         }
 
