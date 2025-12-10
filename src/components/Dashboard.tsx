@@ -5,55 +5,51 @@ import OverviewStats from "@/components/dashboard/OverviewStats";
 import ActiveModules, { ModuleType } from "@/components/dashboard/ActiveModules";
 import ConsoleLogs, { LogType } from "@/components/dashboard/ConsoleLogs";
 import PaperTradingWidget from "@/components/dashboard/PaperTradingWidget";
-import { Radar, Zap, Users } from "lucide-react";
-
-import { fetchPolymarketMarkets } from "@/lib/polymarket";
-import { calculateSnipability } from "@/lib/snipability-algo";
-import { ToastNotification, useToast } from "@/components/ToastNotification";
-import { useWallet } from "@/contexts/WalletContext";
+import { Wallet, Settings as SettingsIcon } from "lucide-react";
 
 const MODULES_CONFIG: ModuleType[] = [
     {
         id: 1,
-        name: "Sniper Engine",
-        description: "Real-time opportunity detection",
-        icon: Zap,
+        name: "Paper Trading",
+        description: "Trade simulation mode",
+        icon: Wallet,
         active: true,
-        color: "text-amber-500",
+        color: "text-green-500",
         stats: [
-            { label: "Latency", value: "Loading..." },
-            { label: "Markets", value: "—" }
+            { label: "Active", value: "Yes" },
+            { label: "Trades", value: "—" }
         ]
     },
     {
         id: 2,
-        name: "PolyRadar",
-        description: "Live market scanner",
-        icon: Radar,
+        name: "Settings",
+        description: "Bot configuration",
+        icon: SettingsIcon,
         active: true,
-        color: "text-blue-500",
+        color: "text-indigo-500",
         stats: [
-            { label: "Scanned", value: "—" },
-            { label: "Snipable", value: "—" }
-        ]
-    },
-    {
-        id: 3,
-        name: "Whale Copy",
-        description: "Smart money tracker",
-        icon: Users,
-        active: false,
-        color: "text-purple-500",
-        stats: [
-            { label: "Tracked", value: "8" },
-            { label: "Vol", value: "$45k" }
+            { label: "Mode", value: "Paper" },
+            { label: "Status", value: "Ready" }
         ]
     }
 ];
 
 export default function Dashboard() {
     const [modules, setModules] = useState<ModuleType[]>(MODULES_CONFIG);
-    const [logs, setLogs] = useState<LogType[]>([]);
+    const [logs, setLogs] = useState<LogType[]>([
+        {
+            id: '1',
+            timestamp: new Date().toISOString(),
+            level: 'INFO',
+            message: 'Dashboard loaded successfully'
+        },
+        {
+            id: '2',
+            timestamp: new Date().toISOString(),
+            level: 'INFO',
+            message: 'Paper trading mode active'
+        }
+    ]);
     const [stats, setStats] = useState({
         marketsScanned: 0,
         snipableMarkets: 0,
@@ -61,94 +57,44 @@ export default function Dashboard() {
         highestScore: 0
     });
     const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'ORDER' | 'SNIPE' | 'SIGNAL' | 'WARN'>('ALL');
+    const [wallet, setWallet] = useState({ balance: 1000 });
 
-    const { wallet } = useWallet();
-    const { toasts, addToast, removeToast } = useToast();
-
-    // Map log levels
-    const mapLogLevel = (type: string): LogType['level'] => {
-        switch (type) {
-            case 'snipe': return 'SNIPE';
-            case 'alert': return 'SNIPE'; // High-score market detected
-            case 'signal': return 'SIGNAL'; // Signal detected
-            case 'order': return 'ORDER';
-            case 'error': return 'ERR';
-            case 'warning': return 'WARN';
-            case 'new_market': return 'MARKET';
-            default: return 'INFO';
-        }
-    }
-
-    // Fetch Logs Logic
-    const fetchLogs = async () => {
-        try {
-            const res = await fetch('/api/listener/logs');
-            if (res.ok) {
-                const data = await res.json();
-                if (data && Array.isArray(data)) {
-                    const formattedLogs: LogType[] = data.map((l: any) => ({
-                        id: l.id,
-                        timestamp: l.timestamp,
-                        level: mapLogLevel(l.type),
-                        message: l.message
-                    }));
-                    setLogs(formattedLogs.slice(0, 100));
-                }
-            }
-        } catch (e) {
-            console.error("Failed to fetch logs", e);
-        }
-    }
-
-    // Load Metrics Logic
-    async function loadRealMetrics() {
-        try {
-            const rawMarkets = await fetchPolymarketMarkets();
-
-            const scored = rawMarkets.map(market => ({
-                market,
-                sniping: calculateSnipability(market)
-            }));
-
-            const snipable = scored.filter(m => m.sniping.score > 50);
-            const totalScore = scored.reduce((sum, item) => sum + item.sniping.score, 0);
-            const highest = Math.max(...scored.map(m => m.sniping.score), 0);
-
-            setStats({
-                marketsScanned: scored.length,
-                snipableMarkets: snipable.length,
-                avgScore: scored.length > 0 ? totalScore / scored.length : 0,
-                highestScore: highest
-            });
-
-            setModules(prev => prev.map(m => {
-                if (m.name === "Sniper Engine") {
-                    return { ...m, stats: [{ label: "Latency", value: "45ms" }, { label: "Markets", value: scored.length.toString() }] };
-                }
-                if (m.name === "PolyRadar") {
-                    return { ...m, stats: [{ label: "Scanned", value: scored.length.toString() }, { label: "Snipable", value: snipable.length.toString() }] };
-                }
-                return m;
-            }));
-
-        } catch (error) {
-            console.error("Failed to load metrics", error);
-        }
-    }
-
-    // Effects
+    // Load wallet balance from paper trading
     useEffect(() => {
-        loadRealMetrics();
-        fetchLogs();
+        const loadWallet = async () => {
+            try {
+                const res = await fetch('/api/paper/profiles');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.profiles) {
+                        const activeProfile = Object.values(data.profiles).find((p: any) =>
+                            p.id === data.activeProfileId
+                        ) as any;
+                        if (activeProfile) {
+                            setWallet({ balance: activeProfile.balance });
 
-        const interval = setInterval(() => {
-            loadRealMetrics();
-            fetchLogs();
-        }, 5000);
-
-        return () => {
-            clearInterval(interval);
+                            // Update module stats
+                            setModules(prev => prev.map(m => {
+                                if (m.name === "Paper Trading") {
+                                    return {
+                                        ...m,
+                                        stats: [
+                                            { label: "Balance", value: `$${activeProfile.balance.toFixed(0)}` },
+                                            { label: "Trades", value: "0" }
+                                        ]
+                                    };
+                                }
+                                return m;
+                            }));
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load wallet", e);
+            }
         };
+
+        loadWallet();
     }, []);
 
     return (
@@ -168,8 +114,6 @@ export default function Dashboard() {
                     <PaperTradingWidget wallet={wallet} />
                 </div>
             </div>
-
-            <ToastNotification toasts={toasts} onRemove={removeToast} />
         </div>
     );
 }
