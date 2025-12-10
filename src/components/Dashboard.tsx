@@ -64,7 +64,6 @@ export default function Dashboard() {
     });
 
     const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'ORDER' | 'SNIPE' | 'SIGNAL' | 'WARN'>('ALL');
-    const [wallet, setWallet] = useState({ balance: INITIAL_BALANCE });
 
     return (
         <div className="space-y-6">
@@ -80,7 +79,7 @@ export default function Dashboard() {
                     />
                 </div>
                 <div className="lg:col-span-1 h-full">
-                    <PaperTradingWidget wallet={wallet} />
+                    <PaperTradingWidget />
                 </div>
             </div>
         </div>
