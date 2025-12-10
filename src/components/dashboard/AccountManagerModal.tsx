@@ -28,7 +28,7 @@ const pageVariants = {
         opacity: 1,
         scale: 1,
         y: 0,
-        transition: { type: "spring", damping: 25, stiffness: 350, mass: 0.8 }
+        transition: { type: "spring" as const, damping: 25, stiffness: 350, mass: 0.8 }
     },
     exit: { opacity: 0, scale: 0.99, y: 5, transition: { duration: 0.1 } }
 };
@@ -170,8 +170,8 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                                 key={profile.id}
                                                 onClick={() => handleSwitchProfile(profile.id)}
                                                 className={`relative p-5 rounded-xl border cursor-pointer transition-all group ${profile.id === activeProfileId
-                                                        ? 'bg-[#2e7cf6]/5 border-[#2e7cf6] shadow-[0_0_20px_-12px_rgba(46,124,246,0.3)]'
-                                                        : 'bg-[#0e1115] border-[#2d323b] hover:border-[#8ba1be]'
+                                                    ? 'bg-[#2e7cf6]/5 border-[#2e7cf6] shadow-[0_0_20px_-12px_rgba(46,124,246,0.3)]'
+                                                    : 'bg-[#0e1115] border-[#2d323b] hover:border-[#8ba1be]'
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-start mb-4">
