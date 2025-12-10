@@ -72,8 +72,8 @@ export default function CopyTradingPage() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-3 font-medium whitespace-nowrap transition-all relative ${isActive
-                                        ? 'text-indigo-400 border-b-2 border-indigo-500'
-                                        : 'text-slate-400 hover:text-white'
+                                    ? 'text-indigo-400 border-b-2 border-indigo-500'
+                                    : 'text-slate-400 hover:text-white'
                                     }`}
                             >
                                 <Icon size={18} />

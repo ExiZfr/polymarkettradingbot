@@ -96,21 +96,6 @@ model CopySetting {
   @@map("copy_settings")
 }
 
-model WalletSnapshot {
-  id            String        @id @default(cuid())
-  walletId      String
-  trackedWallet TrackedWallet @relation(fields: [walletId], references: [id])
-
-  date            DateTime @default(now())
-  totalPnl        Float
-  winRate         Float
-  totalVolume     Float
-  activePositions Int
-
-  @@index([walletId, date])
-  @@map("wallet_snapshots")
-}
-
 // NEW: Individual copied trade execution
 model CopyTradeExecution {
   id              String   @id @default(cuid())

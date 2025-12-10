@@ -43,3 +43,5 @@ export function CopyStats({ title, value, icon, trend, trendUp, subtext, descrip
         </div>
     );
 }
+
+export default CopyStats;
