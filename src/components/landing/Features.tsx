@@ -66,14 +66,14 @@ const colorClasses = {
 
 export default function Features() {
     return (
-        <section id="features" className="py-24 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-900">
+        <section id="features" className="py-24 px-4 sm:px-6 lg:px-8 bg-secondary/50">
             <div className="max-w-7xl mx-auto">
                 {/* Section Header */}
                 <div className="text-center mb-16">
-                    <h2 className="text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white mb-4">
+                    <h2 className="text-4xl sm:text-5xl font-bold text-foreground mb-4">
                         Everything you need to trade
                     </h2>
-                    <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+                    <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
                         Powerful features designed to give you an edge in prediction markets
                     </p>
                 </div>
@@ -87,17 +87,17 @@ export default function Features() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: i * 0.1 }}
-                            className="group p-6 bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl hover:shadow-lg transition-all cursor-pointer"
+                            className="group p-6 bg-card border border-border rounded-2xl hover:shadow-lg transition-all cursor-pointer"
                         >
                             <div
                                 className={`inline-flex p-3 rounded-xl border mb-4 ${colorClasses[feature.color as keyof typeof colorClasses]}`}
                             >
                                 <feature.icon size={24} />
                             </div>
-                            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                            <h3 className="text-xl font-bold text-foreground mb-2">
                                 {feature.title}
                             </h3>
-                            <p className="text-gray-600 dark:text-gray-400">
+                            <p className="text-muted-foreground">
                                 {feature.description}
                             </p>
                         </motion.div>
