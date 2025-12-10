@@ -8,12 +8,9 @@ export default function Footer() {
         product: [
             { label: "Features", href: "#features" },
             { label: "Pricing", href: "#pricing" },
-            { label: "FAQ", href: "#faq" },
         ],
         company: [
             { label: "About", href: "/about" },
-            { label: "Blog", href: "/blog" },
-            { label: "Careers", href: "/careers" },
         ],
         legal: [
             { label: "Privacy", href: "/privacy" },
