@@ -6,22 +6,16 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     LayoutDashboard,
-    Radar,
-    Users,
-    Brain,
     Settings,
     LogOut,
     Zap,
     ChevronRight,
-    Receipt,
-    Radio,
     ChevronDown,
     Plus,
     Trash2,
     Check,
     Loader2
 } from "lucide-react";
-import { useWallet } from "@/contexts/WalletContext";
 import ProfileModal from "./ProfileModal";
 
 type NavItem = {
@@ -39,11 +33,6 @@ interface Profile {
 
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Market Radar", href: "/dashboard/radar", icon: Radar, badge: "Live" },
-    { label: "Listener", href: "/dashboard/listener", icon: Radio },
-    { label: "Orders", href: "/dashboard/orders", icon: Receipt },
-    { label: "Copy Trading", href: "/dashboard/copy-trading", icon: Users },
-    { label: "Oracle", href: "/dashboard/oracle", icon: Brain },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
@@ -55,7 +44,7 @@ export default function Sidebar({
     setSidebarOpen: (open: boolean) => void;
 }) {
     const pathname = usePathname();
-    const { wallet, refreshWallet } = useWallet();
+    const [walletBalance, setWalletBalance] = useState<number>(0);
 
     const [profiles, setProfiles] = useState<Profile[]>([]);
     const [activeProfileId, setActiveProfileId] = useState<string>('default');
@@ -83,6 +72,7 @@ export default function Sidebar({
                     const activeProfile = profileList.find(p => p.id === (data.activeProfileId || 'default'));
                     if (activeProfile) {
                         setActiveProfileName(activeProfile.name);
+                        setWalletBalance(activeProfile.balance);
                     }
                 }
             }
@@ -103,9 +93,12 @@ export default function Sidebar({
             if (res.ok) {
                 setActiveProfileId(profileId);
                 const profile = profiles.find(p => p.id === profileId);
-                if (profile) setActiveProfileName(profile.name);
+                if (profile) {
+                    setActiveProfileName(profile.name);
+                    setWalletBalance(profile.balance);
+                }
                 setIsProfileMenuOpen(false);
-                refreshWallet();
+                fetchProfiles();
             }
         } catch (e) {
             console.error("Failed to switch profile", e);
@@ -232,7 +225,7 @@ export default function Sidebar({
                                 <div className="flex items-center justify-between text-xs text-slate-400 bg-black/20 rounded-lg p-2">
                                     <span>Balance</span>
                                     <span className="font-mono text-green-400">
-                                        ${wallet ? wallet.balance.toFixed(2) : '---'}
+                                        ${walletBalance.toFixed(2)}
                                     </span>
                                 </div>
                             </button>
