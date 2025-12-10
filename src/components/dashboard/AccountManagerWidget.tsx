@@ -11,7 +11,7 @@ export default function AccountManagerWidget() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const updateStats = () => {
-        const profile = paperStore.getProfile();
+        const profile = paperStore.getActiveProfile();
         setBalance(profile.currentBalance);
         setName(profile.username || "Paper Account");
     };

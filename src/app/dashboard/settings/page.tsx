@@ -30,7 +30,7 @@ export default function SettingsPage() {
 
     useEffect(() => {
         setSettings(paperStore.getSettings());
-        setProfile(paperStore.getProfile());
+        setProfile(paperStore.getActiveProfile());
     }, []);
 
     const handleSettingsChange = (key: keyof PaperTradingSettings, value: any) => {
