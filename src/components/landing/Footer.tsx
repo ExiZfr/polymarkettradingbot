@@ -6,8 +6,8 @@ import { Github, Twitter } from "lucide-react";
 export default function Footer() {
     const links = {
         product: [
-            { label: "Features", href: "#features" },
-            { label: "Pricing", href: "#pricing" },
+            { label: "Features", href: "/#features" },
+            { label: "Pricing", href: "/#pricing" },
         ],
         company: [
             { label: "About", href: "/about" },

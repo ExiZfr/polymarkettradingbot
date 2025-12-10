@@ -10,6 +10,7 @@ import {
     LogOut,
     Wallet,
 } from "lucide-react";
+import AccountManagerWidget from "./AccountManagerWidget";
 
 type NavItem = {
     label: string;
@@ -31,7 +32,6 @@ export default function Sidebar({
     setSidebarOpen: (open: boolean) => void;
 }) {
     const pathname = usePathname();
-    const [balance] = useState(1000);
 
     return (
         <>
@@ -100,28 +100,7 @@ export default function Sidebar({
 
                 {/* Bottom Section */}
                 <div className="p-4 border-t border-border bg-muted/30">
-                    {/* Balance Card */}
-                    <div className="bg-card border border-border rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="mx-4 mt-auto mb-4 p-4 rounded-xl bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/20">
-                                <span className="font-bold text-lg">PA</span>
-                            </div>
-                            <div className="flex-1 text-left">
-                                <div className="text-sm font-bold text-foreground">
-                                    Paper Account
-                                </div>
-                                <div className="text-xs text-muted-foreground">
-                                    Demo Trading
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
-                            <span>Balance</span>
-                            <span className="font-mono text-green-500 font-semibold">
-                                ${balance.toFixed(2)}
-                            </span>
-                        </div>
-                    </div>
+                    <AccountManagerWidget />
 
                     {/* Sign Out Button */}
                     <button

@@ -11,9 +11,9 @@ export default function Navbar() {
     const { theme, toggleTheme } = useTheme();
 
     const navItems = [
-        { label: "Features", href: "#features" },
-        { label: "Pricing", href: "#pricing" },
-        { label: "About", href: "#about" },
+        { label: "Features", href: "/#features" },
+        { label: "Pricing", href: "/#pricing" },
+        { label: "About", href: "/about" },
     ];
 
     return (
