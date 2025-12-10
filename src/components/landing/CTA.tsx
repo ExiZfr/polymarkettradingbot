@@ -33,10 +33,10 @@ export default function CTA() {
                 >
                     <Link
                         href="/login"
-                        className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center p-8"
+                        className="inline-flex items-center justify-center px-8 py-4 bg-white text-blue-600 rounded-xl font-bold text-lg hover:bg-blue-50 transition-all shadow-lg hover:shadow-xl group"
                     >
                         Get Started Free
-                        <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
                     </Link>
                 </motion.div>
             </div>
