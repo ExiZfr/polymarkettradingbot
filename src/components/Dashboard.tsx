@@ -38,13 +38,13 @@ export default function Dashboard() {
     const [modules, setModules] = useState<ModuleType[]>(MODULES_CONFIG);
     const [logs, setLogs] = useState<LogType[]>([
         {
-            id: '1',
+            id: 1,
             timestamp: new Date().toISOString(),
             level: 'INFO',
             message: 'Dashboard loaded successfully'
         },
         {
-            id: '2',
+            id: 2,
             timestamp: new Date().toISOString(),
             level: 'INFO',
             message: 'Paper trading mode active'

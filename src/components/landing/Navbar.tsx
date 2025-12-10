@@ -1,138 +1,115 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import Link from "next/link";
-import { Menu, X, Zap, ExternalLink } from "lucide-react";
-
-const navLinks = [
-    { href: "/#features", label: "Features" },
-    { href: "/#how-it-works", label: "How It Works" },
-    { href: "/#pricing", label: "Pricing" },
-];
+import { motion } from "framer-motion";
+import { Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function Navbar() {
-    const [isScrolled, setIsScrolled] = useState(false);
-    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const { theme, toggleTheme } = useTheme();
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
+    const navItems = [
+        { label: "Features", href: "#features" },
+        { label: "Pricing", href: "#pricing" },
+        { label: "About", href: "#about" },
+    ];
 
     return (
-        <>
-            <motion.nav
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-                    ? "bg-[#06070A]/80 backdrop-blur-xl border-b border-white/5"
-                    : "bg-transparent"
-                    }`}
-            >
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16 sm:h-20">
-                        {/* Logo */}
-                        <Link href="/" className="flex items-center gap-2 group">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/25 group-hover:shadow-indigo-500/40 transition-shadow">
-                                <Zap size={20} className="text-white" />
-                            </div>
-                            <span className="text-lg sm:text-xl font-bold text-white">
-                                Poly<span className="text-indigo-400">GraalX</span>
-                            </span>
-                        </Link>
-
-                        {/* Desktop Navigation */}
-                        <div className="hidden md:flex items-center gap-1">
-                            {navLinks.map((link) => (
-                                <a
-                                    key={link.href}
-                                    href={link.href}
-                                    className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5"
-                                >
-                                    {link.label}
-                                </a>
-                            ))}
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex items-center justify-between h-16">
+                    {/* Logo */}
+                    <Link href="/" className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span className="text-white font-bold text-lg">P</span>
                         </div>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">
+                            Poly<span className="text-blue-600">GraalX</span>
+                        </span>
+                    </Link>
 
-                        {/* Desktop CTA */}
-                        <div className="hidden md:flex items-center gap-3">
-                            <Link
-                                href="/login"
-                                className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
+                    {/* Desktop Navigation */}
+                    <div className="hidden md:flex items-center gap-8">
+                        {navItems.map((item) => (
+                            <a
+                                key={item.label}
+                                href={item.href}
+                                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors"
                             >
-                                Sign In
-                            </Link>
-                            <Link
-                                href="https://t.me/Plmktradingbot"
-                                target="_blank"
-                                className="flex items-center gap-2 px-5 py-2.5 bg-white text-black font-semibold text-sm rounded-xl hover:bg-slate-100 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10"
-                            >
-                                Get Started
-                                <ExternalLink size={14} />
-                            </Link>
-                        </div>
+                                {item.label}
+                            </a>
+                        ))}
 
-                        {/* Mobile Menu Button */}
+                        {/* Theme Toggle */}
                         <button
-                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                            className="md:hidden p-2 text-slate-400 hover:text-white transition-colors"
-                            aria-label="Toggle menu"
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="Toggle theme"
                         >
-                            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                            {theme === "dark" ? (
+                                <Sun size={18} className="text-gray-700 dark:text-gray-300" />
+                            ) : (
+                                <Moon size={18} className="text-gray-700 dark:text-gray-300" />
+                            )}
+                        </button>
+
+                        <Link
+                            href="/login"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                        >
+                            Get Started
+                        </Link>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className="md:hidden flex items-center gap-2">
+                        <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                            aria-label="Toggle theme"
+                        >
+                            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+                        </button>
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                        >
+                            {isOpen ? <X size={20} /> : <Menu size={20} />}
                         </button>
                     </div>
                 </div>
-            </motion.nav>
+            </div>
 
             {/* Mobile Menu */}
-            <AnimatePresence>
-                {isMobileMenuOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-x-0 top-16 z-40 md:hidden"
-                    >
-                        <div className="bg-[#0A0B10]/95 backdrop-blur-xl border-b border-white/5 p-4">
-                            <div className="flex flex-col gap-2">
-                                {navLinks.map((link) => (
-                                    <a
-                                        key={link.href}
-                                        href={link.href}
-                                        onClick={() => setIsMobileMenuOpen(false)}
-                                        className="px-4 py-3 text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                                    >
-                                        {link.label}
-                                    </a>
-                                ))}
-                                <hr className="border-white/5 my-2" />
-                                <Link
-                                    href="/login"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="px-4 py-3 text-base font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-xl transition-colors"
-                                >
-                                    Sign In
-                                </Link>
-                                <Link
-                                    href="https://t.me/Plmktradingbot"
-                                    target="_blank"
-                                    onClick={() => setIsMobileMenuOpen(false)}
-                                    className="flex items-center justify-center gap-2 px-4 py-3 bg-white text-black font-semibold rounded-xl mt-2"
-                                >
-                                    Get Started
-                                    <ExternalLink size={16} />
-                                </Link>
-                            </div>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950"
+                >
+                    <div className="px-4 py-4 space-y-3">
+                        {navItems.map((item) => (
+                            <a
+                                key={item.label}
+                                href={item.href}
+                                className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-500"
+                                onClick={() => setIsOpen(false)}
+                            >
+                                {item.label}
+                            </a>
+                        ))}
+                        <Link
+                            href="/login"
+                            className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            Get Started
+                        </Link>
+                    </div>
+                </motion.div>
+            )}
+        </nav>
     );
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import Stats from "@/components/landing/Stats";
@@ -51,19 +51,21 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-[#06070A] text-white overflow-x-hidden">
-      <Navbar />
+    <ThemeProvider>
+      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white overflow-x-hidden">
+        <Navbar />
 
-      <main>
-        <Hero />
-        <Stats />
-        <Features />
-        <RadarShowcase />
-        <Pricing />
-        <CTA />
-      </main>
+        <main>
+          <Hero />
+          <Stats />
+          <Features />
+          <RadarShowcase />
+          <Pricing />
+          <CTA />
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </ThemeProvider>
   );
 }
