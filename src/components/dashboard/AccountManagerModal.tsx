@@ -2,19 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, DollarSign, Target, TrendingDown, TrendingUp, AlertTriangle, Save } from "lucide-react";
-import { paperStore, PaperTradingSettings } from "@/lib/paper-trading";
-
-type AccountManagerModalProps = {
-    isOpen: boolean;
-    onClose: () => void;
-    onUpdate: () => void;
-};
-
-"use client";
-
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { X, DollarSign, Target, TrendingDown, TrendingUp, AlertTriangle, Save, Wallet, ShieldCheck, Zap } from "lucide-react";
 import { paperStore, PaperTradingSettings } from "@/lib/paper-trading";
 
@@ -23,6 +10,7 @@ type AccountManagerModalProps = {
     onClose: () => void;
     onUpdate: () => void;
 };
+
 
 // Animation variants
 const modalVariants = {
