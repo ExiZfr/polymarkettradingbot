@@ -254,16 +254,16 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                             <X size={20} />
                         </button>
 
-                        <div className="relative z-10 p-8 space-y-8">
+                        <div className="relative z-10 p-4 sm:p-6 md:p-8 space-y-6 md:space-y-8">
 
                             {/* --- HEADER --- */}
-                            <motion.div variants={itemVariants} className="flex items-center gap-4 border-b border-[#2d323b] pb-6">
-                                <div className="w-12 h-12 rounded-lg bg-[#2e7cf6] flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
-                                    <Wallet size={24} />
+                            <motion.div variants={itemVariants} className="flex items-center gap-3 sm:gap-4 border-b border-[#2d323b] pb-4 md:pb-6">
+                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-[#2e7cf6] flex items-center justify-center text-white shadow-lg shadow-blue-900/20">
+                                    <Wallet className="w-5 h-5 sm:w-6 sm:h-6" />
                                 </div>
                                 <div>
-                                    <h1 className="text-2xl font-semibold text-[#e4e6ea] tracking-tight">Paper Trading</h1>
-                                    <p className="text-sm text-[#8ba1be]">
+                                    <h1 className="text-xl sm:text-2xl font-semibold text-[#e4e6ea] tracking-tight">Paper Trading</h1>
+                                    <p className="text-xs sm:text-sm text-[#8ba1be]">
                                         {view === 'list' && "Manage your simulation portfolios."}
                                         {view === 'settings' && "Configure portfolio parameters."}
                                         {view === 'create' && "Initialize a new trading account."}
@@ -333,7 +333,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
 
                             {/* --- VIEW: CREATE PROFILE --- */}
                             {view === 'create' && (
-                                <motion.div variants={itemVariants} className="max-w-2xl mx-auto space-y-8 py-4">
+                                <motion.div variants={itemVariants} className="max-w-2xl mx-auto space-y-6 md:space-y-8 py-2 md:py-4">
                                     <div className="space-y-6">
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                             <div>
@@ -381,7 +381,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                                 >
                                                     <div className="pt-4 pb-2 space-y-6">
                                                         {/* Presets Grid */}
-                                                        <div className="grid grid-cols-3 gap-3">
+                                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                                             <button
                                                                 onClick={() => setNewProfileSettings({ ...newProfileSettings, ...RISK_PRESETS.CONSERVATIVE })}
                                                                 className="flex flex-col items-center justify-center p-3 rounded-lg border border-[#2d323b] bg-[#0e1115] hover:border-[#27aa80] hover:bg-[#27aa80]/10 transition-all group"
@@ -526,26 +526,26 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                     </div>
                                 </motion.div>
                             )}
-
+                            ```
                             {/* --- VIEW: DELETE CONFIRMATION --- */}
                             {view === 'delete_confirm' && (
                                 <motion.div
                                     variants={itemVariants}
-                                    className="flex flex-col items-center justify-center text-center py-8 space-y-6"
+                                    className="flex flex-col items-center justify-center text-center py-6 md:py-8 space-y-4 md:space-y-6"
                                 >
                                     <div className="w-20 h-20 rounded-full bg-[#ef4444]/10 flex items-center justify-center border border-[#ef4444]/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.3)]">
                                         <AlertTriangle size={40} className="text-[#ef4444]" />
                                     </div>
 
-                                    <div className="space-y-2 max-w-md">
-                                        <h2 className="text-2xl font-bold text-[#e4e6ea]">Delete Portfolio?</h2>
-                                        <p className="text-[#8ba1be] text-sm leading-relaxed">
+                                    <div className="space-y-2 max-w-md px-4 sm:px-0">
+                                        <h2 className="text-xl sm:text-2xl font-bold text-[#e4e6ea]">Delete Portfolio?</h2>
+                                        <p className="text-[#8ba1be] text-xs sm:text-sm leading-relaxed">
                                             Are you sure you want to delete <span className="text-[#e4e6ea] font-semibold">{walletName}</span>?
                                             This action is <span className="text-[#ef4444]">irreversible</span> and ensures all trading data associated with this portfolio will be wiped.
                                         </p>
                                     </div>
 
-                                    <div className="w-full max-w-sm pt-6 flex gap-3">
+                                    <div className="w-full max-w-sm pt-6 flex flex-col sm:flex-row gap-3">
                                         <button
                                             onClick={() => setView('settings')}
                                             className="flex-1 px-4 py-3 rounded-lg font-medium text-sm text-[#e4e6ea] bg-[#2d323b] hover:bg-[#3d444d] transition-colors"
