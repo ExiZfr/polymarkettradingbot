@@ -1,15 +1,25 @@
+```typescript
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// PATCH /api/alerts/[id] - Update alert
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+/**
+ * PATCH /api/alerts/[id]
+ * Update an alert
+ */
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
+        const { id } = await params;
         const body = await req.json();
-        const { id } = params;
 
         const alert = await prisma.alert.update({
             where: { id },
-            data: body,
+            data: {
+                ...body,
+                updatedAt: new Date()
+            }
         });
 
         return NextResponse.json(alert);
@@ -19,13 +29,44 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     }
 }
 
-// DELETE /api/alerts/[id] - Delete alert
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+/**
+ * GET /api/alerts/[id]
+ * Get a specific alert by ID
+ */
+export async function GET(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
     try {
-        const { id } = params;
+        const { id } = await params;
 
+        const alert = await prisma.alert.findUnique({
+            where: { id }
+        });
+
+        if (!alert) {
+            return NextResponse.json({ error: 'Alert not found' }, { status: 404 });
+        }
+
+        return NextResponse.json(alert);
+    } catch (error) {
+        console.error('Failed to fetch alert:', error);
+        return NextResponse.json({ error: 'Failed to fetch alert' }, { status: 500 });
+    }
+}
+/**
+ * DELETE /api/alerts/[id]
+ * Delete an alert
+ */
+export async function DELETE(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+        
         await prisma.alert.delete({
-            where: { id },
+            where: { id }
         });
 
         return NextResponse.json({ success: true });
