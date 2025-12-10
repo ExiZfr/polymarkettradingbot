@@ -5,9 +5,9 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, TrendingDown, TrendingUp, AlertTriangle,
-    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, Target, ShieldAlert
+    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, ChevronDown
 } from "lucide-react";
-import { paperStore, PaperTradingSettings, PaperProfile } from "@/lib/paper-trading";
+import { paperStore, PaperTradingSettings, PaperProfile, DEFAULT_SETTINGS } from "@/lib/paper-trading";
 
 type AccountManagerModalProps = {
     isOpen: boolean;
@@ -43,13 +43,16 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
     const [profiles, setProfiles] = useState<PaperProfile[]>([]);
     const [activeProfileId, setActiveProfileId] = useState<string>("");
 
-    // Settings State (for the active/selected profile)
+    // Settings State (for the active/selected profile editing)
     const [settings, setSettings] = useState<PaperTradingSettings | null>(null);
     const [walletName, setWalletName] = useState("");
 
     // New Profile State
     const [newProfileName, setNewProfileName] = useState("");
     const [newProfileBalance, setNewProfileBalance] = useState(1000);
+    // Expandable advanced settings for creation
+    const [showAdvancedCreate, setShowAdvancedCreate] = useState(false);
+    const [newProfileSettings, setNewProfileSettings] = useState<PaperTradingSettings>(DEFAULT_SETTINGS);
 
     const [mounted, setMounted] = useState(false);
 
@@ -65,8 +68,8 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
         const activeId = paperStore.getActiveProfileId();
         setActiveProfileId(activeId);
 
-        // Load effective settings for current active profile
-        setSettings(paperStore.getEffectiveSettings(activeId));
+        // Load settings for current active profile
+        setSettings(paperStore.getSettings());
         const currentProfile = paperStore.getActiveProfile();
         setWalletName(currentProfile.username || "Paper Trader");
     };
@@ -75,69 +78,150 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
         if (isOpen) {
             reloadData();
             setView('list'); // Default to list view on open
+            setNewProfileSettings(DEFAULT_SETTINGS); // Reset create defaults
+            setShowAdvancedCreate(false);
         }
     }, [isOpen]);
 
     const handleSwitchProfile = (id: string) => {
         paperStore.switchProfile(id);
         reloadData();
-        onUpdate();
+        onUpdate(); // Update parent widget
     };
 
     const handleCreateProfile = () => {
         if (!newProfileName.trim()) return;
-        const newProfile = paperStore.createProfile(newProfileName, newProfileBalance);
-        paperStore.switchProfile(newProfile.id);
+        // Merge base balance into settings
+        const finalSettings = {
+            ...newProfileSettings,
+            initialBalance: newProfileBalance
+        };
+
+        const newProfile = paperStore.createProfile(newProfileName, newProfileBalance, finalSettings);
+        paperStore.switchProfile(newProfile.id); // Auto-switch to new
         reloadData();
         onUpdate();
         setView('list');
+        // Reset form
         setNewProfileName("");
         setNewProfileBalance(1000);
+        setNewProfileSettings(DEFAULT_SETTINGS);
     };
 
     const handleSaveSettings = () => {
         if (!settings) return;
-
-        // Save specifics for THIS profile
-        const activeId = paperStore.getActiveProfileId();
-
-        // Update profile with new name, balance (reset), and SETTINGS
-        paperStore.saveProfile({
-            id: activeId,
-            username: walletName,
-            initialBalance: settings.initialBalance,
-            currentBalance: settings.initialBalance, // Reset balance on explicit save as per "Reset" warning
-            settings: settings // PER-PROFILE settings
-        });
-
-        // Reset Logic: User explicitly saved, implying a reset of parameters
-        // The above saveProfile handles basic overrides, but we might want to clear orders
-        // paperStore.resetProfile() logic might be needed if we want to CLEAR history.
-        // For now, let's treat "Confirm Configuration" as a soft-reset of parameters and balance, 
-        // but maybe we should call resetProfile to be safe if balance changed profoundly.
-
-        // Let's use the safer route:
+        paperStore.saveSettings(settings);
         paperStore.resetProfile(settings.initialBalance);
-        // Re-apply the new settings and name because resetProfile might revert to old saved ones if we don't save again
-        paperStore.saveProfile({
-            id: activeId,
-            username: walletName,
-            settings: settings
-        });
+        paperStore.saveProfile({ username: walletName });
 
         reloadData();
         onUpdate();
         setView('list');
     };
 
-    const getRiskRewardRatio = () => {
-        if (!settings || settings.autoStopLoss === 0) return "N/A";
-        // Simple Ratio: TP / SL
-        const ratio = settings.autoTakeProfit / settings.autoStopLoss;
-        return `1:${ratio.toFixed(1)}`;
-    };
-
     if (!mounted) return null;
+
+    // Helper to render risk settings form (reusable for both Create and Edit)
+    const renderRiskSettings = (
+        currentSettings: PaperTradingSettings,
+        updateSettings: (s: PaperTradingSettings) => void
+    ) => (
+        <div className="space-y-6">
+            <h2 className="text-sm font-semibold text-[#8ba1be] uppercase tracking-wider flex items-center gap-2">
+                <Zap size={14} />
+                Risk Controls
+            </h2>
+
+            {/* Risk Per Trade */}
+            <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-5">
+                <div className="flex justify-between items-center mb-4">
+                    <div>
+                        <h3 className="text-base font-medium text-[#e4e6ea]">Position Sizing</h3>
+                        <p className="text-xs text-[#6a7380] mt-0.5">Percentage of balance allocated per trade</p>
+                    </div>
+                    <div className="text-2xl font-mono font-bold text-[#e4e6ea]">{currentSettings.riskPerTrade}<span className="text-sm text-[#2e7cf6]">%</span></div>
+                </div>
+                <div className="relative h-2 bg-[#2d323b] rounded-full overflow-hidden">
+                    <div
+                        className="absolute top-0 left-0 h-full bg-[#2e7cf6] transition-all duration-300"
+                        style={{ width: `${(currentSettings.riskPerTrade / 25) * 100}%` }}
+                    />
+                </div>
+                <input
+                    type="range" min="1" max="25" step="1"
+                    value={currentSettings.riskPerTrade}
+                    onChange={(e) => updateSettings({ ...currentSettings, riskPerTrade: parseInt(e.target.value) })}
+                    className="absolute w-full h-2 -mt-2 opacity-0 cursor-pointer"
+                />
+            </div>
+
+            {/* Automation Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Stop Loss */}
+                <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-4 group hover:border-[#ef4444]/50 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-[#e4e6ea]">Stop Loss</span>
+                        <TrendingDown size={16} className="text-[#ef4444]" />
+                    </div>
+                    <div className="flex items-baseline gap-1 mb-2">
+                        <span className="text-2xl font-mono font-bold text-[#e4e6ea]">-{currentSettings.autoStopLoss}</span>
+                        <span className="text-xs text-[#8ba1be]">%</span>
+                    </div>
+                    <input
+                        type="range" min="0" max="50"
+                        value={currentSettings.autoStopLoss}
+                        onChange={(e) => updateSettings({ ...currentSettings, autoStopLoss: parseInt(e.target.value) })}
+                        className="w-full h-1 bg-[#2d323b] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#ef4444]"
+                    />
+                </div>
+                {/* Take Profit */}
+                <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-4 group hover:border-[#22c55e]/50 transition-colors">
+                    <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium text-[#e4e6ea]">Take Profit</span>
+                        <TrendingUp size={16} className="text-[#22c55e]" />
+                    </div>
+                    <div className="flex items-baseline gap-1 mb-2">
+                        <span className="text-2xl font-mono font-bold text-[#e4e6ea]">+{currentSettings.autoTakeProfit}</span>
+                        <span className="text-xs text-[#8ba1be]">%</span>
+                    </div>
+                    <input
+                        type="range" min="0" max="100"
+                        value={currentSettings.autoTakeProfit}
+                        onChange={(e) => updateSettings({ ...currentSettings, autoTakeProfit: parseInt(e.target.value) })}
+                        className="w-full h-1 bg-[#2d323b] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#22c55e]"
+                    />
+                </div>
+            </div>
+
+            {/* Advanced Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-xs font-medium text-[#8ba1be] mb-2">Concurrency Limit</label>
+                    <select
+                        value={currentSettings.maxOpenPositions}
+                        onChange={(e) => updateSettings({ ...currentSettings, maxOpenPositions: parseInt(e.target.value) })}
+                        className="w-full px-3 py-3 bg-[#0e1115] border border-[#2d323b] rounded-lg text-[#e4e6ea] text-sm focus:outline-none focus:border-[#2e7cf6] transition-colors"
+                    >
+                        {[1, 3, 5, 10, 20, 50].map(num => (
+                            <option key={num} value={num} className="bg-[#0e1115]">{num} Open Positions Max</option>
+                        ))}
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-xs font-medium text-[#8ba1be] mb-2">Strategy Options</label>
+                    <button
+                        onClick={() => updateSettings({ ...currentSettings, allowShorts: !currentSettings.allowShorts })}
+                        className={`w-full px-4 py-2.5 rounded-lg border flex items-center justify-between transition-all ${currentSettings.allowShorts ? 'bg-[#2e7cf6]/10 border-[#2e7cf6] text-[#e4e6ea]' : 'bg-[#0e1115] border-[#2d323b] text-[#8ba1be] hover:border-[#8ba1be]'}`}
+                    >
+                        <span className="text-sm font-medium">Allow Shorting</span>
+                        <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${currentSettings.allowShorts ? 'bg-[#2e7cf6]' : 'bg-[#2d323b]'}`}>
+                            <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${currentSettings.allowShorts ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     return createPortal(
         <AnimatePresence>
@@ -181,7 +265,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                     <h1 className="text-2xl font-semibold text-[#e4e6ea] tracking-tight">Paper Trading</h1>
                                     <p className="text-sm text-[#8ba1be]">
                                         {view === 'list' && "Manage your simulation portfolios."}
-                                        {view === 'settings' && "Configure granular risk parameters."}
+                                        {view === 'settings' && "Configure portfolio parameters."}
                                         {view === 'create' && "Initialize a new trading account."}
                                     </p>
                                 </div>
@@ -196,8 +280,8 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                                 key={profile.id}
                                                 onClick={() => handleSwitchProfile(profile.id)}
                                                 className={`relative p-5 rounded-xl border cursor-pointer transition-all group ${profile.id === activeProfileId
-                                                        ? 'bg-[#2e7cf6]/5 border-[#2e7cf6] shadow-[0_0_20px_-12px_rgba(46,124,246,0.3)]'
-                                                        : 'bg-[#0e1115] border-[#2d323b] hover:border-[#8ba1be]'
+                                                    ? 'bg-[#2e7cf6]/5 border-[#2e7cf6] shadow-[0_0_20px_-12px_rgba(46,124,246,0.3)]'
+                                                    : 'bg-[#0e1115] border-[#2d323b] hover:border-[#8ba1be]'
                                                     }`}
                                             >
                                                 <div className="flex justify-between items-start mb-4">
@@ -249,34 +333,61 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
 
                             {/* --- VIEW: CREATE PROFILE --- */}
                             {view === 'create' && (
-                                <motion.div variants={itemVariants} className="max-w-md mx-auto space-y-8 py-4">
-                                    <div className="space-y-4">
-                                        <div>
-                                            <label className="block text-xs font-medium text-[#8ba1be] mb-2">Portfolio Name</label>
-                                            <input
-                                                type="text"
-                                                autoFocus
-                                                value={newProfileName}
-                                                onChange={(e) => setNewProfileName(e.target.value)}
-                                                className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg p-3 text-base text-[#e4e6ea] focus:outline-none focus:border-[#2e7cf6] font-medium"
-                                                placeholder="e.g. High Risk Bot"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-medium text-[#8ba1be] mb-2">Initial Funding</label>
-                                            <div className="relative">
-                                                <span className="absolute inset-y-0 left-3 flex items-center text-lg text-[#27aa80]">$</span>
+                                <motion.div variants={itemVariants} className="max-w-2xl mx-auto space-y-8 py-4">
+                                    <div className="space-y-6">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Portfolio Name</label>
                                                 <input
-                                                    type="number"
-                                                    value={newProfileBalance}
-                                                    onChange={(e) => setNewProfileBalance(parseFloat(e.target.value))}
-                                                    className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg py-3 pl-8 pr-3 text-lg font-bold text-[#e4e6ea] focus:outline-none focus:border-[#27aa80] font-mono"
+                                                    type="text"
+                                                    autoFocus
+                                                    value={newProfileName}
+                                                    onChange={(e) => setNewProfileName(e.target.value)}
+                                                    className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg p-3 text-base text-[#e4e6ea] focus:outline-none focus:border-[#2e7cf6] font-medium"
+                                                    placeholder="e.g. High Risk Bot"
                                                 />
                                             </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Initial Funding</label>
+                                                <div className="relative">
+                                                    <span className="absolute inset-y-0 left-3 flex items-center text-lg text-[#27aa80]">$</span>
+                                                    <input
+                                                        type="number"
+                                                        value={newProfileBalance}
+                                                        onChange={(e) => setNewProfileBalance(parseFloat(e.target.value))}
+                                                        className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg py-3 pl-8 pr-3 text-lg font-bold text-[#e4e6ea] focus:outline-none focus:border-[#27aa80] font-mono"
+                                                    />
+                                                </div>
+                                            </div>
                                         </div>
+
+                                        {/* Advanced Configuration Toggle */}
+                                        <button
+                                            onClick={() => setShowAdvancedCreate(!showAdvancedCreate)}
+                                            className="flex items-center gap-2 text-sm text-[#2e7cf6] font-medium hover:text-[#4a9eff] transition-colors"
+                                        >
+                                            {showAdvancedCreate ? "Quick Setup" : "Configure Strategy Parameters"}
+                                            <ChevronDown size={14} className={`transition-transform ${showAdvancedCreate ? 'rotate-180' : ''}`} />
+                                        </button>
+
+                                        {/* Advanced Settings Form */}
+                                        <AnimatePresence>
+                                            {showAdvancedCreate && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pt-4 pb-2">
+                                                        {renderRiskSettings(newProfileSettings, setNewProfileSettings)}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
 
-                                    <div className="flex gap-4">
+                                    <div className="flex gap-4 border-t border-[#2d323b] pt-6">
                                         <button
                                             onClick={() => setView('list')}
                                             className="px-6 py-3 rounded-lg font-medium text-sm text-[#8ba1be] hover:text-[#e4e6ea] hover:bg-[#2d323b]/50 transition-colors"
@@ -289,13 +400,13 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                             className="flex-1 px-8 py-3 rounded-lg font-semibold text-sm bg-[#e4e6ea] text-[#0e1115] hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
                                         >
                                             <Plus size={18} />
-                                            Create Portfolio
+                                            Initialize Portfolio
                                         </button>
                                     </div>
                                 </motion.div>
                             )}
 
-                            {/* --- VIEW: SETTINGS (Granular Risk Control) --- */}
+                            {/* --- VIEW: SETTINGS (Edit Active) --- */}
                             {view === 'settings' && settings && (
                                 <motion.div variants={itemVariants} className="space-y-6">
                                     {/* Navigation to go back */}
@@ -307,31 +418,24 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         Back to Portfolios
                                     </button>
 
-                                    {/* === SECTION: IDENTITY === */}
+                                    {/* Identity (Edit) */}
                                     <div className="space-y-6">
                                         <h2 className="text-sm font-semibold text-[#8ba1be] uppercase tracking-wider flex items-center gap-2">
                                             <Info size={14} />
-                                            Configuration: <span className="text-[#e4e6ea]">{activeProfileId === activeProfileId ? walletName : 'Editing...'}</span>
+                                            Active Account: <span className="text-[#e4e6ea]">{activeProfileId === activeProfileId ? walletName : 'Editing...'}</span>
                                         </h2>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            {/* Wallet Name */}
                                             <div>
-                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Portfolio Alias</label>
-                                                <div className="relative">
-                                                    <span className="absolute inset-y-0 left-3 flex items-center text-[#2d323b]">
-                                                        <User size={16} />
-                                                    </span>
-                                                    <input
-                                                        type="text"
-                                                        value={walletName}
-                                                        onChange={(e) => setWalletName(e.target.value)}
-                                                        className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg py-3 pl-10 pr-3 text-base text-[#e4e6ea] placeholder:text-[#2d323b] focus:outline-none focus:border-[#2e7cf6] transition-all font-medium"
-                                                    />
-                                                </div>
+                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Wallet Alias</label>
+                                                <input
+                                                    type="text"
+                                                    value={walletName}
+                                                    onChange={(e) => setWalletName(e.target.value)}
+                                                    className="w-full bg-[#0e1115] border border-[#2d323b] rounded-lg p-3 text-base text-[#e4e6ea] placeholder:text-[#2d323b] focus:outline-none focus:border-[#2e7cf6] transition-all font-medium"
+                                                />
                                             </div>
-                                            {/* Starting Balance */}
                                             <div>
-                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Reset Initial Capital (USDC)</label>
+                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Reset Capital (USDC)</label>
                                                 <div className="relative">
                                                     <span className="absolute inset-y-0 left-3 flex items-center text-xl text-[#27aa80]">$</span>
                                                     <input
@@ -345,129 +449,14 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         </div>
                                     </div>
 
-                                    {/* === SECTION: RISK MANAGEMENT === */}
-                                    <div className="space-y-6">
-                                        <div className="flex items-center justify-between">
-                                            <h2 className="text-sm font-semibold text-[#8ba1be] uppercase tracking-wider flex items-center gap-2">
-                                                <ShieldAlert size={14} />
-                                                Granular Risk Controls
-                                            </h2>
-
-                                            {/* R:R Visualization */}
-                                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#2d323b]/30 border border-[#2d323b]">
-                                                <span className="text-xs text-[#8ba1be]">Projected R:R</span>
-                                                <span className="text-xs font-mono font-bold text-[#e4e6ea]">{getRiskRewardRatio()}</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Risk Per Trade */}
-                                        <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-5">
-                                            <div className="flex justify-between items-center mb-4">
-                                                <div>
-                                                    <h3 className="text-base font-medium text-[#e4e6ea]">Capital at Risk (Per Trade)</h3>
-                                                    <p className="text-xs text-[#6a7380] mt-0.5">Max drawdown per single position from total balance.</p>
-                                                </div>
-                                                <div className="text-2xl font-mono font-bold text-[#e4e6ea]">{settings.riskPerTrade}<span className="text-sm text-[#2e7cf6]">%</span></div>
-                                            </div>
-                                            <div className="relative h-2 bg-[#2d323b] rounded-full overflow-hidden">
-                                                <div
-                                                    className="absolute top-0 left-0 h-full bg-[#2e7cf6] transition-all duration-300"
-                                                    style={{ width: `${(settings.riskPerTrade / 25) * 100}%` }}
-                                                />
-                                            </div>
-                                            <input
-                                                type="range" min="1" max="25" step="1"
-                                                value={settings.riskPerTrade}
-                                                onChange={(e) => setSettings({ ...settings, riskPerTrade: parseInt(e.target.value) })}
-                                                className="absolute w-full h-2 -mt-2 opacity-0 cursor-pointer"
-                                            />
-                                            <div className="flex justify-between text-[10px] font-mono text-[#6a7380] pt-2">
-                                                <span>Conservative (1%)</span>
-                                                <span>Moderate (5-10%)</span>
-                                                <span>Degen (25%)</span>
-                                            </div>
-                                        </div>
-
-                                        {/* Automation Grid */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            {/* Stop Loss with Viz */}
-                                            <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-4 group hover:border-[#ef4444]/50 transition-colors">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-[#e4e6ea]">Auto Stop Loss</span>
-                                                    <TrendingDown size={16} className="text-[#ef4444]" />
-                                                </div>
-                                                <div className="flex items-baseline gap-1 mb-2">
-                                                    <span className="text-2xl font-mono font-bold text-[#e4e6ea]">-{settings.autoStopLoss}</span>
-                                                    <span className="text-xs text-[#8ba1be]">%</span>
-                                                </div>
-                                                <input
-                                                    type="range" min="0" max="90"
-                                                    value={settings.autoStopLoss}
-                                                    onChange={(e) => setSettings({ ...settings, autoStopLoss: parseInt(e.target.value) })}
-                                                    className="w-full h-1 bg-[#2d323b] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#ef4444]"
-                                                />
-                                                <p className="text-[10px] text-[#6a7380] mt-2">Triggers market sell if price drops by this %.</p>
-                                            </div>
-
-                                            {/* Take Profit with Viz */}
-                                            <div className="bg-[#0e1115] border border-[#2d323b] rounded-lg p-4 group hover:border-[#22c55e]/50 transition-colors">
-                                                <div className="flex justify-between items-center mb-2">
-                                                    <span className="text-sm font-medium text-[#e4e6ea]">Auto Take Profit</span>
-                                                    <TrendingUp size={16} className="text-[#22c55e]" />
-                                                </div>
-                                                <div className="flex items-baseline gap-1 mb-2">
-                                                    <span className="text-2xl font-mono font-bold text-[#e4e6ea]">+{settings.autoTakeProfit}</span>
-                                                    <span className="text-xs text-[#8ba1be]">%</span>
-                                                </div>
-                                                <input
-                                                    type="range" min="0" max="500"
-                                                    value={settings.autoTakeProfit}
-                                                    onChange={(e) => setSettings({ ...settings, autoTakeProfit: parseInt(e.target.value) })}
-                                                    className="w-full h-1 bg-[#2d323b] rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-[#22c55e]"
-                                                />
-                                                <p className="text-[10px] text-[#6a7380] mt-2">Secure profit when price increases by this %.</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Max Positions & Strategy */}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Max Open Positions</label>
-                                                <div className="relative">
-                                                    <span className="absolute inset-y-0 left-3 flex items-center text-[#2d323b]">
-                                                        <Target size={16} />
-                                                    </span>
-                                                    <select
-                                                        value={settings.maxOpenPositions}
-                                                        onChange={(e) => setSettings({ ...settings, maxOpenPositions: parseInt(e.target.value) })}
-                                                        className="w-full pl-10 pr-3 py-3 bg-[#0e1115] border border-[#2d323b] rounded-lg text-[#e4e6ea] text-sm focus:outline-none focus:border-[#2e7cf6] transition-colors appearance-none"
-                                                    >
-                                                        {[1, 3, 5, 10, 20, 50].map(num => (
-                                                            <option key={num} value={num} className="bg-[#0e1115]">{num} Concurrent Trades</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-[#8ba1be] mb-2">Short Selling</label>
-                                                <button
-                                                    onClick={() => setSettings({ ...settings, allowShorts: !settings.allowShorts })}
-                                                    className={`w-full px-4 py-2.5 rounded-lg border flex items-center justify-between transition-all ${settings.allowShorts ? 'bg-[#2e7cf6]/10 border-[#2e7cf6] text-[#e4e6ea]' : 'bg-[#0e1115] border-[#2d323b] text-[#8ba1be] hover:border-[#8ba1be]'}`}
-                                                >
-                                                    <span className="text-sm font-medium">Enable Shorting</span>
-                                                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${settings.allowShorts ? 'bg-[#2e7cf6]' : 'bg-[#2d323b]'}`}>
-                                                        <div className={`w-3 h-3 rounded-full bg-white shadow-sm transition-transform ${settings.allowShorts ? 'translate-x-4' : 'translate-x-0'}`} />
-                                                    </div>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    {/* Risk Management (Edit) - Reuse Config */}
+                                    {renderRiskSettings(settings, setSettings)}
 
                                     {/* Warning */}
                                     <div className="p-4 rounded-lg bg-[#eab308]/10 border border-[#eab308]/20 flex items-start gap-3">
                                         <AlertTriangle size={18} className="text-[#eab308] flex-shrink-0 mt-0.5" />
                                         <div className="text-xs text-[#eab308]/90 leading-relaxed">
-                                            <strong className="font-semibold text-[#eab308]">Notice:</strong> These risk settings are specific to the <strong>{walletName}</strong> portfolio. Saving will apply them immediately for future orders.
+                                            <strong className="font-semibold text-[#eab308]">System Reset Required:</strong> Saving changes will archive current performance data for this profile and re-initialize it.
                                         </div>
                                     </div>
 
