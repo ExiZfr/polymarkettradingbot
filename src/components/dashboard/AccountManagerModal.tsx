@@ -573,13 +573,9 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                             )}
                         </div>
                     </motion.div>
-                            )}
-                </div>
-                    </motion.div>
-                </motion.div >
-            )
-}
-        </AnimatePresence >,
-    document.body
+                </motion.div>
+            )}
+        </AnimatePresence>,
+        document.body
     );
 }
