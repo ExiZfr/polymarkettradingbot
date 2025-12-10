@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, TrendingDown, TrendingUp, AlertTriangle,
-    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, ChevronDown, Shield, Target
+    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, ChevronDown, Shield, Target, Trash2
 } from "lucide-react";
 import { paperStore, PaperTradingSettings, PaperProfile, DEFAULT_SETTINGS, RISK_PRESETS } from "@/lib/paper-trading";
 
@@ -488,8 +488,37 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         </div>
                                     </div>
 
+                                    {/* Danger Zone */}
+                                    <div className="pt-6 border-t border-[#2d323b] space-y-4">
+                                        <h3 className="text-sm font-semibold text-[#ef4444] uppercase tracking-wider">Danger Zone</h3>
+                                        <div className="flex items-center justify-between p-4 rounded-lg border border-[#ef4444]/20 bg-[#ef4444]/5">
+                                            <div>
+                                                <div className="text-[#e4e6ea] font-medium text-sm">Delete Portfolio</div>
+                                                <div className="text-xs text-[#ef4444]/80">Permanently remove this profile and all its trade history.</div>
+                                            </div>
+                                            <button
+                                                onClick={() => {
+                                                    if (confirm("Are you sure you want to delete this portfolio? This action cannot be undone.")) {
+                                                        const success = paperStore.deleteProfile(activeProfileId);
+                                                        if (success) {
+                                                            reloadData();
+                                                            onUpdate(); // Update widget
+                                                            setView('list');
+                                                        } else {
+                                                            alert("Cannot delete the last remaining profile.");
+                                                        }
+                                                    }
+                                                }}
+                                                className="px-4 py-2 rounded-lg bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444] hover:text-white transition-colors text-xs font-bold border border-[#ef4444]/20 flex items-center gap-2"
+                                            >
+                                                <Trash2 size={14} />
+                                                Delete
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     {/* Footer Actions */}
-                                    <div className="flex gap-4 pt-2 border-t border-[#2d323b]">
+                                    <div className="flex gap-4 pt-2">
                                         <button
                                             onClick={() => setView('list')}
                                             className="px-6 py-3 rounded-lg font-medium text-sm text-[#8ba1be] hover:text-[#e4e6ea] hover:bg-[#2d323b]/50 transition-colors"
