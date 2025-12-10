@@ -4,7 +4,6 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Sun, Moon } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { ToastProvider } from "@/contexts/ToastContext";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
@@ -60,22 +59,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <ToastProvider>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex overflow-hidden font-sans selection:bg-blue-500/30">
-                <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex overflow-hidden font-sans selection:bg-blue-500/30">
+            <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-                {/* Main Content */}
-                <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 relative">
-                    <DashboardHeader toggleSidebar={toggleSidebar} />
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 relative">
+                <DashboardHeader toggleSidebar={toggleSidebar} />
 
-                    {/* Page Content */}
-                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10">
-                        <div className="max-w-7xl mx-auto">
-                            {children}
-                        </div>
-                    </main>
-                </div>
+                {/* Page Content */}
+                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10">
+                    <div className="max-w-7xl mx-auto">
+                        {children}
+                    </div>
+                </main>
             </div>
-        </ToastProvider>
+        </div>
     );
 }
