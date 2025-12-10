@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
+import { Menu, Sun, Moon } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { ToastProvider } from "@/contexts/ToastContext";
-import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
-import { Sun, Moon } from "lucide-react";
+import { useTheme } from "@/contexts/ThemeContext";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
     const { theme, toggleTheme } = useTheme();
@@ -54,39 +53,29 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
     );
 }
 
-function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const pathname = usePathname();
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex overflow-hidden font-sans selection:bg-blue-500/30">
-            <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
+        <ToastProvider>
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white flex overflow-hidden font-sans selection:bg-blue-500/30">
+                <Sidebar isSidebarOpen={isSidebarOpen} setSidebarOpen={setSidebarOpen} />
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 relative">
-                <DashboardHeader toggleSidebar={toggleSidebar} />
+                {/* Main Content */}
+                <div className="flex-1 flex flex-col h-screen overflow-hidden bg-gray-50 dark:bg-gray-950 relative">
+                    <DashboardHeader toggleSidebar={toggleSidebar} />
 
-                {/* Page Content */}
-                <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10">
-                    <div className="max-w-7xl mx-auto">
-                        {children}
-                    </div>
-                </main>
+                    {/* Page Content */}
+                    <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 z-10">
+                        <div className="max-w-7xl mx-auto">
+                            {children}
+                        </div>
+                    </main>
+                </div>
             </div>
-        </div>
-    );
-}
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <ThemeProvider>
-            <ToastProvider>
-                <DashboardLayoutContent>
-                    {children}
-                </DashboardLayoutContent>
-            </ToastProvider>
-        </ThemeProvider>
+        </ToastProvider>
     );
 }

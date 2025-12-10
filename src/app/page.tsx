@@ -51,21 +51,19 @@ export const metadata: Metadata = {
 
 export default function LandingPage() {
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white overflow-x-hidden">
-        <Navbar />
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white overflow-x-hidden">
+      <Navbar />
 
-        <main>
-          <Hero />
-          <Stats />
-          <Features />
-          <RadarShowcase />
-          <Pricing />
-          <CTA />
-        </main>
+      <main>
+        <Hero />
+        <Stats />
+        <Features />
+        <RadarShowcase />
+        <Pricing />
+        <CTA />
+      </main>
 
-        <Footer />
-      </div>
-    </ThemeProvider>
+      <Footer />
+    </div>
   );
 }
