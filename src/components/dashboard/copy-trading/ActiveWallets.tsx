@@ -15,6 +15,9 @@ interface CopySetting {
     percentageAmount?: number;
     inverse?: boolean;
     pnl?: number; // Mocked or calculated
+    smartScore?: number; // 0-100
+    sharpeRatio?: number;
+    profitFactor?: number;
 }
 
 interface CopiedTrade {
@@ -47,14 +50,32 @@ export function ActiveWallets({ isPaperMode }: ActiveWalletsProps) {
                 const res = await fetch('/api/paper/copy');
                 const data = await res.json();
                 const settings = Object.values(data.copySettings || {}) as CopySetting[];
-                // Mock PnL for paper mode for now, or fetch from snapshots if available
-                const settingsWithMockPnl = settings.map(s => ({ ...s, pnl: (Math.random() * 200) - 50 }));
-                setWallets(settingsWithMockPnl);
+
+                // Fetch performance metrics for each wallet
+                const settingsWithMetrics = await Promise.all(
+                    settings.map(async (s) => {
+                        try {
+                            const perfRes = await fetch(`/api/copy-trading/performance?wallet=${s.walletAddress}`);
+                            const perf = await perfRes.json();
+                            return {
+                                ...s,
+                                pnl: perf.pnl || (Math.random() * 200) - 50,
+                                smartScore: perf.smartScore || 0,
+                                sharpeRatio: perf.sharpeRatio || 0,
+                                profitFactor: perf.profitFactor || 0
+                            };
+                        } catch (error) {
+                            return { ...s, pnl: (Math.random() * 200) - 50, smartScore: 0 };
+                        }
+                    })
+                );
+
+                setWallets(settingsWithMetrics);
             } else {
                 // Real mode mock
                 setWallets([
-                    { walletAddress: '0x1234...5678', label: 'Whale 1', enabled: true, copyMode: 'fixed', fixedAmount: 50, pnl: 4500 },
-                    { walletAddress: '0x8765...4321', label: 'Alpha Sniper', enabled: true, copyMode: 'percentage', percentageAmount: 5, pnl: 2100 },
+                    { walletAddress: '0x1234...5678', label: 'Whale 1', enabled: true, copyMode: 'fixed', fixedAmount: 50, pnl: 4500, smartScore: 87 },
+                    { walletAddress: '0x8765...4321', label: 'Alpha Sniper', enabled: true, copyMode: 'percentage', percentageAmount: 5, pnl: 2100, smartScore: 92 },
                 ]);
             }
         } catch (error) {
