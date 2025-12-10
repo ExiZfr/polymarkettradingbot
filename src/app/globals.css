@@ -45,16 +45,16 @@
 
 .dark {
   /* Dark mode (Deep Slate/Blue - Polymarket Style) */
-  --background: #0B1121;
-  /* Rich Dark Blue-Black (Custom Slate) */
+  --background: #0F172A;
+  /* Slate 900 - The distinct blue-black */
   --foreground: #F8FAFC;
   /* Slate 50 */
 
-  --card: #151E2E;
-  /* Slightly lighter than bg */
+  --card: #1E293B;
+  /* Slate 800 */
   --card-foreground: #F8FAFC;
 
-  --popover: #151E2E;
+  --popover: #1E293B;
   --popover-foreground: #F8FAFC;
 
   --primary: #3B82F6;
@@ -77,9 +77,9 @@
   --destructive: #7F1D1D;
   --destructive-foreground: #F8FAFC;
 
-  --border: #2D3748;
-  /* Custom Slate Border */
-  --input: #2D3748;
+  --border: #334155;
+  /* Slate 700 */
+  --input: #334155;
   --ring: #3B82F6;
 }
 

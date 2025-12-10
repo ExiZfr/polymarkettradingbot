@@ -17,16 +17,16 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-950/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+        <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
                     {/* Logo */}
                     <Link href="/" className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <span className="text-white font-bold text-lg">P</span>
+                        <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                            <span className="text-primary-foreground font-bold text-lg">P</span>
                         </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">
-                            Poly<span className="text-blue-600">GraalX</span>
+                        <span className="text-xl font-bold text-foreground">
+                            Poly<span className="text-primary">GraalX</span>
                         </span>
                     </Link>
 
@@ -36,7 +36,7 @@ export default function Navbar() {
                             <a
                                 key={item.label}
                                 href={item.href}
-                                className="text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-500 transition-colors"
+                                className="text-sm font-medium text-muted-foreground hover:text-primary transition-colors"
                             >
                                 {item.label}
                             </a>
@@ -45,19 +45,19 @@ export default function Navbar() {
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                            className="p-2 rounded-lg bg-secondary hover:bg-muted transition-colors"
                             aria-label="Toggle theme"
                         >
                             {theme === "dark" ? (
-                                <Sun size={18} className="text-gray-700 dark:text-gray-300" />
+                                <Sun size={18} className="text-foreground" />
                             ) : (
-                                <Moon size={18} className="text-gray-700 dark:text-gray-300" />
+                                <Moon size={18} className="text-foreground" />
                             )}
                         </button>
 
                         <Link
                             href="/login"
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg transition-colors"
                         >
                             Get Started
                         </Link>
@@ -67,16 +67,16 @@ export default function Navbar() {
                     <div className="md:hidden flex items-center gap-2">
                         <button
                             onClick={toggleTheme}
-                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                            className="p-2 rounded-lg bg-secondary"
                             aria-label="Toggle theme"
                         >
-                            {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+                            {theme === "dark" ? <Sun size={18} className="text-foreground" /> : <Moon size={18} className="text-foreground" />}
                         </button>
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="p-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+                            className="p-2 rounded-lg bg-secondary"
                         >
-                            {isOpen ? <X size={20} /> : <Menu size={20} />}
+                            {isOpen ? <X size={20} className="text-foreground" /> : <Menu size={20} className="text-foreground" />}
                         </button>
                     </div>
                 </div>
@@ -87,14 +87,14 @@ export default function Navbar() {
                 <motion.div
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="md:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950"
+                    className="md:hidden border-t border-border bg-background"
                 >
                     <div className="px-4 py-4 space-y-3">
                         {navItems.map((item) => (
                             <a
                                 key={item.label}
                                 href={item.href}
-                                className="block py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-500"
+                                className="block py-2 text-sm font-medium text-muted-foreground hover:text-primary"
                                 onClick={() => setIsOpen(false)}
                             >
                                 {item.label}
@@ -102,7 +102,7 @@ export default function Navbar() {
                         ))}
                         <Link
                             href="/login"
-                            className="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center"
+                            className="block px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-medium rounded-lg text-center"
                             onClick={() => setIsOpen(false)}
                         >
                             Get Started
