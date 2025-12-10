@@ -1,8 +1,8 @@
 "use client";
 
 // ============================================
-// PAPER TRADING ENGINE v2.0
-// Full-featured simulation trading system
+// PAPER TRADING ENGINE v2.1
+// Multi-Account Simulation System
 // ============================================
 
 // Types
@@ -21,6 +21,7 @@ export interface PaperTradingSettings {
 export interface PaperOrder {
     id: string;
     marketId: string;
+    profileId: string; // Linked to specific profile
     marketTitle: string;
     marketImage?: string;
     type: 'BUY' | 'SELL';
@@ -42,7 +43,8 @@ export interface PaperOrder {
 }
 
 export interface PaperProfile {
-    username: string;
+    id: string; // Unique ID
+    username: string; // Display Name
     initialBalance: number;
     currentBalance: number;
     totalPnL: number;
@@ -55,10 +57,11 @@ export interface PaperProfile {
     bestTrade: number;
     worstTrade: number;
     avgTradeSize: number;
-    active: boolean;
+    active: boolean; // Is this the currently selected profile globally?
     autoFollow: boolean;
     createdAt: number;
     lastTradeAt?: number;
+    settings?: Partial<PaperTradingSettings>; // Per-profile settings override (optional)
 }
 
 export interface PaperStats {
@@ -89,8 +92,11 @@ const DEFAULT_SETTINGS: PaperTradingSettings = {
     allowShorts: false
 };
 
+const DEFAULT_PROFILE_ID = "default_profile";
+
 const DEFAULT_PROFILE: PaperProfile = {
-    username: "Paper Trader",
+    id: DEFAULT_PROFILE_ID,
+    username: "Main Portfolio",
     initialBalance: 1000,
     currentBalance: 1000,
     totalPnL: 0,
@@ -109,9 +115,10 @@ const DEFAULT_PROFILE: PaperProfile = {
 };
 
 // Storage Keys
-const STORAGE_KEY = "polybot_paper_trading";
+const STORAGE_KEY = "polybot_paper_trading_v2"; // Bumped version
 const SETTINGS_KEY = `${STORAGE_KEY}_settings`;
-const PROFILE_KEY = `${STORAGE_KEY}_profile`;
+const PROFILES_KEY = `${STORAGE_KEY}_profiles`;
+const ACTIVE_PROFILE_KEY = `${STORAGE_KEY}_active_id`;
 const ORDERS_KEY = `${STORAGE_KEY}_orders`;
 
 // Helper Functions
@@ -139,7 +146,7 @@ function saveLocalStorage<T>(key: string, value: T): void {
 // PAPER STORE - Main API
 // ============================================
 export const paperStore = {
-    // --- SETTINGS ---
+    // --- SETTINGS (Global defaults) ---
     getSettings: (): PaperTradingSettings => {
         return safeLocalStorage(SETTINGS_KEY, DEFAULT_SETTINGS);
     },
@@ -151,34 +158,126 @@ export const paperStore = {
         return updated;
     },
 
-    // --- PROFILE ---
-    getProfile: (): PaperProfile => {
-        return safeLocalStorage(PROFILE_KEY, DEFAULT_PROFILE);
+    // --- PROFILES ---
+    getProfiles: (): PaperProfile[] => {
+        // Migration check: if no profiles but old profile exists, migrate it
+        let profiles = safeLocalStorage<PaperProfile[]>(PROFILES_KEY, []);
+        if (profiles.length === 0) {
+            profiles = [DEFAULT_PROFILE];
+            saveLocalStorage(PROFILES_KEY, profiles);
+        }
+        return profiles;
     },
 
-    saveProfile: (profile: Partial<PaperProfile>): PaperProfile => {
-        const current = paperStore.getProfile();
-        const updated = { ...current, ...profile };
-        saveLocalStorage(PROFILE_KEY, updated);
-        return updated;
+    getActiveProfileId: (): string => {
+        return safeLocalStorage(ACTIVE_PROFILE_KEY, DEFAULT_PROFILE_ID);
     },
 
-    resetProfile: (initialBalance?: number): PaperProfile => {
-        const balance = initialBalance || paperStore.getSettings().initialBalance;
+    getActiveProfile: (): PaperProfile => {
+        const profiles = paperStore.getProfiles();
+        const activeId = paperStore.getActiveProfileId();
+        return profiles.find(p => p.id === activeId) || profiles[0] || DEFAULT_PROFILE;
+    },
+
+    createProfile: (name: string, initialBalance: number): PaperProfile => {
+        const profiles = paperStore.getProfiles();
         const newProfile: PaperProfile = {
             ...DEFAULT_PROFILE,
-            initialBalance: balance,
-            currentBalance: balance,
+            id: `profile_${Date.now()}`,
+            username: name,
+            initialBalance: initialBalance,
+            currentBalance: initialBalance,
+            active: false, // Default to inactive upon creation
             createdAt: Date.now()
         };
-        saveLocalStorage(PROFILE_KEY, newProfile);
-        saveLocalStorage(ORDERS_KEY, []);
+        profiles.push(newProfile);
+        saveLocalStorage(PROFILES_KEY, profiles);
         return newProfile;
     },
 
-    // --- ORDERS ---
-    getOrders: (): PaperOrder[] => {
+    saveProfile: (updates: Partial<PaperProfile>): PaperProfile => {
+        const profiles = paperStore.getProfiles();
+        const activeId = paperStore.getActiveProfileId();
+        const index = profiles.findIndex(p => p.id === activeId);
+
+        if (index !== -1) {
+            profiles[index] = { ...profiles[index], ...updates };
+            saveLocalStorage(PROFILES_KEY, profiles);
+            return profiles[index];
+        }
+        return DEFAULT_PROFILE; // Specific fallback
+    },
+
+    switchProfile: (profileId: string): PaperProfile | null => {
+        const profiles = paperStore.getProfiles();
+        const target = profiles.find(p => p.id === profileId);
+
+        if (target) {
+            saveLocalStorage(ACTIVE_PROFILE_KEY, profileId);
+            // Update active flags for UI convenience
+            const updatedProfiles = profiles.map(p => ({
+                ...p,
+                active: p.id === profileId
+            }));
+            saveLocalStorage(PROFILES_KEY, updatedProfiles);
+            return target;
+        }
+        return null;
+    },
+
+    resetProfile: (initialBalance?: number): PaperProfile => {
+        const profiles = paperStore.getProfiles();
+        const activeId = paperStore.getActiveProfileId();
+        const index = profiles.findIndex(p => p.id === activeId);
+
+        if (index !== -1) {
+            const balance = initialBalance || paperStore.getSettings().initialBalance;
+            const resetProfile: PaperProfile = {
+                ...DEFAULT_PROFILE,
+                id: profiles[index].id, // Keep ID
+                username: profiles[index].username, // Keep Name
+                initialBalance: balance,
+                currentBalance: balance,
+                active: true,
+                createdAt: Date.now()
+            };
+            profiles[index] = resetProfile;
+            saveLocalStorage(PROFILES_KEY, profiles);
+
+            // Also need to clear orders FOR THIS PROFILE
+            const allOrders = paperStore.getAllOrders();
+            const otherOrders = allOrders.filter(o => o.profileId !== activeId);
+            saveLocalStorage(ORDERS_KEY, otherOrders);
+
+            return resetProfile;
+        }
+        return DEFAULT_PROFILE;
+    },
+
+    deleteProfile: (profileId: string): boolean => {
+        let profiles = paperStore.getProfiles();
+        if (profiles.length <= 1) return false; // Cannot delete last profile
+
+        profiles = profiles.filter(p => p.id !== profileId);
+        saveLocalStorage(PROFILES_KEY, profiles);
+
+        // If we deleted the active one, switch to the first available
+        if (paperStore.getActiveProfileId() === profileId) {
+            paperStore.switchProfile(profiles[0].id);
+        }
+        return true;
+    },
+
+    // --- ORDERS (Scoped to Active Profile) ---
+    getAllOrders: (): PaperOrder[] => {
         return safeLocalStorage(ORDERS_KEY, []);
+    },
+
+    getOrders: (): PaperOrder[] => {
+        const activeId = paperStore.getActiveProfileId();
+        const allOrders = paperStore.getAllOrders();
+        // Return orders for active profile OR legacy orders with no profileId (migration)
+        return allOrders.filter(o => o.profileId === activeId || (!o.profileId && activeId === DEFAULT_PROFILE_ID));
     },
 
     getOpenOrders: (): PaperOrder[] => {
@@ -196,7 +295,7 @@ export const paperStore = {
     // Calculate position size based on settings
     calculatePositionSize: (): number => {
         const settings = paperStore.getSettings();
-        const profile = paperStore.getProfile();
+        const profile = paperStore.getActiveProfile();
 
         if (settings.useRiskBasedSizing) {
             return (profile.currentBalance * settings.riskPerTrade) / 100;
@@ -217,8 +316,8 @@ export const paperStore = {
         notes?: string;
     }): PaperOrder | null => {
         const settings = paperStore.getSettings();
-        const profile = paperStore.getProfile();
-        const orders = paperStore.getOrders();
+        const profile = paperStore.getActiveProfile();
+        const orders = paperStore.getOrders(); // Scoped to active profile
 
         // Check if paper trading is enabled
         if (!settings.enabled) {
@@ -257,6 +356,7 @@ export const paperStore = {
         const newOrder: PaperOrder = {
             id: `PO_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
             marketId: orderData.marketId,
+            profileId: profile.id, // Link to profile
             marketTitle: orderData.marketTitle,
             marketImage: orderData.marketImage,
             type: orderData.type,
@@ -273,9 +373,10 @@ export const paperStore = {
             notes: orderData.notes
         };
 
-        // Update orders
-        orders.unshift(newOrder);
-        saveLocalStorage(ORDERS_KEY, orders);
+        // Update ALL orders storage
+        const allOrders = paperStore.getAllOrders();
+        allOrders.unshift(newOrder);
+        saveLocalStorage(ORDERS_KEY, allOrders);
 
         // Deduct from balance
         paperStore.saveProfile({
@@ -285,19 +386,25 @@ export const paperStore = {
             avgTradeSize: ((profile.avgTradeSize * profile.tradesCount) + amount) / (profile.tradesCount + 1)
         });
 
-        console.log('[PaperTrading] Order placed:', newOrder.id);
+        console.log('[PaperTrading] Order placed:', newOrder.id, 'for profile:', profile.id);
         return newOrder;
     },
 
     // Close an order
     closeOrder: (orderId: string, exitPrice: number): PaperOrder | null => {
-        const orders = paperStore.getOrders();
-        const profile = paperStore.getProfile();
+        const allOrders = paperStore.getAllOrders();
+        const profile = paperStore.getActiveProfile();
 
-        const orderIndex = orders.findIndex(o => o.id === orderId);
+        const orderIndex = allOrders.findIndex(o => o.id === orderId);
         if (orderIndex === -1) return null;
 
-        const order = orders[orderIndex];
+        const order = allOrders[orderIndex];
+        // Ensure order belongs to active profile, or at least warn/handle shared IDs if any
+        if (order.profileId && order.profileId !== profile.id) {
+            console.warn("Attempting to close order from different profile");
+            return null;
+        }
+
         if (order.status !== 'OPEN') return null;
 
         // Calculate PnL
@@ -315,11 +422,13 @@ export const paperStore = {
             roi
         };
 
-        orders[orderIndex] = closedOrder;
-        saveLocalStorage(ORDERS_KEY, orders);
+        allOrders[orderIndex] = closedOrder;
+        saveLocalStorage(ORDERS_KEY, allOrders);
 
         // Update profile stats
-        const closedOrders = orders.filter(o => o.status === 'CLOSED');
+        // Re-calculate stats based on THIS profile's closed orders to be safe
+        const profileOrders = allOrders.filter(o => o.profileId === profile.id || (!o.profileId && profile.id === DEFAULT_PROFILE_ID));
+        const closedOrders = profileOrders.filter(o => o.status === 'CLOSED');
         const wins = closedOrders.filter(o => (o.pnl || 0) > 0);
         const losses = closedOrders.filter(o => (o.pnl || 0) < 0);
         const totalRealizedPnL = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
@@ -327,7 +436,7 @@ export const paperStore = {
         paperStore.saveProfile({
             currentBalance: profile.currentBalance + returnAmount,
             realizedPnL: totalRealizedPnL,
-            totalPnL: totalRealizedPnL,
+            totalPnL: totalRealizedPnL, // Assuming unrealized is calc'd separately
             winCount: wins.length,
             lossCount: losses.length,
             winRate: closedOrders.length > 0 ? (wins.length / closedOrders.length) * 100 : 0,
@@ -341,17 +450,19 @@ export const paperStore = {
 
     // Cancel an order (refund amount)
     cancelOrder: (orderId: string): boolean => {
-        const orders = paperStore.getOrders();
-        const profile = paperStore.getProfile();
+        const allOrders = paperStore.getAllOrders();
+        const profile = paperStore.getActiveProfile();
 
-        const orderIndex = orders.findIndex(o => o.id === orderId);
+        const orderIndex = allOrders.findIndex(o => o.id === orderId);
         if (orderIndex === -1) return false;
 
-        const order = orders[orderIndex];
+        const order = allOrders[orderIndex];
+        if (order.profileId && order.profileId !== profile.id) return false;
+
         if (order.status !== 'OPEN' && order.status !== 'PENDING') return false;
 
-        orders[orderIndex] = { ...order, status: 'CANCELLED' };
-        saveLocalStorage(ORDERS_KEY, orders);
+        allOrders[orderIndex] = { ...order, status: 'CANCELLED' };
+        saveLocalStorage(ORDERS_KEY, allOrders);
 
         // Refund balance
         paperStore.saveProfile({
@@ -363,30 +474,32 @@ export const paperStore = {
 
     // Update current prices for open orders (for unrealized PnL)
     updatePrices: (priceMap: Record<string, number>) => {
-        const orders = paperStore.getOrders();
+        const allOrders = paperStore.getAllOrders();
         let updated = false;
 
-        orders.forEach((order, index) => {
+        allOrders.forEach((order, index) => {
             if (order.status === 'OPEN' && priceMap[order.marketId]) {
-                orders[index] = { ...order, currentPrice: priceMap[order.marketId] };
+                allOrders[index] = { ...order, currentPrice: priceMap[order.marketId] };
                 updated = true;
             }
         });
 
         if (updated) {
-            saveLocalStorage(ORDERS_KEY, orders);
+            saveLocalStorage(ORDERS_KEY, allOrders);
 
-            // Calculate unrealized PnL
-            const openOrders = orders.filter(o => o.status === 'OPEN');
+            // Recalculate unrealized PnL for ACTIVE profile only (for now)
+            const activeProfile = paperStore.getActiveProfile();
+            const activeOrders = allOrders.filter(o => o.profileId === activeProfile.id || (!o.profileId && activeProfile.id === DEFAULT_PROFILE_ID));
+            const openOrders = activeOrders.filter(o => o.status === 'OPEN');
+
             const unrealizedPnL = openOrders.reduce((sum, order) => {
                 const currentValue = order.shares * (order.currentPrice || order.entryPrice);
                 return sum + (currentValue - order.amount);
             }, 0);
 
-            const profile = paperStore.getProfile();
             paperStore.saveProfile({
                 unrealizedPnL,
-                totalPnL: profile.realizedPnL + unrealizedPnL
+                totalPnL: activeProfile.realizedPnL + unrealizedPnL
             });
         }
     },
@@ -394,7 +507,7 @@ export const paperStore = {
     // Get comprehensive stats
     getStats: (): PaperStats => {
         const orders = paperStore.getOrders();
-        const profile = paperStore.getProfile();
+        const profile = paperStore.getActiveProfile();
 
         const openOrders = orders.filter(o => o.status === 'OPEN');
         const closedOrders = orders.filter(o => o.status === 'CLOSED');
