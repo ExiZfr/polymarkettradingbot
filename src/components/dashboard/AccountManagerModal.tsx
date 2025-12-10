@@ -514,6 +514,15 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         >
                                             Cancel
                                         </button>
+                                        <motion.button
+                                            whileHover={{ scale: 1.01 }}
+                                            whileTap={{ scale: 0.99 }}
+                                            onClick={handleSaveSettings}
+                                            className="flex-1 px-8 py-3 rounded-lg font-semibold text-sm bg-[#e4e6ea] text-[#0e1115] hover:bg-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/5"
+                                        >
+                                            <Save size={18} />
+                                            Update Configuration
+                                        </motion.button>
                                     </div>
                                 </motion.div>
                             )}
@@ -562,15 +571,6 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                     </div>
                                 </motion.div>
                             )}
-                            <motion.button
-                                whileHover={{ scale: 1.01 }}
-                                whileTap={{ scale: 0.99 }}
-                                onClick={handleSaveSettings}
-                                className="flex-1 px-8 py-3 rounded-lg font-semibold text-sm bg-[#e4e6ea] text-[#0e1115] hover:bg-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/5"
-                            >
-                                <Save size={18} />
-                                Update Configuration
-                            </motion.button>
                         </div>
                     </motion.div>
                             )}
