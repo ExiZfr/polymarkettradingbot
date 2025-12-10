@@ -1,64 +1,128 @@
 @import "tailwindcss";
 
-/* Theme Variables - Polymarket Inspired */
+/* Theme Variables - Polymarket Inspired (Refined) */
 :root {
-  /* Light mode (default) */
-  --background: #FAFAFA;
-  /* Un blanc très légèrement cassé pour moins d'éblouissement */
+  /* Light mode (Clean White/Gray) */
+  --background: #FFFFFF;
+  /* Pure White */
   --foreground: #0F172A;
-  /* Slate 900 - Noir doux */
+  /* Slate 900 */
+
+  --card: #F8FAFC;
+  /* Slate 50 - Subtle contrast for cards */
+  --card-foreground: #0F172A;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
+
   --primary: #2E7CF6;
-  /* Polymarket Blue vibrant */
-  --primary-light: #5B9BFF;
-  --accent: #10B981;
-  /* Emerald 500 */
-  --destructive: #EF4444;
-  --muted: #64748B;
+  /* Polymarket Blue */
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #F1F5F9;
+  /* Slate 100 */
+  --secondary-foreground: #0F172A;
+
+  --muted: #F1F5F9;
+  /* Slate 100 */
+  --muted-foreground: #64748B;
   /* Slate 500 */
 
-  --card-bg: #FFFFFF;
-  --card-border: #E2E8F0;
-  /* Slate 200 */
+  --accent: #F1F5F9;
+  /* Slate 100 */
+  --accent-foreground: #0F172A;
 
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(226, 232, 240, 0.6);
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --border: #E2E8F0;
+  /* Slate 200 */
+  --input: #E2E8F0;
+  --ring: #2E7CF6;
+
+  --radius: 0.75rem;
 }
 
 .dark {
-  /* Dark mode */
-  --background: #0B0D11;
-  /* Un noir bleuté profond, pas 100% noir */
+  /* Dark mode (Deep Slate/Blue - Polymarket Style) */
+  --background: #0B1121;
+  /* Rich Dark Blue-Black (Custom Slate) */
   --foreground: #F8FAFC;
   /* Slate 50 */
+
+  --card: #151E2E;
+  /* Slightly lighter than bg */
+  --card-foreground: #F8FAFC;
+
+  --popover: #151E2E;
+  --popover-foreground: #F8FAFC;
+
   --primary: #3B82F6;
   /* Blue 500 */
-  --primary-light: #60A5FA;
-  --accent: #34D399;
-  /* Emerald 400 */
-  --destructive: #F87171;
-  --muted: #94A3B8;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #1E293B;
+  /* Slate 800 */
+  --secondary-foreground: #F8FAFC;
+
+  --muted: #1E293B;
+  /* Slate 800 */
+  --muted-foreground: #94A3B8;
   /* Slate 400 */
 
-  --card-bg: #151921;
-  /* Plus clair que le background */
-  --card-border: #2D3342;
-  /* Bordure subtile */
+  --accent: #1E293B;
+  /* Slate 800 */
+  --accent-foreground: #F8FAFC;
 
-  --glass-bg: rgba(15, 23, 42, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --destructive: #7F1D1D;
+  --destructive-foreground: #F8FAFC;
+
+  --border: #2D3748;
+  /* Custom Slate Border */
+  --input: #2D3748;
+  --ring: #3B82F6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
 }
 
 * {
   box-sizing: border-box;
-  border-color: var(--card-border);
-  /* Default border color */
+  border-color: var(--border);
 }
 
 html {
@@ -67,56 +131,11 @@ html {
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  line-height: 1.5;
-}
-
-/* Selection */
-::selection {
-  background: rgba(46, 124, 246, 0.2);
-  color: inherit;
-}
-
-.dark ::selection {
-  background: rgba(59, 130, 246, 0.3);
-  color: white;
-}
-
-/* Buttons */
-.btn-primary {
-  background-color: var(--primary);
-  color: white;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.btn-primary:hover {
-  background-color: #1D65D6;
-  /* Darker blue */
-  transform: translateY(-1px);
-  box-shadow: 0 4px 6px -1px rgba(46, 124, 246, 0.2);
-}
-
-.dark .btn-primary:hover {
-  background-color: #2563EB;
-}
-
-/* Base Card Style */
-.card-base {
-  background-color: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 0.75rem;
-  /* 12px */
-}
-
-/* Utils */
-.flex-center {
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Custom Scrollbar */
@@ -130,10 +149,7 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.5);
+  background: var(--muted-foreground);
+  opacity: 0.5;
   border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.8);
 }
