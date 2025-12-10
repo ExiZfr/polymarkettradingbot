@@ -5,9 +5,9 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X, TrendingDown, TrendingUp, AlertTriangle,
-    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, ChevronDown
+    Save, Wallet, Zap, ArrowRight, Info, Plus, Check, Settings, User, ChevronDown, Shield, Target
 } from "lucide-react";
-import { paperStore, PaperTradingSettings, PaperProfile, DEFAULT_SETTINGS } from "@/lib/paper-trading";
+import { paperStore, PaperTradingSettings, PaperProfile, DEFAULT_SETTINGS, RISK_PRESETS } from "@/lib/paper-trading";
 
 type AccountManagerModalProps = {
     isOpen: boolean;
@@ -379,7 +379,35 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                                     exit={{ height: 0, opacity: 0 }}
                                                     className="overflow-hidden"
                                                 >
-                                                    <div className="pt-4 pb-2">
+                                                    <div className="pt-4 pb-2 space-y-6">
+                                                        {/* Presets Grid */}
+                                                        <div className="grid grid-cols-3 gap-3">
+                                                            <button
+                                                                onClick={() => setNewProfileSettings({ ...newProfileSettings, ...RISK_PRESETS.CONSERVATIVE })}
+                                                                className="flex flex-col items-center justify-center p-3 rounded-lg border border-[#2d323b] bg-[#0e1115] hover:border-[#27aa80] hover:bg-[#27aa80]/10 transition-all group"
+                                                            >
+                                                                <div className="text-[#27aa80] mb-1"><Shield size={20} /></div>
+                                                                <div className="text-xs font-semibold text-[#e4e6ea]">Low Risk</div>
+                                                                <div className="text-[10px] text-[#8ba1be]">Safe & Steady</div>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setNewProfileSettings({ ...newProfileSettings, ...RISK_PRESETS.BALANCED })}
+                                                                className="flex flex-col items-center justify-center p-3 rounded-lg border border-[#2d323b] bg-[#0e1115] hover:border-[#2e7cf6] hover:bg-[#2e7cf6]/10 transition-all group"
+                                                            >
+                                                                <div className="text-[#2e7cf6] mb-1"><Target size={20} /></div>
+                                                                <div className="text-xs font-semibold text-[#e4e6ea]">Normal</div>
+                                                                <div className="text-[10px] text-[#8ba1be]">Balanced Growth</div>
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setNewProfileSettings({ ...newProfileSettings, ...RISK_PRESETS.DEGEN })}
+                                                                className="flex flex-col items-center justify-center p-3 rounded-lg border border-[#2d323b] bg-[#0e1115] hover:border-[#ef4444] hover:bg-[#ef4444]/10 transition-all group"
+                                                            >
+                                                                <div className="text-[#ef4444] mb-1"><Zap size={20} /></div>
+                                                                <div className="text-xs font-semibold text-[#e4e6ea]">Degen</div>
+                                                                <div className="text-[10px] text-[#8ba1be]">High Risk/Reward</div>
+                                                            </button>
+                                                        </div>
+
                                                         {renderRiskSettings(newProfileSettings, setNewProfileSettings)}
                                                     </div>
                                                 </motion.div>

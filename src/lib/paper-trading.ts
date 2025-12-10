@@ -114,6 +114,31 @@ const DEFAULT_PROFILE: PaperProfile = {
     createdAt: Date.now()
 };
 
+// Risk Presets
+export const RISK_PRESETS = {
+    CONSERVATIVE: {
+        riskPerTrade: 1,
+        autoStopLoss: 5,
+        autoTakeProfit: 10,
+        maxOpenPositions: 3,
+        allowShorts: false
+    },
+    BALANCED: {
+        riskPerTrade: 5,
+        autoStopLoss: 15,
+        autoTakeProfit: 30,
+        maxOpenPositions: 5,
+        allowShorts: false
+    },
+    DEGEN: {
+        riskPerTrade: 25,
+        autoStopLoss: 50,
+        autoTakeProfit: 100,
+        maxOpenPositions: 20,
+        allowShorts: true
+    }
+};
+
 // Storage Keys
 const STORAGE_KEY = "polybot_paper_trading_v2"; // Bumped version
 const PROFILES_KEY = `${STORAGE_KEY}_profiles`;
