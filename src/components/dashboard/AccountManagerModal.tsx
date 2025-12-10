@@ -545,7 +545,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         </p>
                                     </div>
 
-                                    <div className="w-full max-w-sm pt-6 flex flex-col sm:flex-row gap-3">
+                                    <div className="w-full max-w-sm pt-6 flex flex-col sm:flex-row gap-3 px-4 sm:px-0">
                                         <button
                                             onClick={() => setView('settings')}
                                             className="flex-1 px-4 py-3 rounded-lg font-medium text-sm text-[#e4e6ea] bg-[#2d323b] hover:bg-[#3d444d] transition-colors"
