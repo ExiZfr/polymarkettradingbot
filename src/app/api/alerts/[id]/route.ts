@@ -1,33 +1,5 @@
-```typescript
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-
-/**
- * PATCH /api/alerts/[id]
- * Update an alert
- */
-export async function PATCH(
-    req: Request,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    try {
-        const { id } = await params;
-        const body = await req.json();
-
-        const alert = await prisma.alert.update({
-            where: { id },
-            data: {
-                ...body,
-                updatedAt: new Date()
-            }
-        });
-
-        return NextResponse.json(alert);
-    } catch (error) {
-        console.error('Failed to update alert:', error);
-        return NextResponse.json({ error: 'Failed to update alert' }, { status: 500 });
-    }
-}
 
 /**
  * GET /api/alerts/[id]
@@ -54,6 +26,35 @@ export async function GET(
         return NextResponse.json({ error: 'Failed to fetch alert' }, { status: 500 });
     }
 }
+
+/**
+ * PATCH /api/alerts/[id]
+ * Update an alert
+ */
+export async function PATCH(
+    req: Request,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    try {
+        const { id } = await params;
+
+        const body = await req.json();
+
+        const alert = await prisma.alert.update({
+            where: { id },
+            data: {
+                ...body,
+                updatedAt: new Date()
+            }
+        });
+
+        return NextResponse.json(alert);
+    } catch (error) {
+        console.error('Failed to update alert:', error);
+        return NextResponse.json({ error: 'Failed to update alert' }, { status: 500 });
+    }
+}
+
 /**
  * DELETE /api/alerts/[id]
  * Delete an alert
@@ -64,7 +65,7 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
-        
+
         await prisma.alert.delete({
             where: { id }
         });
