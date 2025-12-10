@@ -43,36 +43,54 @@ model Signal {
 }
 
 model TrackedWallet {
-  id          String   @id @default(cuid())
-  address     String   @unique
-  ens         String?
-  tags        String[] // ["Leaderboard Top 10", "Whale"]
-  isMonitored Boolean  @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  copySettings CopySetting[]
-  snapshots    WalletSnapshot[]
+  id                String   @id @default(cuid())
+  address           String   @unique
+  label             String?
+  trades            Int      @default(0)
+  volume            Float    @default(0)
+  createdAt         DateTime @default(now())
+  
+  snapshots         WalletSnapshot[]
+  copySettings      CopySetting[]
+  performance       WalletPerformance?
+  tradeExecutions   CopyTradeExecution[]
 
   @@map("tracked_wallets")
 }
 
-model CopySetting {
-  id            String        @id @default(cuid())
-  userId        Int
-  user          User          @relation(fields: [userId], references: [id])
-  walletId      String
+model WalletSnapshot {
+  id        String   @id @default(cuid())
+  walletId  String
+  
+  pnl       Float
+  volume    Float
+  trades    Int
+  timestamp DateTime @default(now())
+  
   trackedWallet TrackedWallet @relation(fields: [walletId], references: [id])
 
-  enabled       Boolean @default(true)
-  fixedAmount   Float? // Fixed amount per bet
-  percentage    Float? // Percentage of balance per bet
-  maxBetAmount  Float? // Cap
-  dailyStopLoss Float?
+  @@index([walletId, timestamp])
+  @@map("wallet_snapshots")
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model CopySetting {
+  id              String   @id @default(cuid())
+  userId          Int
+  walletId        String
+  
+  label           String?
+  enabled         Boolean  @default(true)
+  inverse         Boolean  @default(false)
+  
+  copyMode        String   // "fixed", "percentage", "kelly"
+  fixedAmount     Float?   
+  percentageAmount Float?  
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User            @relation(fields: [userId], references: [id])
+  trackedWallet   TrackedWallet   @relation(fields: [walletId], references: [id])
 
   @@unique([userId, walletId])
   @@map("copy_settings")
@@ -83,13 +101,117 @@ model WalletSnapshot {
   walletId      String
   trackedWallet TrackedWallet @relation(fields: [walletId], references: [id])
 
-  date            DateTime @default(now()) // Can be just date part effectively
+  date            DateTime @default(now())
   totalPnl        Float
   winRate         Float
   totalVolume     Float
   activePositions Int
 
+  @@index([walletId, date])
   @@map("wallet_snapshots")
+}
+
+// NEW: Individual copied trade execution
+model CopyTradeExecution {
+  id              String   @id @default(cuid())
+  userId          Int
+  walletId        String
+  
+  // Trade Info
+  marketId        String
+  marketTitle     String
+  outcome         String   // "YES" or "NO"
+  amount          Float
+  price           Float
+  shares          Float
+  
+  // Performance
+  entryPrice      Float
+  currentPrice    Float?   @default(0)
+  exitPrice       Float?
+  pnl             Float    @default(0)
+  pnlPercent      Float    @default(0)
+  
+  // Risk Management
+  status          String   // "OPEN", "CLOSED", "STOPPED"
+  stopLossPrice   Float?
+  takeProfitPrice Float?
+  
+  // Category
+  category        String   @default("unknown")
+  
+  // Timestamps
+  entryTime       DateTime @default(now())
+  exitTime        DateTime?
+  
+  trackedWallet   TrackedWallet @relation(fields: [walletId], references: [id])
+  
+  @@index([userId, status])
+  @@index([walletId, entryTime])
+  @@map("copy_trade_executions")
+}
+
+// NEW: Advanced wallet performance metrics
+model WalletPerformance {
+  id              String   @id @default(cuid())
+  walletId        String   @unique
+  
+  // Advanced Metrics  
+  sharpeRatio     Float    @default(0)
+  sortinoRatio    Float    @default(0)
+  calmarRatio     Float    @default(0)
+  maxDrawdown     Float    @default(0)
+  profitFactor    Float    @default(0)
+  kellyPercentage Float    @default(0)
+  riskOfRuin      Float    @default(0)
+  
+  // Consistency
+  winStreak       Int      @default(0)
+  lossStreak      Int      @default(0)
+  maxWinStreak    Int      @default(0)
+  maxLossStreak   Int      @default(0)
+  
+  // Activity
+  avgHoldTime     Float    @default(0) // hours
+  avgTradeSize    Float    @default(0)
+  avgWin          Float    @default(0)
+  avgLoss         Float    @default(0)
+  
+  // Scores
+  smartScore      Int      @default(0)  // 0-100
+  farmScore       Int      @default(0)  // 0-100
+  
+  // Updated
+  lastCalculated  DateTime @default(now())
+  
+  trackedWallet   TrackedWallet @relation(fields: [walletId], references: [id])
+  
+  @@map("wallet_performance")
+}
+
+// NEW: Portfolio allocation and risk limits
+model PortfolioAllocation {
+  id              String   @id @default(cuid())
+  userId          Int      @unique
+  
+  // Capital
+  totalCapital    Float    @default(0)
+  allocatedCapital Float   @default(0)
+  reserveCash     Float    @default(0)
+  
+  // Risk Limits
+  maxPerWallet    Float    @default(20)  // %
+  maxPerCategory  Float    @default(40)  // %
+  dailyLossLimit  Float    @default(500) // $
+  
+  // Targets
+  targetROI       Float    @default(20)  // %
+  targetSharpe    Float    @default(1.5)
+  
+  // Status
+  stopLossActive  Boolean  @default(true)
+  
+  @@map("portfolio_allocations")
 }
 
 model Alert {
