@@ -73,8 +73,8 @@ export default function Sidebar({
                                 href={item.href}
                                 onClick={() => setSidebarOpen(false)}
                                 className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all group ${isActive
-                                        ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-500 border border-blue-200 dark:border-blue-900"
-                                        : "text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                                    ? "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-500 border border-blue-200 dark:border-blue-900"
+                                    : "text-gray-700 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
                                     }`}
                             >
                                 <div className="flex items-center gap-3">
@@ -103,8 +103,8 @@ export default function Sidebar({
                     {/* Balance Card */}
                     <div className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-xl p-4 mb-4">
                         <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-white font-bold">
-                                PA
+                            <div className="mx-4 mt-auto mb-4 p-4 rounded-xl bg-linear-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-900/20">
+                                <span className="font-bold text-lg">PA</span>
                             </div>
                             <div className="flex-1 text-left">
                                 <div className="text-sm font-bold text-gray-900 dark:text-white">

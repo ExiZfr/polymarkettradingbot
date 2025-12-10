@@ -13,38 +13,40 @@ type StatsProps = {
 };
 
 export default function OverviewStats({ stats }: StatsProps) {
+    if (!stats) return null; // Safety check
+
     const statItems = [
         {
             label: "Markets Scanned",
-            value: stats.marketsScanned.toLocaleString(),
+            value: stats.marketsScanned?.toLocaleString() || "0",
             icon: Search,
-            color: "text-blue-400",
-            bg: "bg-blue-500/10",
-            border: "border-blue-500/20",
+            color: "text-blue-600 dark:text-blue-400",
+            bg: "bg-blue-50 dark:bg-blue-900/20",
+            border: "border-blue-100 dark:border-blue-900/30",
         },
         {
             label: "Snipable Opps",
-            value: stats.snipableMarkets,
+            value: stats.snipableMarkets || 0,
             icon: Zap,
-            color: "text-amber-400",
-            bg: "bg-amber-500/10",
-            border: "border-amber-500/20",
+            color: "text-amber-600 dark:text-amber-400",
+            bg: "bg-amber-50 dark:bg-amber-900/20",
+            border: "border-amber-100 dark:border-amber-900/30",
         },
         {
             label: "Avg Score",
-            value: stats.avgScore.toFixed(1),
+            value: stats.avgScore?.toFixed(1) || "0.0",
             icon: Activity,
-            color: "text-purple-400",
-            bg: "bg-purple-500/10",
-            border: "border-purple-500/20",
+            color: "text-purple-600 dark:text-purple-400",
+            bg: "bg-purple-50 dark:bg-purple-900/20",
+            border: "border-purple-100 dark:border-purple-900/30",
         },
         {
             label: "Highest Score",
-            value: stats.highestScore.toFixed(1),
+            value: stats.highestScore?.toFixed(1) || "0.0",
             icon: Trophy,
-            color: "text-green-400",
-            bg: "bg-green-500/10",
-            border: "border-green-500/20",
+            color: "text-green-600 dark:text-green-400",
+            bg: "bg-green-50 dark:bg-green-900/20",
+            border: "border-green-100 dark:border-green-900/30",
         },
     ];
 
@@ -56,7 +58,7 @@ export default function OverviewStats({ stats }: StatsProps) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="bg-[#0C0D12] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors relative overflow-hidden group"
+                    className="bg-white dark:bg-gray-950 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 hover:border-gray-300 dark:hover:border-gray-700 transition-colors relative overflow-hidden group shadow-sm"
                 >
                     <div className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity ${item.color}`}>
                         <item.icon size={60} />
@@ -66,12 +68,12 @@ export default function OverviewStats({ stats }: StatsProps) {
                         <div className={`p-2 rounded-lg ${item.bg} ${item.color} ${item.border} border`}>
                             <item.icon size={18} />
                         </div>
-                        <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                             {item.label}
                         </span>
                     </div>
 
-                    <div className="text-2xl sm:text-3xl font-bold text-white font-mono">
+                    <div className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white font-mono">
                         {item.value}
                     </div>
                 </motion.div>

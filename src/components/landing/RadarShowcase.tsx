@@ -42,7 +42,7 @@ export default function RadarShowcase() {
 
                     {/* Right: Visual */}
                     <div className="relative">
-                        <div className="aspect-video bg-gradient-to-br from-blue-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 flex items-center justify-center">
+                        <div className="w-full h-full bg-linear-to-br from-slate-800 to-slate-900 flex items-center justify-center p-8 rounded-2xl border border-gray-200 dark:border-gray-800">
                             <Radar size={120} className="text-blue-600/20 dark:text-blue-500/20 animate-pulse" />
                         </div>
                     </div>
