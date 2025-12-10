@@ -39,7 +39,7 @@ const itemVariants = {
 };
 
 export default function AccountManagerModal({ isOpen, onClose, onUpdate }: AccountManagerModalProps) {
-    const [view, setView] = useState<'list' | 'settings' | 'create'>('list');
+    const [view, setView] = useState<'list' | 'settings' | 'create' | 'delete_confirm'>('list');
     const [profiles, setProfiles] = useState<PaperProfile[]>([]);
     const [activeProfileId, setActiveProfileId] = useState<string>("");
 
@@ -497,18 +497,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                                 <div className="text-xs text-[#ef4444]/80">Permanently remove this profile and all its trade history.</div>
                                             </div>
                                             <button
-                                                onClick={() => {
-                                                    if (confirm("Are you sure you want to delete this portfolio? This action cannot be undone.")) {
-                                                        const success = paperStore.deleteProfile(activeProfileId);
-                                                        if (success) {
-                                                            reloadData();
-                                                            onUpdate(); // Update widget
-                                                            setView('list');
-                                                        } else {
-                                                            alert("Cannot delete the last remaining profile.");
-                                                        }
-                                                    }
-                                                }}
+                                                onClick={() => setView('delete_confirm')}
                                                 className="px-4 py-2 rounded-lg bg-[#ef4444]/10 text-[#ef4444] hover:bg-[#ef4444] hover:text-white transition-colors text-xs font-bold border border-[#ef4444]/20 flex items-center gap-2"
                                             >
                                                 <Trash2 size={14} />
@@ -525,23 +514,72 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                         >
                                             Cancel
                                         </button>
-                                        <motion.button
-                                            whileHover={{ scale: 1.01 }}
-                                            whileTap={{ scale: 0.99 }}
-                                            onClick={handleSaveSettings}
-                                            className="flex-1 px-8 py-3 rounded-lg font-semibold text-sm bg-[#e4e6ea] text-[#0e1115] hover:bg-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/5"
-                                        >
-                                            <Save size={18} />
-                                            Update Configuration
-                                        </motion.button>
                                     </div>
                                 </motion.div>
                             )}
+
+                            {/* --- VIEW: DELETE CONFIRMATION --- */}
+                            {view === 'delete_confirm' && (
+                                <motion.div
+                                    variants={itemVariants}
+                                    className="flex flex-col items-center justify-center text-center py-8 space-y-6"
+                                >
+                                    <div className="w-20 h-20 rounded-full bg-[#ef4444]/10 flex items-center justify-center border border-[#ef4444]/20 shadow-[0_0_30px_-10px_rgba(239,68,68,0.3)]">
+                                        <AlertTriangle size={40} className="text-[#ef4444]" />
+                                    </div>
+
+                                    <div className="space-y-2 max-w-md">
+                                        <h2 className="text-2xl font-bold text-[#e4e6ea]">Delete Portfolio?</h2>
+                                        <p className="text-[#8ba1be] text-sm leading-relaxed">
+                                            Are you sure you want to delete <span className="text-[#e4e6ea] font-semibold">{walletName}</span>?
+                                            This action is <span className="text-[#ef4444]">irreversible</span> and ensures all trading data associated with this portfolio will be wiped.
+                                        </p>
+                                    </div>
+
+                                    <div className="w-full max-w-sm pt-6 flex gap-3">
+                                        <button
+                                            onClick={() => setView('settings')}
+                                            className="flex-1 px-4 py-3 rounded-lg font-medium text-sm text-[#e4e6ea] bg-[#2d323b] hover:bg-[#3d444d] transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                const success = paperStore.deleteProfile(activeProfileId);
+                                                if (success) {
+                                                    reloadData();
+                                                    onUpdate();
+                                                    setView('list');
+                                                } else {
+                                                    alert("Cannot delete the last remaining profile."); // Fallback for edge case
+                                                    setView('settings');
+                                                }
+                                            }}
+                                            className="flex-1 px-4 py-3 rounded-lg font-bold text-sm bg-[#ef4444] text-white hover:bg-[#dc2626] transition-all shadow-[0_0_20px_-5px_rgba(239,68,68,0.5)] hover:shadow-[0_0_25px_-5px_rgba(239,68,68,0.6)]"
+                                        >
+                                            Confirm Deletion
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            )}
+                            <motion.button
+                                whileHover={{ scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
+                                onClick={handleSaveSettings}
+                                className="flex-1 px-8 py-3 rounded-lg font-semibold text-sm bg-[#e4e6ea] text-[#0e1115] hover:bg-white transition-all flex items-center justify-center gap-2 shadow-lg shadow-white/5"
+                            >
+                                <Save size={18} />
+                                Update Configuration
+                            </motion.button>
                         </div>
                     </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>,
-        document.body
+                            )}
+                </div>
+                    </motion.div>
+                </motion.div >
+            )
+}
+        </AnimatePresence >,
+    document.body
     );
 }
