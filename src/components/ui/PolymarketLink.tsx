@@ -24,11 +24,11 @@ export default function PolymarketLink({ marketId, className, children }: Polyma
 
         async function fetchSlug() {
             try {
-                // Use local proxy to avoid CORS issues
-                const res = await fetch(`/api/polymarket-proxy?id=${marketId}`);
+                // Use centralized market resolver with DB caching
+                const res = await fetch(`/api/markets/resolve?id=${marketId}`);
 
                 if (!res.ok) {
-                    console.warn(`[PolymarketLink] Proxy lookup failed for ${marketId}: ${res.status}`);
+                    console.warn(`[PolymarketLink] Resolution failed for ${marketId}: ${res.status}`);
                     setError(true);
                     return;
                 }

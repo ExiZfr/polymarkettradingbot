@@ -159,6 +159,44 @@ def save_ledger(ledger: dict) -> None:
         print(f"❌ Failed to save ledger: {e}")
 
 
+async def cache_market_to_dashboard(market: dict, client: "httpx.AsyncClient") -> None:
+    """
+    Send market slug/title to the dashboard API for caching.
+    This ensures Polymarket links work correctly across all modules.
+    """
+    # Dashboard API URL (assumes running on same machine or configured via env)
+    dashboard_url = os.environ.get("DASHBOARD_URL", "http://localhost:3000")
+    
+    market_id = market.get("id")
+    slug = market.get("slug", "")
+    title = market.get("question", f"Market #{market_id}")
+    image_url = market.get("image", "")
+    
+    if not market_id or not slug:
+        return  # Skip if missing essential data
+    
+    try:
+        # POST to our centralized market resolver to cache this data
+        await client.post(
+            f"{dashboard_url}/api/markets/resolve",
+            json={
+                "ids": [market_id],
+                "preload": {
+                    market_id: {
+                        "slug": slug,
+                        "title": title,
+                        "imageUrl": image_url
+                    }
+                }
+            },
+            timeout=5.0
+        )
+        # print(f"💾 Cached market link: {slug}")
+    except Exception as e:
+        # Silently fail - link resolution will still work via API fallback
+        pass
+
+
 # =============================================================================
 # 3. RADAR MODULE (Market Detection)
 # =============================================================================
@@ -337,6 +375,8 @@ async def monitor_new_markets(ledger: dict,
                     
                     print(f"🆕 New market detected: {market.get('question', 'Unknown')[:60]}...")
                     await on_new_market_callback(market, ledger, client)
+                    # Pre-cache the market link for dashboard
+                    await cache_market_to_dashboard(market, client)
             
             if new_count > 0:
                 print(f"✨ {new_count} new market(s) detected this scan!")
