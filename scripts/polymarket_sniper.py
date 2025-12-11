@@ -194,13 +194,16 @@ async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
                 try:
                     headers = {
                         "User-Agent": "PolymarketSniper/1.0",
-                        "Accept": "application/json"
+                        "Accept": "application/json",
+                        "Connection": "keep-alive"
                     }
+                    # Separate timeouts: connect=30s, read=120s for slow API
+                    timeout = httpx.Timeout(connect=30.0, read=120.0, write=30.0, pool=30.0)
                     response = await client.get(
                         url, 
                         params=params, 
                         headers=headers,
-                        timeout=60.0  # Increased for pagination requests
+                        timeout=timeout
                     )
                     response.raise_for_status()
                     data = response.json()
