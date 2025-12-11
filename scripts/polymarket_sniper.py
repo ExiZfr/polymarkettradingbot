@@ -640,19 +640,36 @@ async def handle_new_market(market: dict, ledger: dict, client: "httpx.AsyncClie
     outcomes = market.get("outcomes", [])
     outcome_prices = market.get("outcomePrices", [])
     
-    if not outcomes or not outcome_prices:
+    # Fallback: try tokens array
+    if not outcome_prices:
         tokens = market.get("tokens", [])
         if tokens:
-            outcomes = [t.get("outcome", "?") for t in tokens]
-            outcome_prices = [t.get("price", "?") for t in tokens]
+            outcomes = [str(t.get("outcome", "?")) for t in tokens]
+            outcome_prices = [t.get("price", 0) for t in tokens]
+    
+    # Fallback: try clobTokenIds for price info
+    if not outcome_prices:
+        outcome_prices = [market.get("bestBid", 0), market.get("bestAsk", 0)]
     
     # Format prices for display
     price_str = ""
     try:
-        prices = [float(p) for p in outcome_prices[:2]]
-        price_str = f"[{outcomes[0] if outcomes else 'YES'}:{prices[0]:.2f} | {outcomes[1] if len(outcomes) > 1 else 'NO'}:{prices[1] if len(prices) > 1 else 0:.2f}]"
-    except:
-        price_str = "[Prix indisponible]"
+        # Convert to floats
+        prices = []
+        for p in outcome_prices[:2]:
+            if isinstance(p, str):
+                prices.append(float(p) if p else 0.5)
+            else:
+                prices.append(float(p) if p else 0.5)
+        
+        if len(prices) >= 2 and any(p > 0 for p in prices):
+            o1 = outcomes[0] if outcomes else "YES"
+            o2 = outcomes[1] if len(outcomes) > 1 else "NO"
+            price_str = f"[{o1}:{prices[0]:.2f} | {o2}:{prices[1]:.2f}]"
+        else:
+            price_str = "[No odds yet]"
+    except Exception as e:
+        price_str = "[Prix N/A]"
     
     should_snipe, outcome, amount, adjusted_price = analyze_sniping_opportunity(market)
     
