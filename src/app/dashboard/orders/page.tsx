@@ -21,9 +21,53 @@ import {
     Timer,
     X
 } from "lucide-react";
-import { paperStore, PaperOrder } from "@/lib/paper-trading";
+import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
+
+// Portfolio Balance Component
+function PortfolioBalance({ profile }: { profile: PaperProfile }) {
+    const roi = profile.initialBalance > 0
+        ? ((profile.currentBalance - profile.initialBalance) / profile.initialBalance) * 100
+        : 0;
+
+    const isPositive = profile.totalPnL >= 0;
+
+    return (
+        <div className="p-6 rounded-2xl bg-gradient-to-br from-primary/10 to-purple-500/10 border border-primary/20">
+            <div className="flex items-center justify-between mb-4">
+                <div>
+                    <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Portfolio Balance</h3>
+                    <p className="text-xs text-muted-foreground mt-1">{profile.username}</p>
+                </div>
+                <div className={`px-3 py-1.5 rounded-full text-xs font-bold ${isPositive ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
+                    {isPositive ? '↑' : '↓'} {roi >= 0 ? '+' : ''}{roi.toFixed(2)}% ROI
+                </div>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div>
+                    <p className="text-xs text-muted-foreground mb-1">Initial Capital</p>
+                    <p className="text-lg font-bold text-foreground">${profile.initialBalance.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground mb-1">Current Balance</p>
+                    <p className="text-lg font-bold text-primary">${profile.currentBalance.toFixed(2)}</p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground mb-1">Total P&L</p>
+                    <p className={`text-lg font-bold ${isPositive ? 'text-green-500' : 'text-red-500'}`}>
+                        {isPositive ? '+' : ''}${profile.totalPnL.toFixed(2)}
+                    </p>
+                </div>
+                <div>
+                    <p className="text-xs text-muted-foreground mb-1">Win Rate</p>
+                    <p className="text-lg font-bold text-foreground">{profile.winRate.toFixed(1)}%</p>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // Summary Stats Component
 function SummaryStats({ orders }: { orders: PaperOrder[] }) {
@@ -289,13 +333,16 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
 
 export default function OrderBookPage() {
     const [orders, setOrders] = useState<PaperOrder[]>([]);
+    const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
     const loadOrders = () => {
         const allOrders = paperStore.getOrders();
+        const activeProfile = paperStore.getActiveProfile();
         setOrders(allOrders);
+        setProfile(activeProfile);
     };
 
     useEffect(() => {
@@ -359,6 +406,9 @@ export default function OrderBookPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Portfolio Balance */}
+            {profile && <PortfolioBalance profile={profile} />}
 
             {/* Summary Stats */}
             <SummaryStats orders={orders} />
