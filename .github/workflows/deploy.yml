@@ -150,6 +150,15 @@ jobs:
             echo "🎯 Starting sniper bot..."
             pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3 --no-autorestart
             
+            # Start PolyRadar Whale Tracker
+            if pm2 describe polyradar-whale-tracker > /dev/null 2>&1; then
+                echo "🔄 Restarting PolyRadar..."
+                pm2 restart polyradar-whale-tracker
+            else
+                echo "🐋 Starting PolyRadar whale tracker..."
+                pm2 start scripts/polyradar_main.py --name polyradar-whale-tracker --interpreter python3 -- --mode simulation --bankroll 10000
+            fi
+            
             # Save PM2 config
             pm2 save
             
@@ -161,5 +170,6 @@ jobs:
             echo "🌐 Main App: polygraalx (port 3001)"
             echo "📡 Listener: polylistener"
             echo "🎯 Sniper: polysniper"
+            echo "🐋 PolyRadar: polyradar-whale-tracker"
             echo "========================================"
 
