@@ -228,93 +228,81 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                 {/* --- THE CARD ITSELF --- */}
                 <div
                     id="pnl-card"
-                    className={`
-                        relative w-[600px] h-[340px] rounded-[40px] overflow-hidden
-                        bg-[#08080a] border border-white/5
-                        shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] ${glowShadow}
-                        flex flex-col justify-between p-8
-                    `}
+                    className="relative w-[640px] h-[380px] rounded-[32px] overflow-hidden shadow-[0_30px_80px_-15px_rgba(0,0,0,0.9)]"
+                    style={{
+                        backgroundImage: 'url(/images/pnl-card-template.png)',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }}
                 >
-                    {/* Background Texture */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
-                    <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
+                    {/* Dark overlay for text readability */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent pointer-events-none" />
 
-                    {/* Header */}
-                    <div className="flex justify-between items-start z-10">
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center gap-1 font-black text-white text-xl tracking-tighter">
-                                <span className="text-blue-500">Poly</span>GraalX
+                    {/* Content Layer */}
+                    <div className="relative z-10 h-full flex flex-col justify-between p-8">
+
+                        {/* Header */}
+                        <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center">
+                                    <span className="text-xl font-black text-white">P</span>
+                                </div>
+                                <div>
+                                    <div className="text-white font-black text-lg tracking-tight">
+                                        <span className="text-blue-400">Poly</span>GraalX
+                                    </div>
+                                    <div className="text-white/40 text-xs font-mono">Whale Hunter</div>
+                                </div>
+                            </div>
+                            <div className={`px-3 py-1.5 rounded-full border backdrop-blur-sm ${isWin ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' : 'bg-red-500/20 border-red-400/30 text-red-300'} text-xs font-bold uppercase tracking-widest`}>
+                                {isWin ? '✓ PROFIT' : '✗ LOSS'}
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-linear-to-r from-blue-500 to-purple-500 opacity-20 border border-white/10" />
-                            <span className="text-white/40 font-mono text-sm">Whale Hunter</span>
-                        </div>
-                    </div>
 
-                    {/* Middle Content */}
-                    <div className="flex-1 flex items-center z-10 mt-4 relative">
-                        <div className="flex-1 z-20">
-                            <div className="flex items-baseline gap-2 mb-1">
-                                <span className="text-white font-bold text-lg">{order.outcome} PERP</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${isWin ? 'bg-[#00df8f]/10 text-[#00df8f]' : 'bg-[#ff4d4d]/10 text-[#ff4d4d]'}`}>125X</span>
+                        {/* Main Content */}
+                        <div className="flex-1 flex flex-col justify-center pr-[200px]"> {/* Right padding for bust image */}
+                            <div className="flex items-baseline gap-3 mb-2">
+                                <span className="text-white/80 font-bold text-xl">{order.outcome}</span>
+                                <span className="text-xs font-bold px-2 py-1 rounded bg-white/10 text-white/60 border border-white/10">PERP</span>
                             </div>
-                            <h1 className={`text-[80px] leading-none font-black tracking-tighter ${mainColor} drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]`}>
+
+                            {/* Giant ROI Number with Neon Effect */}
+                            <h1
+                                className={`text-[90px] leading-none font-black tracking-tighter ${mainColor}`}
+                                style={{
+                                    textShadow: isWin
+                                        ? '0 0 40px rgba(0,223,143,0.5), 0 0 80px rgba(0,223,143,0.3)'
+                                        : '0 0 40px rgba(255,77,77,0.5), 0 0 80px rgba(255,77,77,0.3)'
+                                }}
+                            >
                                 {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
                             </h1>
+
+                            <p className="text-white/50 font-mono text-lg mt-1">
+                                {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)} USDC
+                            </p>
                         </div>
 
-                        {/* RIGHT: THE GREEK GOD MASCOT PLACEHOLDER */}
-                        <div className="w-[240px] h-[280px] absolute right-0 bottom-[-40px] -mr-8 flex items-end justify-center pointer-events-none z-10">
-                            {/* Stylized Vector Bust */}
-                            <svg viewBox="0 0 200 240" className="w-full h-full drop-shadow-2xl">
-                                <defs>
-                                    <linearGradient id="bustGradient" x1="0" y1="0" x2="1" y2="1">
-                                        <stop offset="0%" stopColor="#e2e8f0" />
-                                        <stop offset="100%" stopColor="#64748b" />
-                                    </linearGradient>
-                                    <filter id="glow">
-                                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                                        <feMerge>
-                                            <feMergeNode in="coloredBlur" />
-                                            <feMergeNode in="SourceGraphic" />
-                                        </feMerge>
-                                    </filter>
-                                </defs>
-                                {/* Bust Shape */}
-                                <path
-                                    d="M100,40 C130,40 150,60 150,90 C150,115 135,135 110,140 L160,220 L40,220 L90,140 C65,135 50,115 50,90 C50,60 70,40 100,40 Z"
-                                    fill="url(#bustGradient)"
-                                    className="drop-shadow-lg"
-                                />
-                                {/* Cyber Visor */}
-                                <rect x="65" y="80" width="70" height="12" rx="4" fill={isWin ? "#00df8f" : "#ff4d4d"} filter="url(#glow)" />
-                                {/* Laurel Wreath */}
-                                <path d="M50,90 Q30,60 50,30" stroke="#f59e0b" strokeWidth="4" fill="none" opacity="0.8" />
-                                <path d="M150,90 Q170,60 150,30" stroke="#f59e0b" strokeWidth="4" fill="none" opacity="0.8" />
-                            </svg>
-                        </div>
-                    </div>
-
-                    {/* Footer Data */}
-                    <div className="flex justify-between items-end z-10 w-full pr-[180px]"> {/* Padding right to avoid mascot overlap */}
-                        <div className="flex gap-12">
-                            <div>
-                                <p className="text-[10px] text-white/30 uppercase font-bold mb-1">Entry Price</p>
-                                <p className="text-white font-mono text-xl tracking-tight">{order.entryPrice.toFixed(2)}</p>
+                        {/* Footer Data */}
+                        <div className="flex justify-between items-end pr-[160px]">
+                            <div className="flex gap-10">
+                                <div>
+                                    <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mb-1">Entry Price</p>
+                                    <p className="text-white font-mono text-xl">{order.entryPrice.toFixed(4)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-white/30 uppercase font-bold tracking-widest mb-1">Mark Price</p>
+                                    <p className="text-white font-mono text-xl">{(order.exitPrice || order.currentPrice || 0).toFixed(4)}</p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] text-white/30 uppercase font-bold mb-1">Mark Price</p>
-                                <p className="text-white font-mono text-xl tracking-tight">{(order.exitPrice || order.currentPrice || 0).toFixed(2)}</p>
+
+                            {/* Referral/Timestamp */}
+                            <div className="text-right">
+                                <p className="text-[9px] text-white/20 uppercase tracking-widest">Sharing Time:</p>
+                                <p className="text-white/40 text-xs font-mono">{new Date().toLocaleString()}</p>
                             </div>
                         </div>
 
-                        {/* QR Code */}
-                        <div className="bg-white p-1 rounded-lg">
-                            <div className="w-12 h-12 bg-black border border-dashed border-white/20 flex items-center justify-center">
-                                <div className="w-4 h-4 bg-white rounded-sm" />
-                            </div>
-                        </div>
                     </div>
                 </div>
 
