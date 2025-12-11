@@ -14,6 +14,7 @@ import {
     CheckCircle2
 } from 'lucide-react';
 import { paperStore } from '@/lib/paper-trading';
+import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
 
 interface WhaleSignal {
     id: number;
@@ -429,6 +430,12 @@ export default function RadarPage() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Console Section */}
+            <div className="mt-8">
+                <h2 className="text-xl font-bold text-foreground mb-4">Bot Terminal</h2>
+                <RadarLogsConsole />
             </div>
         </div>
     );
