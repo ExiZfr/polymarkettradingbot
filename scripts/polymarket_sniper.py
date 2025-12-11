@@ -694,6 +694,21 @@ async def handle_new_market(market: dict, ledger: dict, client: "httpx.AsyncClie
     if should_snipe:
         print(f"🎯 OPPORTUNITE DETECTEE! {market.get('question', '')[:50]}...")
         print(f"   Prix: {price_str} -> Achat {outcome} @ ${adjusted_price:.4f}")
+        
+        # Monitor/Send Signal to Dashboard API
+        try:
+            signal_data = {
+                "level": "SNIPE",
+                "message": f"Snipe: {market.get('question', '')[:40]}... [{outcome} @ ${adjusted_price:.4f}]",
+                "market": market.get('question', ''),
+                "price": adjusted_price,
+                "outcome": outcome
+            }
+            # Fire and forget signal (non-blocking) - assuming localhost:3000
+            asyncio.create_task(client.post("http://localhost:3001/api/sniper/signals", json=signal_data))
+        except Exception:
+            pass
+
         await simulate_snipe_order(market, outcome, amount, adjusted_price, ledger)
     else:
         # Show brief analysis even for skipped markets

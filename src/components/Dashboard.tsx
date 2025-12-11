@@ -72,14 +72,11 @@ export default function Dashboard() {
                 const res = await fetch('/api/sniper/data');
                 if (res.ok) {
                     const data = await res.json();
-
-                    // Convert Array of open trades to object map for widget compatibility
                     const openTrades = data.trades ? data.trades.filter((t: any) => t.status === "OPEN") : [];
                     const positionsMap = openTrades.reduce((acc: any, t: any) => {
                         acc[t.trade_id] = t;
                         return acc;
                     }, {});
-
                     setWallet({
                         balance: data.capital_current_USDC,
                         positions: positionsMap
@@ -90,8 +87,35 @@ export default function Dashboard() {
             }
         };
 
+        const fetchSignals = async () => {
+            try {
+                const res = await fetch('/api/sniper/signals');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.signals && data.signals.length > 0) {
+                        setLogs(prev => {
+                            const existingIds = new Set(prev.map(l => l.id));
+                            const newSignals = data.signals.filter((s: any) => !existingIds.has(s.id));
+                            if (newSignals.length === 0) return prev;
+
+                            // Transform signal to LogType if needed, though they match closely
+                            return [...prev, ...newSignals].sort((a, b) =>
+                                new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+                            ).slice(0, 100); // Keep last 100
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Failed to fetch signals:", error);
+            }
+        };
+
         fetchBalance();
-        const interval = setInterval(fetchBalance, 5000); // Live update
+        fetchSignals();
+        const interval = setInterval(() => {
+            fetchBalance();
+            fetchSignals();
+        }, 3000);
         return () => clearInterval(interval);
     }, []);
 
