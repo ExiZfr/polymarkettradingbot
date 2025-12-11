@@ -171,8 +171,13 @@ async def monitor_new_markets(ledger: dict,
     
     print(f"🔍 Radar started. {len(processed_ids)} markets already processed.")
     
+    cycle_count = 0
     while True:
         try:
+            cycle_count += 1
+            if cycle_count % 5 == 0:
+                 print(f"👀 Scanning active markets... ({len(processed_ids)} known)")
+
             markets = await fetch_markets(client)
             
             for market in markets:
