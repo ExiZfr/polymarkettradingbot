@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
 import { showTradeNotification } from "@/components/dashboard/TradeNotificationSystem";
+import ClosePositionModal from "@/components/dashboard/ClosePositionModal";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 
@@ -325,13 +326,14 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                     </motion.div>
                 )}
             </AnimatePresence>
-        </motion.div>
+        </motion.div >
     );
 }
 
 export default function OrderBookPage() {
     const [orders, setOrders] = useState<PaperOrder[]>([]);
     const [profile, setProfile] = useState<PaperProfile | null>(null);
+    const [selectedOrderToClose, setSelectedOrderToClose] = useState<PaperOrder | null>(null);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
@@ -351,17 +353,24 @@ export default function OrderBookPage() {
         return () => window.removeEventListener('paper-update', handleUpdate);
     }, []);
 
-    const handleCloseOrder = (orderId: string) => {
+    // Open the close modal upon button click
+    const handleCloseClick = (orderId: string) => {
         const order = orders.find(o => o.id === orderId);
-        if (!order) return;
+        if (order) setSelectedOrderToClose(order);
+    };
 
-        const currentPrice = order.currentPrice || order.entryPrice;
-        const closedOrder = paperStore.closeOrder(orderId, currentPrice);
+    // Confirm close from modal
+    const handleConfirmClose = () => {
+        if (!selectedOrderToClose) return;
+
+        const currentPrice = selectedOrderToClose.currentPrice || selectedOrderToClose.entryPrice;
+        const closedOrder = paperStore.closeOrder(selectedOrderToClose.id, currentPrice);
 
         if (closedOrder) {
             showTradeNotification(closedOrder, 'CLOSED');
         }
 
+        setSelectedOrderToClose(null); // Close modal
         loadOrders();
     };
 
@@ -466,7 +475,7 @@ export default function OrderBookPage() {
             <div className="space-y-3">
                 {filteredOrders.length > 0 ? (
                     filteredOrders.map((order, index) => (
-                        <OrderRow key={order.id} order={order} index={index} onClose={handleCloseOrder} />
+                        <OrderRow key={order.id} order={order} index={index} onClose={handleCloseClick} />
                     ))
                 ) : (
                     <motion.div
@@ -487,6 +496,17 @@ export default function OrderBookPage() {
                     </motion.div>
                 )}
             </div>
+
+            {/* Close Position Modal */}
+            <AnimatePresence>
+                {selectedOrderToClose && (
+                    <ClosePositionModal
+                        order={selectedOrderToClose}
+                        onClose={() => setSelectedOrderToClose(null)}
+                        onConfirm={handleConfirmClose}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
