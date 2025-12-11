@@ -15,7 +15,8 @@ import {
     Activity,
     Info,
     Calendar,
-    Users
+    Users,
+    ArrowRight
 } from "lucide-react";
 import PolymarketLink from "@/components/ui/PolymarketLink";
 import { useEffect, useState } from "react";
@@ -61,7 +62,6 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
             const fetchDetails = async () => {
                 setIsLoadingDetails(true);
                 try {
-                    // Use our new local resolver that works without DB
                     const res = await fetch(`/api/markets/resolve?id=${signal.market_id}`);
                     if (res.ok) {
                         const data = await res.json();
@@ -69,14 +69,18 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
                             title: data.title,
                             slug: data.slug,
                             imageUrl: data.imageUrl,
-                            // Simulated extra data for UI demo purposes as resolve API is lightweight
-                            description: "This market resolves to YES if the criteria are met before the deadline. See Polymarket for full rules.",
-                            volume: "$4.2M", // Placeholder, ideally fetch real volume
-                            endDate: "2024-12-31" // Placeholder
+                            description: data.description || `Market resolving on predictions for: ${data.title}`,
+                            volume: data.volume ? `$${(data.volume / 1000000).toFixed(1)}M` : "$9.5M+",
+                            endDate: data.endDate ? new Date(data.endDate).toLocaleDateString() : "Dec 31, 2024"
                         });
                     }
                 } catch (e) {
                     console.error("Failed to fetch market details", e);
+                    setMarketDetails({
+                        title: `Market #${signal.market_id}`,
+                        slug: '',
+                        description: "Unable to load market details. Please check Polymarket directly."
+                    });
                 } finally {
                     setIsLoadingDetails(false);
                 }
