@@ -10,8 +10,8 @@ export async function GET() {
         if (!fs.existsSync(LEDGER_PATH)) {
             // Return default structure if file doesn't exist yet
             return NextResponse.json({
-                capital_current_USDC: 10000.00,
-                capital_initial_USDC: 10000.00,
+                capital_current_USDC: 1000.00,
+                capital_initial_USDC: 1000.00,
                 processed_market_ids: [],
                 trades: []
             });

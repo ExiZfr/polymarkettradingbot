@@ -16,7 +16,8 @@ import {
     BarChart3,
     Percent,
     Radar,
-    Search
+    Search,
+    Trash2
 } from "lucide-react";
 import SniperGuide from "@/components/dashboard/SniperGuide";
 import FileLogsConsole from "@/components/dashboard/FileLogsConsole";
@@ -135,6 +136,16 @@ export default function SniperPage() {
         return () => clearInterval(interval);
     }, [fetchLedger]);
 
+    const handleReset = async () => {
+        if (!confirm("Attention: Cela va réinitialiser le compte à $1000 et effacer l'historique. Continuer ?")) return;
+        try {
+            await fetch('/api/sniper/reset', { method: 'POST' });
+            fetchLedger();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const stats = ledger ? calculateStats(ledger) : null;
 
     return (
@@ -230,14 +241,23 @@ export default function SniperPage() {
                         animate={{ opacity: 1, y: 0 }}
                         className="rounded-3xl border border-border bg-card/50 backdrop-blur-xl p-8"
                     >
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
-                                <Zap size={24} />
+                        <div className="flex items-center justify-between mb-6">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+                                    <Zap size={24} />
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-bold">Paramètres de Tir</h3>
+                                    <p className="text-sm text-muted-foreground">Configuration actuelle du script Python</p>
+                                </div>
                             </div>
-                            <div>
-                                <h3 className="text-xl font-bold">Paramètres de Tir</h3>
-                                <p className="text-sm text-muted-foreground">Configuration actuelle du script Python</p>
-                            </div>
+                            <button
+                                onClick={handleReset}
+                                className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                                title="Réinitialiser les données"
+                            >
+                                <Trash2 size={18} />
+                            </button>
                         </div>
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
