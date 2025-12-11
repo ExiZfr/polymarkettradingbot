@@ -9,13 +9,12 @@ import {
     DollarSign,
     Activity,
     Filter,
-    ExternalLink,
-    Copy,
     CheckCircle2
 } from 'lucide-react';
 import { paperStore } from '@/lib/paper-trading';
 import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
 import RadarGuide from '@/components/dashboard/RadarGuide';
+import SignalDetailsModal from '@/components/dashboard/SignalDetailsModal';
 
 interface WhaleSignal {
     id: number;
@@ -54,6 +53,7 @@ export default function RadarPage() {
     const [isActive, setIsActive] = useState(false);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<string | null>(null);
+    const [selectedSignal, setSelectedSignal] = useState<WhaleSignal | null>(null);
 
     // Fetch data
     const fetchData = async () => {
@@ -124,6 +124,29 @@ export default function RadarPage() {
 
         return () => clearInterval(interval);
     }, [filter]);
+
+    const handleCopyTrade = (signal: WhaleSignal, type: 'COPY' | 'INVERSE') => {
+        const outcomeToBuy = type === 'COPY'
+            ? signal.outcome
+            : (signal.outcome === 'YES' ? 'NO' : 'YES');
+
+        const result = paperStore.placeOrder({
+            marketId: signal.market_id,
+            marketTitle: `Market #${signal.market_id}`, // In real app, we need title
+            type: 'BUY',
+            outcome: outcomeToBuy,
+            entryPrice: signal.price, // Approx
+            amount: 100, // Defult copy amount
+            source: 'COPY_TRADING',
+            notes: `${type} Trade of Whale ${signal.wallet_address.slice(0, 6)}`
+        });
+
+        if (result) {
+            // Show toast or notification (omitted for brevity)
+            console.log(`${type} trade executed: $100 on ${outcomeToBuy}`);
+            setSelectedSignal(null);
+        }
+    };
 
     const getCategoryColor = (category: string | null) => {
         switch (category) {
@@ -304,10 +327,12 @@ export default function RadarPage() {
                             signals.map((signal, index) => (
                                 <motion.div
                                     key={signal.id}
+                                    layoutId={`signal-${signal.id}`}
+                                    onClick={() => setSelectedSignal(signal)}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="p-4 bg-background rounded-lg border border-border hover:border-primary/50 transition group flex items-start gap-4"
+                                    className="p-4 bg-background rounded-lg border border-border hover:border-primary/50 transition group flex items-start gap-4 cursor-pointer hover:bg-accent/50 active:scale-[0.99]"
                                 >
                                     {/* Icon */}
                                     <div className={`p-2 rounded-lg shrink-0 ${signal.outcome === 'YES' ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
@@ -403,6 +428,14 @@ export default function RadarPage() {
 
             {/* Guide Button */}
             <RadarGuide />
+
+            {/* Signal Details Modal */}
+            <SignalDetailsModal
+                signal={selectedSignal}
+                isOpen={!!selectedSignal}
+                onClose={() => setSelectedSignal(null)}
+                onCopyTrade={handleCopyTrade}
+            />
         </div>
     );
 }
