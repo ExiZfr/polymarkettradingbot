@@ -175,7 +175,7 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
         >
             {/* Main Row */}
             <div
-                className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
+                className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer group"
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
@@ -186,9 +186,18 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
 
                     {/* Market Info */}
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-foreground truncate">
-                            {order.marketTitle || "Unknown Market"}
-                        </p>
+                        <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium text-foreground truncate">
+                                {order.marketTitle || "Unknown Market"}
+                            </p>
+                            <PolymarketLink
+                                marketId={order.marketId}
+                                className="text-muted-foreground hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
+                                title="View on Polymarket"
+                            >
+                                <ExternalLink size={12} />
+                            </PolymarketLink>
+                        </div>
                         <div className="flex items-center gap-3 mt-1">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded ${order.outcome === "YES"
                                 ? "bg-green-500/10 text-green-500"

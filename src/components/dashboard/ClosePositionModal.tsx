@@ -12,7 +12,8 @@ import {
     Target,
     ArrowRight,
     AlertTriangle,
-    CheckCircle2
+    CheckCircle2,
+    ExternalLink
 } from "lucide-react";
 import { PaperOrder } from "@/lib/paper-trading";
 
@@ -130,7 +131,16 @@ export default function ClosePositionModal({ order, onClose, onConfirm }: CloseP
                                 <span className={`font-bold ${order.outcome === 'YES' ? 'text-green-500' : 'text-red-500'}`}>
                                     {order.outcome}
                                 </span>
-                                <span className="text-sm text-white/80 truncate">{order.marketTitle}</span>
+                                <span className="text-sm text-white/80 truncate mr-2">{order.marketTitle}</span>
+                                <a
+                                    href={`https://polymarket.com/market/${order.marketId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-white/30 hover:text-blue-400 transition-colors"
+                                    title="View on Polymarket"
+                                >
+                                    <ExternalLink size={14} />
+                                </a>
                             </div>
                         </div>
                     </div>
