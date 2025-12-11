@@ -221,7 +221,7 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                     <X size={20} />
                 </button>
 
-                {/* --- THE ULTIMATE PNL CARD --- */}
+                {/* --- THE ULTIMATE PNL CARD v2.1 (No 125x, Cleaner Header) --- */}
                 <div
                     id="pnl-card"
                     className="relative w-[700px] h-[400px] rounded-[32px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] group border border-white/10"
@@ -239,58 +239,68 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                     <div className="relative z-10 h-full flex flex-col justify-between p-6">
 
                         {/* --- HEADER: Identity & Time --- */}
-                        <div className="flex justify-between items-center bg-black/40 backdrop-blur-md rounded-2xl p-3 border border-white/5">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                    <span className="font-black text-white text-lg">P</span>
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-3 bg-black/40 backdrop-blur-md rounded-full pl-1.5 pr-6 py-1.5 border border-white/10 shadow-lg">
+                                {/* Logo Avatar */}
+                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-white/10 relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-white/20 flex -rotate-45 transform skew-x-12 translate-x-full animate-shimmer" />
+                                    <span className="font-black text-white text-xs z-10">P</span>
                                 </div>
-                                <div>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className="text-white font-bold tracking-tight">PolyGraalX.app</span>
-                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+
+                                {/* User Info */}
+                                <div className="flex flex-col justify-center">
+                                    <div className="flex items-center gap-1.5 leading-none mb-1">
+                                        <span className="text-white font-bold text-sm tracking-tight">PolyGraalX.app</span>
+                                        {/* Verified Badge */}
+                                        <svg className="w-3.5 h-3.5 text-blue-400 fill-current" viewBox="0 0 24 24">
+                                            <path d="M20.285 2l-11.285 11.561-5.286-5.011-3.714 3.716 9 8.728 15-15.285z" />
+                                        </svg>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] text-white/50 font-mono uppercase tracking-wider">
-                                        <span>@WhaleHunter</span>
-                                        <span className="text-white/20">•</span>
-                                        <span>{new Date().toLocaleTimeString()}</span>
+                                    <div className="flex items-center gap-2 text-[10px] text-white/50 font-mono font-medium uppercase tracking-wider leading-none">
+                                        <span className="text-blue-200/80">@WhaleHunter</span>
+                                        <span className="w-0.5 h-0.5 rounded-full bg-white/30" />
+                                        <span>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            <div className={`px-4 py-1.5 rounded-lg border ${isWin ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'} flex items-center gap-2 backdrop-blur-sm`}>
-                                <div className={`w-2 h-2 rounded-full ${isWin ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#fb7185]'} animate-pulse`} />
-                                <span className="text-xs font-black uppercase tracking-widest">{isWin ? 'PROFIT' : 'LOSS'}</span>
+                            {/* Status Badge */}
+                            <div className={`px-4 py-2 rounded-full border backdrop-blur-md flex items-center gap-2 shadow-lg ${isWin ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 shadow-emerald-500/10' : 'bg-rose-500/10 border-rose-500/20 text-rose-400 shadow-rose-500/10'}`}>
+                                <div className={`w-1.5 h-1.5 rounded-full ${isWin ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400 animate-pulse'}`} />
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{isWin ? 'WINNER' : 'LIQUIDATED'}</span>
                             </div>
                         </div>
 
                         {/* --- MIDDLE: The Big Numbers --- */}
                         <div className="flex-1 flex flex-col justify-center pl-4 relative">
-                            {/* Market Ticker */}
+                            {/* Market Ticker - CLEANER NO 125X */}
                             <div className="flex items-center gap-3 mb-2">
-                                <h2 className="text-2xl font-black text-white tracking-tight drop-shadow-md truncate max-w-[400px]">
+                                <h2 className="text-3xl font-black text-white tracking-tight drop-shadow-md truncate max-w-[450px]">
                                     {order.outcome}
                                 </h2>
-                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/10 backdrop-blur-sm">
-                                    PERP
-                                </span>
-                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isWin ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/20 text-rose-300 border border-rose-500/20'}`}>
-                                    125X
+                                <span className="px-2.5 py-1 rounded-md text-[10px] font-extrabold bg-white/5 text-white/40 border border-white/5 uppercase tracking-wider backdrop-blur-sm">
+                                    PREDICTION
                                 </span>
                             </div>
 
                             {/* ROI Display */}
                             <div className="relative">
                                 <h1
-                                    className={`text-[96px] leading-[0.85] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white ${isWin ? 'via-emerald-100 to-emerald-200' : 'via-rose-100 to-rose-200'}`}
+                                    className={`text-[96px] leading-[0.85] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white ${isWin ? 'via-emerald-50 to-emerald-200' : 'via-rose-50 to-rose-200'}`}
                                     style={{
                                         filter: `drop-shadow(0 0 40px ${isWin ? 'rgba(52,211,153,0.3)' : 'rgba(244,63,94,0.3)'})`
                                     }}
                                 >
                                     {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
                                 </h1>
-                                <p className={`font-mono text-2xl font-bold mt-2 ml-2 ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                    {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}
-                                </p>
+                                <div className="flex items-center gap-3 mt-2 ml-2">
+                                    <p className={`font-mono text-3xl font-bold ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                        {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}
+                                    </p>
+                                    <div className={`px-2 py-0.5 rounded text-[10px] font-bold border ${isWin ? 'border-emerald-500/30 text-emerald-500/50' : 'border-rose-500/30 text-rose-500/50'}`}>
+                                        USDC
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -317,7 +327,7 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                             {/* Card 4: Watermark */}
                             <div className="bg-blue-600/10 backdrop-blur-md border border-blue-500/20 rounded-xl p-2.5 flex flex-col justify-center items-center group-hover:bg-blue-600/20 transition-colors">
                                 <div className="text-[8px] uppercase text-blue-300/60 font-bold tracking-wider">Powered by</div>
-                                <div className="text-blue-300 font-bold text-xs">PolyGraalX</div>
+                                <div className="text-blue-300 font-bold text-xs leading-none mt-0.5">PolyGraalX</div>
                             </div>
                         </div>
 
