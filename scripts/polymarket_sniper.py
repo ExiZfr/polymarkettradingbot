@@ -619,13 +619,33 @@ async def handle_new_market(market: dict, ledger: dict, client: "httpx.AsyncClie
     """
     Callback for new market detection. Analyzes and potentially snipes.
     """
+    # Extract prices for display
+    outcomes = market.get("outcomes", [])
+    outcome_prices = market.get("outcomePrices", [])
+    
+    if not outcomes or not outcome_prices:
+        tokens = market.get("tokens", [])
+        if tokens:
+            outcomes = [t.get("outcome", "?") for t in tokens]
+            outcome_prices = [t.get("price", "?") for t in tokens]
+    
+    # Format prices for display
+    price_str = ""
+    try:
+        prices = [float(p) for p in outcome_prices[:2]]
+        price_str = f"[{outcomes[0] if outcomes else 'YES'}:{prices[0]:.2f} | {outcomes[1] if len(outcomes) > 1 else 'NO'}:{prices[1] if len(prices) > 1 else 0:.2f}]"
+    except:
+        price_str = "[Prix indisponible]"
+    
     should_snipe, outcome, amount, adjusted_price = analyze_sniping_opportunity(market)
     
     if should_snipe:
-        print(f"🎯 SNIPING OPPORTUNITY: {outcome} @ ~${adjusted_price:.4f}")
+        print(f"🎯 OPPORTUNITE DETECTEE! {market.get('question', '')[:50]}...")
+        print(f"   Prix: {price_str} -> Achat {outcome} @ ${adjusted_price:.4f}")
         await simulate_snipe_order(market, outcome, amount, adjusted_price, ledger)
     else:
-        print(f"   ⏭️  No inefficiency detected, skipping.")
+        # Show brief analysis even for skipped markets
+        print(f"📊 {market.get('question', 'Unknown')[:55]}... {price_str}")
 
 
 async def main():
