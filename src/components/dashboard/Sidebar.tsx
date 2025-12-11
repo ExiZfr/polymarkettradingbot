@@ -9,6 +9,7 @@ import {
     Settings,
     LogOut,
     Wallet,
+    Crosshair,
 } from "lucide-react";
 import AccountManagerWidget from "./AccountManagerWidget";
 
@@ -21,6 +22,7 @@ type NavItem = {
 
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
+    { label: "Sniper", href: "/dashboard/sniper", icon: Crosshair, badge: "New" },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
