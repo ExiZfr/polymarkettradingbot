@@ -249,9 +249,9 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                                 </div>
                                 <div>
                                     <div className="text-white font-black text-lg tracking-tight">
-                                        <span className="text-blue-400">Poly</span>GraalX
+                                        <span className="text-blue-400">Poly</span>GraalX<span className="text-blue-400">.app</span>
                                     </div>
-                                    <div className="text-white/40 text-xs font-mono">Whale Hunter</div>
+                                    <div className="text-white/40 text-xs font-mono">Whale Trading Bot</div>
                                 </div>
                             </div>
                             <div className={`px-3 py-1.5 rounded-full border backdrop-blur-sm ${isWin ? 'bg-emerald-500/20 border-emerald-400/30 text-emerald-300' : 'bg-red-500/20 border-red-400/30 text-red-300'} text-xs font-bold uppercase tracking-widest`}>
@@ -296,11 +296,20 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                                 </div>
                             </div>
 
-                            {/* Referral/Timestamp */}
+                            {/* Branding Watermark */}
                             <div className="text-right">
-                                <p className="text-[9px] text-white/20 uppercase tracking-widest">Sharing Time:</p>
-                                <p className="text-white/40 text-xs font-mono">{new Date().toLocaleString()}</p>
+                                <p className="text-[9px] text-white/20 uppercase tracking-widest mb-0.5">Trade with</p>
+                                <p className="text-white font-bold text-sm tracking-tight">
+                                    <span className="text-blue-400">Poly</span>GraalX<span className="text-blue-400">.app</span>
+                                </p>
                             </div>
+                        </div>
+
+                        {/* Bottom Watermark Bar */}
+                        <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/80 to-transparent flex items-end justify-center pb-1.5">
+                            <p className="text-[10px] text-white/30 font-mono tracking-[0.3em] uppercase">
+                                polygraalx.app • whale trading bot
+                            </p>
                         </div>
 
                     </div>
