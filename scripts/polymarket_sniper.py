@@ -713,6 +713,19 @@ async def handle_new_market(market: dict, ledger: dict, client: "httpx.AsyncClie
     else:
         # Show brief analysis even for skipped markets
         print(f"📊 {market.get('question', 'Unknown')[:55]}... {price_str}")
+        
+        # Send "Scanned" signal to Dashboard (so it appears in Snipe Console)
+        try:
+            signal_data = {
+                "level": "SNIPE", # Using SNIPE level so it appears in the requested category
+                "message": f"Scanned: {market.get('question', '')[:40]}... {price_str}",
+                "market": market.get('question', ''),
+                "price": outcome_prices[0] if outcome_prices else 0, # Best effort price
+                "outcome": "SKIP"
+            }
+            asyncio.create_task(client.post("http://localhost:3001/api/sniper/signals", json=signal_data))
+        except Exception:
+            pass
 
 
 async def main():
