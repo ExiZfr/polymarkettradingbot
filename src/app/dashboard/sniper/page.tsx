@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
     Crosshair,
     Play,
@@ -10,32 +10,22 @@ import {
     TrendingUp,
     TrendingDown,
     DollarSign,
-    Target,
     Zap,
     Activity,
     Clock,
     BarChart3,
     Percent,
-    AlertCircle,
+    Radar,
+    Search
 } from "lucide-react";
+import SniperGuide from "@/components/dashboard/SniperGuide";
 
-// Types matching the Python module's virtual_ledger.json schema
 interface Trade {
     trade_id: string;
-    market_id: string;
-    market_question: string;
-    market_slug: string;
     status: "OPEN" | "CLOSED_PROFIT" | "CLOSED_LOSS";
-    date_ouverture: string;
-    outcome_taken: string;
-    amount_invested_USDC: number;
-    shares_received: number;
-    price_entry: number;
-    price_exit: number | null;
-    date_cloture: string | null;
+    net_pnl_USDC: number | null;
     gross_pnl_USDC: number | null;
     fees_simulated: number | null;
-    net_pnl_USDC: number | null;
 }
 
 interface Ledger {
@@ -51,13 +41,9 @@ interface PerformanceStats {
     totalNetPnl: number;
     winRate: number;
     profitFactor: number | string;
-    maxDrawdown: number;
-    avgPnlPerTrade: number;
-    totalTrades: number;
-    openTrades: number;
-    closedTrades: number;
     winningTrades: number;
     losingTrades: number;
+    openTrades: number;
     totalFees: number;
 }
 
@@ -75,134 +61,46 @@ function calculateStats(ledger: Ledger): PerformanceStats {
 
     const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
     const profitFactor = totalGrossLoss > 0 ? totalGrossProfit / totalGrossLoss : "∞";
-    const avgPnlPerTrade = closedTrades.length > 0 ? totalNetPnl / closedTrades.length : 0;
 
     return {
         capitalInitial: ledger.capital_initial_USDC,
         capitalCurrent: ledger.capital_current_USDC,
         totalNetPnl,
         winRate,
-        profitFactor,
-        maxDrawdown: 0, // Would need equity curve calculation
-        avgPnlPerTrade,
-        totalTrades: trades.length,
-        openTrades: openTrades.length,
-        closedTrades: closedTrades.length,
+        profitFactor: typeof profitFactor === 'number' ? profitFactor.toFixed(2) : profitFactor,
         winningTrades: winningTrades.length,
         losingTrades: losingTrades.length,
+        openTrades: openTrades.length,
         totalFees,
     };
 }
 
-// Stat Card Component
-function StatCard({
-    icon: Icon,
-    label,
-    value,
-    subValue,
-    trend,
-    color = "primary",
-}: {
-    icon: React.ElementType;
-    label: string;
-    value: string;
-    subValue?: string;
-    trend?: "up" | "down" | "neutral";
-    color?: "primary" | "green" | "red" | "yellow";
-}) {
-    const colorClasses = {
-        primary: "from-primary/20 to-primary/5 border-primary/20",
-        green: "from-green-500/20 to-green-500/5 border-green-500/20",
-        red: "from-red-500/20 to-red-500/5 border-red-500/20",
-        yellow: "from-yellow-500/20 to-yellow-500/5 border-yellow-500/20",
+function StatCard({ label, value, subValue, trend, color = "primary", icon: Icon }: any) {
+    const gradients = {
+        primary: "bg-linear-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20",
+        green: "bg-linear-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20",
+        red: "bg-linear-to-br from-rose-500/10 to-rose-500/5 border-rose-500/20",
+        yellow: "bg-linear-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20",
     };
 
-    const iconColors = {
-        primary: "text-primary",
-        green: "text-green-500",
-        red: "text-red-500",
-        yellow: "text-yellow-500",
-    };
+    // Fallback for color string if not in map
+    const bgClass = gradients[color as keyof typeof gradients] || gradients.primary;
+    const textClass = `text-${color === 'primary' ? 'blue' : color === 'green' ? 'emerald' : color === 'red' ? 'rose' : 'amber'}-500`;
 
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className={`relative overflow-hidden rounded-2xl border bg-gradient-to-br ${colorClasses[color]} p-5 backdrop-blur-xl`}
+            whileHover={{ y: -2 }}
+            className={`p-5 rounded-2xl border backdrop-blur-sm ${bgClass}`}
         >
-            <div className="flex items-start justify-between">
+            <div className="flex justify-between items-start">
                 <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                        {label}
-                    </p>
-                    <p className="mt-2 text-2xl font-bold text-foreground">{value}</p>
-                    {subValue && (
-                        <p className="mt-1 text-xs text-muted-foreground">{subValue}</p>
-                    )}
+                    <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">{label}</p>
+                    <p className="text-2xl font-black mt-2 tracking-tight">{value}</p>
+                    {subValue && <p className="text-xs font-medium text-muted-foreground mt-1">{subValue}</p>}
                 </div>
-                <div className={`rounded-xl bg-background/50 p-2.5 ${iconColors[color]}`}>
+                <div className={`p-2 rounded-xl bg-background/50 ${textClass}`}>
                     <Icon size={20} />
                 </div>
-            </div>
-            {trend && (
-                <div className="absolute bottom-3 right-3">
-                    {trend === "up" && <TrendingUp size={16} className="text-green-500" />}
-                    {trend === "down" && <TrendingDown size={16} className="text-red-500" />}
-                </div>
-            )}
-        </motion.div>
-    );
-}
-
-// Trade Row Component
-function TradeRow({ trade, index }: { trade: Trade; index: number }) {
-    const statusColors = {
-        OPEN: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
-        CLOSED_PROFIT: "bg-green-500/10 text-green-500 border-green-500/20",
-        CLOSED_LOSS: "bg-red-500/10 text-red-500 border-red-500/20",
-    };
-
-    const statusLabels = {
-        OPEN: "Open",
-        CLOSED_PROFIT: "Won",
-        CLOSED_LOSS: "Lost",
-    };
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="flex items-center justify-between p-4 rounded-xl bg-muted/30 border border-border/50 hover:bg-muted/50 transition-colors"
-        >
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-                <div className={`p-2 rounded-lg ${trade.outcome_taken === "YES" ? "bg-green-500/10" : "bg-red-500/10"}`}>
-                    <Target size={16} className={trade.outcome_taken === "YES" ? "text-green-500" : "text-red-500"} />
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                        {trade.market_question || "Unknown Market"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                        {trade.outcome_taken} @ ${trade.price_entry.toFixed(4)}
-                    </p>
-                </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-                <div className="text-right">
-                    <p className="text-sm font-medium text-foreground">
-                        ${trade.amount_invested_USDC.toFixed(2)}
-                    </p>
-                    {trade.net_pnl_USDC !== null && (
-                        <p className={`text-xs ${trade.net_pnl_USDC >= 0 ? "text-green-500" : "text-red-500"}`}>
-                            {trade.net_pnl_USDC >= 0 ? "+" : ""}${trade.net_pnl_USDC.toFixed(2)}
-                        </p>
-                    )}
-                </div>
-                <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${statusColors[trade.status]}`}>
-                    {statusLabels[trade.status]}
-                </span>
             </div>
         </motion.div>
     );
@@ -210,215 +108,206 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
 
 export default function SniperPage() {
     const [ledger, setLedger] = useState<Ledger | null>(null);
-    const [isRunning, setIsRunning] = useState(false);
+    const [isRunning, setIsRunning] = useState(false); // In a real app, fetch this status too
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
-    // In a real implementation, this would fetch from an API
-    // For now, we'll simulate with default data
-    const loadLedger = useCallback(async () => {
+    const fetchLedger = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Simulated ledger data - in production, fetch from API
-            const mockLedger: Ledger = {
-                capital_current_USDC: 10000.00,
-                capital_initial_USDC: 10000.00,
-                processed_market_ids: [],
-                trades: [],
-            };
-            setLedger(mockLedger);
+            const res = await fetch('/api/sniper/data');
+            if (!res.ok) throw new Error("Failed to fetch");
+            const data = await res.json();
+            setLedger(data);
             setLastRefresh(new Date());
         } catch (error) {
-            console.error("Failed to load ledger:", error);
+            console.error("Fetch error:", error);
         } finally {
             setIsLoading(false);
         }
     }, []);
 
     useEffect(() => {
-        loadLedger();
-    }, [loadLedger]);
+        fetchLedger();
+        // Poll every 5 seconds for live updates
+        const interval = setInterval(fetchLedger, 5000);
+        return () => clearInterval(interval);
+    }, [fetchLedger]);
 
     const stats = ledger ? calculateStats(ledger) : null;
 
-    const handleStartStop = () => {
-        setIsRunning(!isRunning);
-        // In production, this would call an API to start/stop the Python sniper
-    };
-
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-6 relative pb-20">
+            {/* Background Decor */}
+            <div className="fixed top-0 right-0 p-20 opacity-5 pointer-events-none">
+                <Crosshair size={400} />
+            </div>
+
+            {/* Header Area */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-primary/10">
-                            <Crosshair className="text-primary" size={24} />
-                        </div>
+                    <h1 className="text-3xl font-black tracking-tight text-foreground flex items-center gap-3">
+                        <span className="p-2 bg-primary text-primary-foreground rounded-lg">
+                            <Crosshair size={24} />
+                        </span>
                         Market Sniper
+                        <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">v1.0</span>
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Paper trading simulation for new market opportunities
+                    <p className="text-muted-foreground mt-2 max-w-lg">
+                        Le bot scanne la blockchain en temps réel pour détecter les inefficacités de prix avant les humains.
                     </p>
                 </div>
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={loadLedger}
-                        disabled={isLoading}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors disabled:opacity-50"
-                    >
-                        <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
-                        Refresh
-                    </button>
-                    <button
-                        onClick={handleStartStop}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${isRunning
-                            ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
-                            : "bg-primary text-primary-foreground hover:bg-primary/90"
+                        onClick={() => setIsRunning(!isRunning)}
+                        className={`group relative overflow-hidden rounded-xl px-8 py-3 font-bold transition-all ${isRunning
+                                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 ring-1 ring-red-500/50"
+                                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
                             }`}
                     >
-                        {isRunning ? (
-                            <>
-                                <Square size={16} />
-                                Stop Sniper
-                            </>
-                        ) : (
-                            <>
-                                <Play size={16} />
-                                Start Sniper
-                            </>
-                        )}
+                        <div className="flex items-center gap-3 relative z-10">
+                            {isRunning ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
+                            {isRunning ? "ARRÊTER LE BOT" : "LANCER LE SNIPER"}
+                        </div>
+                    </button>
+
+                    <button
+                        onClick={fetchLedger}
+                        className="p-3 rounded-xl bg-card border border-border hover:bg-muted transition-colors"
+                        title="Force Refresh"
+                    >
+                        <RefreshCw size={20} className={isLoading ? "animate-spin" : ""} />
                     </button>
                 </div>
             </div>
 
-            {/* Status Banner */}
-            <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`flex items-center justify-between p-4 rounded-xl border ${isRunning
-                    ? "bg-green-500/5 border-green-500/20"
-                    : "bg-yellow-500/5 border-yellow-500/20"
-                    }`}
-            >
-                <div className="flex items-center gap-3">
-                    <div className={`relative flex h-3 w-3`}>
-                        {isRunning && (
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        )}
-                        <span className={`relative inline-flex rounded-full h-3 w-3 ${isRunning ? "bg-green-500" : "bg-yellow-500"}`}></span>
-                    </div>
-                    <span className={`font-medium ${isRunning ? "text-green-500" : "text-yellow-500"}`}>
-                        {isRunning ? "Sniper Active - Scanning Markets" : "Sniper Idle - Ready to Deploy"}
-                    </span>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock size={14} />
-                    Last refresh: {lastRefresh.toLocaleTimeString()}
-                </div>
-            </motion.div>
+            {/* Radar Activity Visualizer (Fake visualization for UI feeling) */}
+            <div className={`relative w-full h-2 overflow-hidden rounded-full bg-muted/30 ${isRunning ? 'opacity-100' : 'opacity-50 grayscale'}`}>
+                {isRunning && (
+                    <motion.div
+                        initial={{ x: "-100%" }}
+                        animate={{ x: "100%" }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                        className="absolute inset-y-0 w-1/3 bg-linear-to-r from-transparent via-primary to-transparent opacity-50"
+                    />
+                )}
+            </div>
 
             {/* Stats Grid */}
             {stats && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <StatCard
-                        icon={DollarSign}
-                        label="Current Capital"
+                        label="Capital Total"
                         value={`$${stats.capitalCurrent.toLocaleString()}`}
-                        subValue={`Started: $${stats.capitalInitial.toLocaleString()}`}
+                        subValue={`Départ: $${stats.capitalInitial.toLocaleString()}`}
+                        icon={DollarSign}
                         color="primary"
                     />
                     <StatCard
-                        icon={TrendingUp}
-                        label="Total P&L"
+                        label="P&L Net"
                         value={`${stats.totalNetPnl >= 0 ? "+" : ""}$${stats.totalNetPnl.toFixed(2)}`}
-                        subValue={`Fees: $${stats.totalFees.toFixed(2)}`}
-                        trend={stats.totalNetPnl >= 0 ? "up" : "down"}
+                        subValue={`Frais payés: $${stats.totalFees.toFixed(2)}`}
+                        icon={TrendingUp}
                         color={stats.totalNetPnl >= 0 ? "green" : "red"}
                     />
                     <StatCard
-                        icon={Percent}
                         label="Win Rate"
                         value={`${stats.winRate.toFixed(1)}%`}
-                        subValue={`${stats.winningTrades}W / ${stats.losingTrades}L`}
+                        subValue={`${stats.winningTrades} gagnés / ${stats.losingTrades} perdus`}
+                        icon={Percent}
                         color={stats.winRate >= 50 ? "green" : "red"}
                     />
                     <StatCard
-                        icon={BarChart3}
                         label="Profit Factor"
-                        value={typeof stats.profitFactor === "number" ? stats.profitFactor.toFixed(2) : stats.profitFactor}
-                        subValue={`Avg: $${stats.avgPnlPerTrade.toFixed(2)}/trade`}
+                        value={stats.profitFactor}
+                        subValue="Ratio Gains / Pertes"
+                        icon={BarChart3}
                         color="yellow"
                     />
                 </div>
             )}
 
-            {/* Configuration Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-border bg-card p-6"
-            >
-                <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                    <Zap size={18} className="text-primary" />
-                    Sniper Configuration
-                </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Max Bet</p>
-                        <p className="text-lg font-bold text-foreground mt-1">$500.00</p>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Configuration Panel */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="lg:col-span-2 rounded-3xl border border-border bg-card/50 backdrop-blur-xl p-8"
+                >
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+                            <Zap size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-bold">Paramètres de Tir</h3>
+                            <p className="text-sm text-muted-foreground">Configuration actuelle du script Python</p>
+                        </div>
                     </div>
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Price Tolerance</p>
-                        <p className="text-lg font-bold text-foreground mt-1">5%</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Take Profit</p>
-                        <p className="text-lg font-bold text-foreground mt-1">10¢</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-muted/30 border border-border/50">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Platform Fee</p>
-                        <p className="text-lg font-bold text-foreground mt-1">2%</p>
-                    </div>
-                </div>
-            </motion.div>
 
-            {/* Quick Trades Summary */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-2xl border border-border bg-card p-6"
-            >
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                        <Activity size={18} className="text-primary" />
-                        Positions Actives
-                    </h2>
-                    <a
-                        href="/dashboard/orders"
-                        className="flex items-center gap-2 text-sm text-primary hover:underline"
-                    >
-                        Voir le Carnet d'Ordres
-                        <span>→</span>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <ConfigBox label="Mise Max" value="$500.00" desc="Risque par trade" />
+                        <ConfigBox label="Tolerance" value="5%" desc="Écart vs 50/50" />
+                        <ConfigBox label="Take Profit" value="10¢" desc="Target gain" />
+                        <ConfigBox label="Slippage" value="Auto" desc="Simulation AMM" />
+                    </div>
+                </motion.div>
+
+                {/* Quick Status Panel */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="rounded-3xl border border-border bg-card/50 backdrop-blur-xl p-8 flex flex-col justify-center"
+                >
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="font-bold text-lg">Scanner Status</h3>
+                        {isRunning ? (
+                            <span className="flex h-3 w-3 relative">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                            </span>
+                        ) : (
+                            <span className="h-3 w-3 rounded-full bg-yellow-500"></span>
+                        )}
+                    </div>
+
+                    <div className="space-y-4 my-4">
+                        <div className="flex justify-between text-sm border-b border-border/50 pb-2">
+                            <span className="text-muted-foreground">Marchés Scannés</span>
+                            <span className="font-mono">{ledger?.processed_market_ids.length || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-sm border-b border-border/50 pb-2">
+                            <span className="text-muted-foreground">Positions Ouvertes</span>
+                            <span className="font-mono text-yellow-500 font-bold">{stats?.openTrades || 0}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span className="text-muted-foreground">Dernier Update</span>
+                            <span className="font-mono text-xs">{lastRefresh.toLocaleTimeString()}</span>
+                        </div>
+                    </div>
+
+                    <a href="/dashboard/orders" className="mt-auto w-full py-3 rounded-xl bg-muted hover:bg-muted/80 text-center text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        <Activity size={16} />
+                        Voir Historique Complet
                     </a>
-                </div>
+                </motion.div>
+            </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                    <div className="p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-center">
-                        <p className="text-3xl font-bold text-yellow-500">{stats?.openTrades || 0}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Open</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-center">
-                        <p className="text-3xl font-bold text-green-500">{stats?.winningTrades || 0}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Won</p>
-                    </div>
-                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 text-center">
-                        <p className="text-3xl font-bold text-red-500">{stats?.losingTrades || 0}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Lost</p>
-                    </div>
-                </div>
-            </motion.div>
+            {/* Help Component */}
+            <SniperGuide />
         </div>
     );
 }
+
+// Helper Subcomponent
+function ConfigBox({ label, value, desc }: any) {
+    return (
+        <div className="p-4 rounded-2xl bg-muted/30 border border-border/50">
+            <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider">{label}</p>
+            <p className="text-xl font-bold text-foreground mt-1">{value}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{desc}</p>
+        </div>
+    );
+}
+
