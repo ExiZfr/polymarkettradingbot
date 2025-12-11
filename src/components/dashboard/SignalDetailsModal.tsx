@@ -45,8 +45,8 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
     const bgClass = isYes ? 'bg-green-500/10' : 'bg-red-500/10';
     const borderClass = isYes ? 'border-green-500/20' : 'border-red-500/20';
 
-    // Simulate Polymarket URL (in real app, use slug or ID)
-    const polymarketUrl = `https://polymarket.com/event/${signal.market_id}`;
+    // Use search URL since we don't have the slug
+    const polymarketUrl = `https://polymarket.com/?s=${signal.market_id}`;
 
     return (
         <AnimatePresence>

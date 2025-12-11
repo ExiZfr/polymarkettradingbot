@@ -315,7 +315,7 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                             )}
                             <div className="md:col-span-4 flex items-end">
                                 <a
-                                    href={`https://polymarket.com/event/${order.marketId}`}
+                                    href={`https://polymarket.com/?s=${order.marketId}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-2 text-xs text-primary hover:underline"
