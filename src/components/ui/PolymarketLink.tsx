@@ -24,28 +24,26 @@ export default function PolymarketLink({ marketId, className, children }: Polyma
 
         async function fetchSlug() {
             try {
-                // Try to fetch market details from Gamma API
-                const res = await fetch(`https://gamma-api.polymarket.com/markets/${marketId}`);
-                if (!res.ok) throw new Error("Failed to fetch market");
+                // Use local proxy to avoid CORS issues
+                const res = await fetch(`/api/polymarket-proxy?id=${marketId}`);
+
+                if (!res.ok) {
+                    console.warn(`[PolymarketLink] Proxy lookup failed for ${marketId}: ${res.status}`);
+                    setError(true);
+                    return;
+                }
 
                 const data = await res.json();
 
-                // The API usually returns 'slug' or 'question' which we can slugify
-                // For simplified markets, it might be nested in 'events'
-                let foundSlug = data.slug;
-
-                // Sometimes market is just one outcome, need event slug
-                if (!foundSlug && data.events && data.events.length > 0) {
-                    foundSlug = data.events[0].slug;
-                }
-
-                if (foundSlug && isMounted) {
-                    slugCache[marketId] = foundSlug;
-                    setSlug(foundSlug);
+                if (data.slug && isMounted) {
+                    // console.log(`[PolymarketLink] Resolved ${marketId} -> ${data.slug}`);
+                    slugCache[marketId] = data.slug;
+                    setSlug(data.slug);
                 } else {
                     setError(true);
                 }
             } catch (err) {
+                console.error(`[PolymarketLink] Error fetching slug`, err);
                 if (isMounted) setError(true);
             } finally {
                 if (isMounted) setLoading(false);
