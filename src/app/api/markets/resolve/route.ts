@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
+
+// In-memory cache as fallback when DB is not available
+const memoryCache = new Map<string, { slug: string; title: string; imageUrl?: string; timestamp: number }>();
+const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
 /**
  * GET /api/markets/resolve?id=XXX
  * 
  * Resolves a Polymarket market_id to its slug and title.
- * Uses local database cache first, then fetches from Polymarket API if not found.
+ * Works WITHOUT database by using in-memory cache.
  * This is the SINGLE SOURCE OF TRUTH for market link resolution.
  */
 export async function GET(request: NextRequest) {
@@ -19,14 +22,11 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Step 1: Check local cache
-        const cached = await prisma.marketCache.findUnique({
-            where: { id }
-        });
-
-        if (cached) {
+        // Step 1: Check memory cache
+        const cached = memoryCache.get(id);
+        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
             return NextResponse.json({
-                id: cached.id,
+                id,
                 slug: cached.slug,
                 title: cached.title,
                 imageUrl: cached.imageUrl,
@@ -34,14 +34,15 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // Step 2: Not in cache, fetch from Polymarket API
-        console.log(`[MarketResolver] Cache miss for ${id}, fetching from Polymarket...`);
+        // Step 2: Fetch from Polymarket API
+        console.log(`[MarketResolver] Fetching from Polymarket API for ${id}...`);
 
         const polyResponse = await fetch(`https://gamma-api.polymarket.com/markets/${id}`, {
             headers: {
                 'Accept': 'application/json',
                 'User-Agent': 'PolyGraalX-Bot/1.0'
-            }
+            },
+            next: { revalidate: 3600 } // Cache for 1 hour
         });
 
         if (!polyResponse.ok) {
@@ -75,22 +76,12 @@ export async function GET(request: NextRequest) {
             }, { status: 404 });
         }
 
-        // Step 4: Store in cache
-        await prisma.marketCache.upsert({
-            where: { id },
-            update: {
-                slug,
-                title,
-                imageUrl,
-                resolved: true
-            },
-            create: {
-                id,
-                slug,
-                title,
-                imageUrl,
-                resolved: true
-            }
+        // Step 4: Store in memory cache
+        memoryCache.set(id, {
+            slug,
+            title,
+            imageUrl: imageUrl || undefined,
+            timestamp: Date.now()
         });
 
         console.log(`[MarketResolver] Cached ${id} -> ${slug}`);
@@ -116,7 +107,7 @@ export async function GET(request: NextRequest) {
  * POST /api/markets/resolve
  * 
  * Bulk resolve multiple market IDs (used by Sniper/Radar to pre-cache)
- * Body: { ids: ["id1", "id2", ...] }
+ * Body: { ids: ["id1", "id2", ...], preload: {...} }
  */
 export async function POST(request: NextRequest) {
     try {
@@ -124,25 +115,15 @@ export async function POST(request: NextRequest) {
         const ids: string[] = body.ids || [];
         const preload: Record<string, { slug: string; title: string; imageUrl?: string }> = body.preload || {};
 
-        // If preload data is provided, directly insert into cache
+        // If preload data is provided, store in memory cache
         if (Object.keys(preload).length > 0) {
             for (const [id, data] of Object.entries(preload)) {
                 if (data.slug) {
-                    await prisma.marketCache.upsert({
-                        where: { id },
-                        update: {
-                            slug: data.slug,
-                            title: data.title || `Market #${id}`,
-                            imageUrl: data.imageUrl || null,
-                            resolved: true
-                        },
-                        create: {
-                            id,
-                            slug: data.slug,
-                            title: data.title || `Market #${id}`,
-                            imageUrl: data.imageUrl || null,
-                            resolved: true
-                        }
+                    memoryCache.set(id, {
+                        slug: data.slug,
+                        title: data.title || `Market #${id}`,
+                        imageUrl: data.imageUrl,
+                        timestamp: Date.now()
                     });
                 }
             }
@@ -158,9 +139,9 @@ export async function POST(request: NextRequest) {
 
         for (const id of ids.slice(0, 20)) { // Limit to 20 per request
             try {
-                // Check cache first
-                const cached = await prisma.marketCache.findUnique({ where: { id } });
-                if (cached) {
+                // Check memory cache first
+                const cached = memoryCache.get(id);
+                if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
                     results.push({ id, slug: cached.slug });
                     continue;
                 }
@@ -179,10 +160,10 @@ export async function POST(request: NextRequest) {
                 }
 
                 if (slug) {
-                    await prisma.marketCache.upsert({
-                        where: { id },
-                        update: { slug, title: data.question || `Market #${id}`, resolved: true },
-                        create: { id, slug, title: data.question || `Market #${id}`, resolved: true }
+                    memoryCache.set(id, {
+                        slug,
+                        title: data.question || `Market #${id}`,
+                        timestamp: Date.now()
                     });
                     results.push({ id, slug });
                 } else {
