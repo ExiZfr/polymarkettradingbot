@@ -274,8 +274,8 @@ export default function SniperPage() {
                     <button
                         onClick={handleStartStop}
                         className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition-all ${isRunning
-                                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
-                                : "bg-primary text-primary-foreground hover:bg-primary/90"
+                            ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
                             }`}
                     >
                         {isRunning ? (
@@ -298,8 +298,8 @@ export default function SniperPage() {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className={`flex items-center justify-between p-4 rounded-xl border ${isRunning
-                        ? "bg-green-500/5 border-green-500/20"
-                        : "bg-yellow-500/5 border-yellow-500/20"
+                    ? "bg-green-500/5 border-green-500/20"
+                    : "bg-yellow-500/5 border-yellow-500/20"
                     }`}
             >
                 <div className="flex items-center gap-3">
@@ -384,7 +384,7 @@ export default function SniperPage() {
                 </div>
             </motion.div>
 
-            {/* Trades Section */}
+            {/* Quick Trades Summary */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -393,30 +393,31 @@ export default function SniperPage() {
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
                         <Activity size={18} className="text-primary" />
-                        Trade Journal
+                        Positions Actives
                     </h2>
-                    <span className="text-xs text-muted-foreground">
-                        {stats?.totalTrades || 0} total trades
-                    </span>
+                    <a
+                        href="/dashboard/orders"
+                        className="flex items-center gap-2 text-sm text-primary hover:underline"
+                    >
+                        Voir le Carnet d'Ordres
+                        <span>→</span>
+                    </a>
                 </div>
 
-                {ledger && ledger.trades.length > 0 ? (
-                    <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-hide">
-                        {ledger.trades.slice().reverse().map((trade, index) => (
-                            <TradeRow key={trade.trade_id} trade={trade} index={index} />
-                        ))}
+                <div className="grid grid-cols-3 gap-4">
+                    <div className="p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20 text-center">
+                        <p className="text-3xl font-bold text-yellow-500">{stats?.openTrades || 0}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Open</p>
                     </div>
-                ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="p-4 rounded-full bg-muted/50 mb-4">
-                            <AlertCircle size={32} className="text-muted-foreground" />
-                        </div>
-                        <p className="text-muted-foreground">No trades yet</p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Start the sniper to begin paper trading
-                        </p>
+                    <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20 text-center">
+                        <p className="text-3xl font-bold text-green-500">{stats?.winningTrades || 0}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Won</p>
                     </div>
-                )}
+                    <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20 text-center">
+                        <p className="text-3xl font-bold text-red-500">{stats?.losingTrades || 0}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Lost</p>
+                    </div>
+                </div>
             </motion.div>
         </div>
     );
