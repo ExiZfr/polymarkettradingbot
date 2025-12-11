@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     BookOpen,
@@ -19,46 +19,22 @@ import {
     CheckCircle2,
     XCircle,
     Timer,
+    X
 } from "lucide-react";
+import { paperStore, PaperOrder } from "@/lib/paper-trading";
 
-// Types matching the Python module's virtual_ledger.json schema
-interface Trade {
-    trade_id: string;
-    market_id: string;
-    market_question: string;
-    market_slug: string;
-    status: "OPEN" | "CLOSED_PROFIT" | "CLOSED_LOSS";
-    date_ouverture: string;
-    outcome_taken: string;
-    amount_invested_USDC: number;
-    shares_received: number;
-    price_entry: number;
-    price_exit: number | null;
-    date_cloture: string | null;
-    gross_pnl_USDC: number | null;
-    fees_simulated: number | null;
-    net_pnl_USDC: number | null;
-}
-
-interface Ledger {
-    capital_current_USDC: number;
-    capital_initial_USDC: number;
-    processed_market_ids: string[];
-    trades: Trade[];
-}
-
-type FilterStatus = "ALL" | "OPEN" | "CLOSED_PROFIT" | "CLOSED_LOSS";
+type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 
 // Summary Stats Component
-function SummaryStats({ trades }: { trades: Trade[] }) {
-    const openTrades = trades.filter(t => t.status === "OPEN");
-    const closedTrades = trades.filter(t => t.status !== "OPEN");
-    const wonTrades = trades.filter(t => t.status === "CLOSED_PROFIT");
-    const lostTrades = trades.filter(t => t.status === "CLOSED_LOSS");
+function SummaryStats({ orders }: { orders: PaperOrder[] }) {
+    const openOrders = orders.filter(o => o.status === "OPEN");
+    const closedOrders = orders.filter(o => o.status === "CLOSED");
+    const wonOrders = closedOrders.filter(o => (o.pnl || 0) > 0);
+    const lostOrders = closedOrders.filter(o => (o.pnl || 0) < 0);
 
-    const totalInvested = trades.reduce((sum, t) => sum + t.amount_invested_USDC, 0);
-    const totalPnl = closedTrades.reduce((sum, t) => sum + (t.net_pnl_USDC || 0), 0);
-    const totalFees = closedTrades.reduce((sum, t) => sum + (t.fees_simulated || 0), 0);
+    const totalInvested = orders.reduce((sum, o) => sum + o.amount, 0);
+    const totalPnl = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+    const winRate = closedOrders.length > 0 ? (wonOrders.length / closedOrders.length) * 100 : 0;
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -67,28 +43,28 @@ function SummaryStats({ trades }: { trades: Trade[] }) {
                     <BookOpen size={14} />
                     <span className="text-xs uppercase tracking-wider">Total</span>
                 </div>
-                <p className="text-xl font-bold text-foreground">{trades.length}</p>
+                <p className="text-xl font-bold text-foreground">{orders.length}</p>
             </div>
             <div className="p-4 rounded-xl bg-yellow-500/5 border border-yellow-500/20">
                 <div className="flex items-center gap-2 text-yellow-500 mb-1">
                     <Timer size={14} />
                     <span className="text-xs uppercase tracking-wider">Open</span>
                 </div>
-                <p className="text-xl font-bold text-yellow-500">{openTrades.length}</p>
+                <p className="text-xl font-bold text-yellow-500">{openOrders.length}</p>
             </div>
             <div className="p-4 rounded-xl bg-green-500/5 border border-green-500/20">
                 <div className="flex items-center gap-2 text-green-500 mb-1">
                     <CheckCircle2 size={14} />
                     <span className="text-xs uppercase tracking-wider">Won</span>
                 </div>
-                <p className="text-xl font-bold text-green-500">{wonTrades.length}</p>
+                <p className="text-xl font-bold text-green-500">{wonOrders.length}</p>
             </div>
             <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/20">
                 <div className="flex items-center gap-2 text-red-500 mb-1">
                     <XCircle size={14} />
                     <span className="text-xs uppercase tracking-wider">Lost</span>
                 </div>
-                <p className="text-xl font-bold text-red-500">{lostTrades.length}</p>
+                <p className="text-xl font-bold text-red-500">{lostOrders.length}</p>
             </div>
             <div className={`p-4 rounded-xl border ${totalPnl >= 0 ? "bg-green-500/5 border-green-500/20" : "bg-red-500/5 border-red-500/20"}`}>
                 <div className={`flex items-center gap-2 mb-1 ${totalPnl >= 0 ? "text-green-500" : "text-red-500"}`}>
@@ -103,8 +79,8 @@ function SummaryStats({ trades }: { trades: Trade[] }) {
     );
 }
 
-// Trade Row Component (Detailed)
-function TradeRow({ trade, index }: { trade: Trade; index: number }) {
+// Order Row Component (Detailed)
+function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number; onClose: (id: string) => void }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     const statusConfig = {
@@ -113,23 +89,28 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
             icon: Timer,
             label: "Open"
         },
-        CLOSED_PROFIT: {
-            color: "bg-green-500/10 text-green-500 border-green-500/20",
-            icon: CheckCircle2,
-            label: "Won"
+        CLOSED: {
+            color: (order.pnl || 0) >= 0 ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-red-500/10 text-red-500 border-red-500/20",
+            icon: (order.pnl || 0) >= 0 ? CheckCircle2 : XCircle,
+            label: (order.pnl || 0) >= 0 ? "Won" : "Lost"
         },
-        CLOSED_LOSS: {
-            color: "bg-red-500/10 text-red-500 border-red-500/20",
-            icon: XCircle,
-            label: "Lost"
+        CANCELLED: {
+            color: "bg-gray-500/10 text-gray-500 border-gray-500/20",
+            icon: X,
+            label: "Cancelled"
         },
+        PENDING: {
+            color: "bg-blue-500/10 text-blue-500 border-blue-500/20",
+            icon: Clock,
+            label: "Pending"
+        }
     };
 
-    const config = statusConfig[trade.status];
+    const config = statusConfig[order.status];
     const StatusIcon = config.icon;
 
-    const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
+    const formatDate = (timestamp: number) => {
+        const date = new Date(timestamp);
         return date.toLocaleDateString("fr-FR", {
             day: "2-digit",
             month: "short",
@@ -159,17 +140,20 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
                     {/* Market Info */}
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-foreground truncate">
-                            {trade.market_question || "Unknown Market"}
+                            {order.marketTitle || "Unknown Market"}
                         </p>
                         <div className="flex items-center gap-3 mt-1">
-                            <span className={`text-xs font-medium px-2 py-0.5 rounded ${trade.outcome_taken === "YES"
-                                    ? "bg-green-500/10 text-green-500"
-                                    : "bg-red-500/10 text-red-500"
+                            <span className={`text-xs font-medium px-2 py-0.5 rounded ${order.outcome === "YES"
+                                ? "bg-green-500/10 text-green-500"
+                                : "bg-red-500/10 text-red-500"
                                 }`}>
-                                {trade.outcome_taken}
+                                {order.outcome}
                             </span>
                             <span className="text-xs text-muted-foreground">
-                                {formatDate(trade.date_ouverture)}
+                                {formatDate(order.timestamp)}
+                            </span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${order.source === 'COPY_TRADING' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+                                {order.source.replace('_', ' ')}
                             </span>
                         </div>
                     </div>
@@ -180,21 +164,21 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
                     {/* Entry Price */}
                     <div className="text-right hidden sm:block">
                         <p className="text-xs text-muted-foreground">Entry</p>
-                        <p className="text-sm font-medium text-foreground">${trade.price_entry.toFixed(4)}</p>
+                        <p className="text-sm font-medium text-foreground">${order.entryPrice.toFixed(3)}</p>
                     </div>
 
                     {/* Amount */}
                     <div className="text-right">
                         <p className="text-xs text-muted-foreground">Invested</p>
-                        <p className="text-sm font-medium text-foreground">${trade.amount_invested_USDC.toFixed(2)}</p>
+                        <p className="text-sm font-medium text-foreground">${order.amount.toFixed(2)}</p>
                     </div>
 
                     {/* P&L */}
                     <div className="text-right min-w-[80px]">
                         <p className="text-xs text-muted-foreground">P&L</p>
-                        {trade.net_pnl_USDC !== null ? (
-                            <p className={`text-sm font-bold ${trade.net_pnl_USDC >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                {trade.net_pnl_USDC >= 0 ? "+" : ""}${trade.net_pnl_USDC.toFixed(2)}
+                        {order.pnl !== undefined ? (
+                            <p className={`text-sm font-bold ${order.pnl >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                {order.pnl >= 0 ? "+" : ""}${order.pnl.toFixed(2)}
                             </p>
                         ) : (
                             <p className="text-sm text-muted-foreground">—</p>
@@ -205,6 +189,22 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
                     <span className={`px-3 py-1.5 text-xs font-medium rounded-full border ${config.color}`}>
                         {config.label}
                     </span>
+
+                    {/* Close Button (for open orders) */}
+                    {order.status === 'OPEN' && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                const currentPrice = order.currentPrice || order.entryPrice;
+                                if (window.confirm(`Close this position at $${currentPrice.toFixed(3)}?`)) {
+                                    onClose(order.id);
+                                }
+                            }}
+                            className="px-2 py-1 text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded transition-colors"
+                        >
+                            Close
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -219,49 +219,65 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
                     >
                         <div className="p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                             <div>
-                                <p className="text-xs text-muted-foreground mb-1">Trade ID</p>
-                                <p className="text-sm font-mono text-foreground">{trade.trade_id}</p>
+                                <p className="text-xs text-muted-foreground mb-1">Order ID</p>
+                                <p className="text-sm font-mono text-foreground">{order.id}</p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground mb-1">Shares Received</p>
-                                <p className="text-sm text-foreground">{trade.shares_received.toFixed(4)}</p>
+                                <p className="text-xs text-muted-foreground mb-1">Shares</p>
+                                <p className="text-sm text-foreground">{order.shares.toFixed(4)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground mb-1">Current Price</p>
+                                <p className="text-sm text-foreground">
+                                    ${(order.currentPrice || order.entryPrice).toFixed(3)}
+                                </p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground mb-1">Exit Price</p>
                                 <p className="text-sm text-foreground">
-                                    {trade.price_exit !== null ? `$${trade.price_exit.toFixed(4)}` : "—"}
+                                    {order.exitPrice ? `$${order.exitPrice.toFixed(3)}` : "—"}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground mb-1">Fees Paid</p>
+                                <p className="text-xs text-muted-foreground mb-1">Stop Loss</p>
                                 <p className="text-sm text-foreground">
-                                    {trade.fees_simulated !== null ? `$${trade.fees_simulated.toFixed(2)}` : "—"}
+                                    {order.stopLoss ? `$${order.stopLoss.toFixed(3)}` : "None"}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-xs text-muted-foreground mb-1">Gross P&L</p>
-                                <p className={`text-sm ${(trade.gross_pnl_USDC || 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
-                                    {trade.gross_pnl_USDC !== null ? `$${trade.gross_pnl_USDC.toFixed(2)}` : "—"}
+                                <p className="text-xs text-muted-foreground mb-1">Take Profit</p>
+                                <p className="text-sm text-foreground">
+                                    {order.takeProfit ? `$${order.takeProfit.toFixed(3)}` : "None"}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground mb-1">ROI</p>
+                                <p className={`text-sm ${(order.roi || 0) >= 0 ? "text-green-500" : "text-red-500"}`}>
+                                    {order.roi ? `${order.roi >= 0 ? '+' : ''}${order.roi.toFixed(2)}%` : "—"}
                                 </p>
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground mb-1">Closed At</p>
                                 <p className="text-sm text-foreground">
-                                    {trade.date_cloture ? formatDate(trade.date_cloture) : "—"}
+                                    {order.exitTimestamp ? formatDate(order.exitTimestamp) : "—"}
                                 </p>
                             </div>
-                            <div className="md:col-span-2 flex items-end">
-                                {trade.market_slug && (
-                                    <a
-                                        href={`https://polymarket.com/event/${trade.market_slug}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-2 text-xs text-primary hover:underline"
-                                    >
-                                        <ExternalLink size={12} />
-                                        View on Polymarket
-                                    </a>
-                                )}
+                            {order.notes && (
+                                <div className="md:col-span-4">
+                                    <p className="text-xs text-muted-foreground mb-1">Notes</p>
+                                    <p className="text-sm text-foreground italic">{order.notes}</p>
+                                </div>
+                            )}
+                            <div className="md:col-span-4 flex items-end">
+                                <a
+                                    href={`https://polymarket.com/event/${order.marketId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-xs text-primary hover:underline"
+                                >
+                                    <ExternalLink size={12} />
+                                    View on Polymarket
+                                </a>
                             </div>
                         </div>
                     </motion.div>
@@ -272,52 +288,49 @@ function TradeRow({ trade, index }: { trade: Trade; index: number }) {
 }
 
 export default function OrderBookPage() {
-    const [ledger, setLedger] = useState<Ledger | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [orders, setOrders] = useState<PaperOrder[]>([]);
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
-    const loadLedger = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            // Simulated ledger data - in production, fetch from API
-            const mockLedger: Ledger = {
-                capital_current_USDC: 10000.00,
-                capital_initial_USDC: 10000.00,
-                processed_market_ids: [],
-                trades: [],
-            };
-            setLedger(mockLedger);
-        } catch (error) {
-            console.error("Failed to load ledger:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
+    const loadOrders = () => {
+        const allOrders = paperStore.getOrders();
+        setOrders(allOrders);
+    };
 
     useEffect(() => {
-        loadLedger();
-    }, [loadLedger]);
+        loadOrders();
+        // Listen to storage events for live updates
+        const handleUpdate = () => loadOrders();
+        window.addEventListener('paper-update', handleUpdate);
+        return () => window.removeEventListener('paper-update', handleUpdate);
+    }, []);
 
-    // Filter and sort trades
-    const filteredTrades = ledger?.trades
-        .filter(t => {
-            if (filterStatus !== "ALL" && t.status !== filterStatus) return false;
-            if (searchQuery && !t.market_question?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    const handleCloseOrder = (orderId: string) => {
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const currentPrice = order.currentPrice || order.entryPrice;
+        paperStore.closeOrder(orderId, currentPrice);
+        loadOrders();
+    };
+
+    // Filter and sort orders
+    const filteredOrders = orders
+        .filter(o => {
+            if (filterStatus !== "ALL" && o.status !== filterStatus) return false;
+            if (searchQuery && !o.marketTitle?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
             return true;
         })
         .sort((a, b) => {
-            const dateA = new Date(a.date_ouverture).getTime();
-            const dateB = new Date(b.date_ouverture).getTime();
-            return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-        }) || [];
+            return sortOrder === "newest" ? b.timestamp - a.timestamp : a.timestamp - b.timestamp;
+        });
 
     const filterButtons: { label: string; value: FilterStatus; count: number }[] = [
-        { label: "All", value: "ALL", count: ledger?.trades.length || 0 },
-        { label: "Open", value: "OPEN", count: ledger?.trades.filter(t => t.status === "OPEN").length || 0 },
-        { label: "Won", value: "CLOSED_PROFIT", count: ledger?.trades.filter(t => t.status === "CLOSED_PROFIT").length || 0 },
-        { label: "Lost", value: "CLOSED_LOSS", count: ledger?.trades.filter(t => t.status === "CLOSED_LOSS").length || 0 },
+        { label: "All", value: "ALL", count: orders.length },
+        { label: "Open", value: "OPEN", count: orders.filter(o => o.status === "OPEN").length },
+        { label: "Closed", value: "CLOSED", count: orders.filter(o => o.status === "CLOSED").length },
+        { label: "Cancelled", value: "CANCELLED", count: orders.filter(o => o.status === "CANCELLED").length },
     ];
 
     return (
@@ -338,22 +351,17 @@ export default function OrderBookPage() {
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={loadLedger}
-                        disabled={isLoading}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors disabled:opacity-50"
+                        onClick={loadOrders}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted hover:bg-muted/80 text-foreground transition-colors"
                     >
-                        <RefreshCw size={16} className={isLoading ? "animate-spin" : ""} />
+                        <RefreshCw size={16} />
                         Refresh
-                    </button>
-                    <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                        <Download size={16} />
-                        Export CSV
                     </button>
                 </div>
             </div>
 
             {/* Summary Stats */}
-            {ledger && <SummaryStats trades={ledger.trades} />}
+            <SummaryStats orders={orders} />
 
             {/* Filters */}
             <div className="flex flex-col sm:flex-row gap-4">
@@ -376,14 +384,14 @@ export default function OrderBookPage() {
                             key={btn.value}
                             onClick={() => setFilterStatus(btn.value)}
                             className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${filterStatus === btn.value
-                                    ? "bg-primary text-primary-foreground"
-                                    : "bg-muted text-muted-foreground hover:text-foreground"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-muted text-muted-foreground hover:text-foreground"
                                 }`}
                         >
                             {btn.label}
                             <span className={`text-xs px-1.5 py-0.5 rounded-full ${filterStatus === btn.value
-                                    ? "bg-primary-foreground/20"
-                                    : "bg-background"
+                                ? "bg-primary-foreground/20"
+                                : "bg-background"
                                 }`}>
                                 {btn.count}
                             </span>
@@ -401,11 +409,11 @@ export default function OrderBookPage() {
                 </button>
             </div>
 
-            {/* Trades List */}
+            {/* Orders List */}
             <div className="space-y-3">
-                {filteredTrades.length > 0 ? (
-                    filteredTrades.map((trade, index) => (
-                        <TradeRow key={trade.trade_id} trade={trade} index={index} />
+                {filteredOrders.length > 0 ? (
+                    filteredOrders.map((order, index) => (
+                        <OrderRow key={order.id} order={order} index={index} onClose={handleCloseOrder} />
                     ))
                 ) : (
                     <motion.div
@@ -416,11 +424,11 @@ export default function OrderBookPage() {
                         <div className="p-4 rounded-full bg-muted/50 mb-4">
                             <BookOpen size={32} className="text-muted-foreground" />
                         </div>
-                        <p className="text-lg font-medium text-foreground">Aucun trade</p>
+                        <p className="text-lg font-medium text-foreground">Aucun ordre</p>
                         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
                             {searchQuery || filterStatus !== "ALL"
-                                ? "Aucun trade ne correspond à vos filtres"
-                                : "Le carnet d'ordres est vide. Lancez le Sniper pour commencer le paper trading."
+                                ? "Aucun ordre ne correspond à vos filtres"
+                                : "Le carnet d'ordres est vide. Copiez un trade depuis le Radar pour commencer."
                             }
                         </p>
                     </motion.div>
