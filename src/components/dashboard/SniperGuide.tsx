@@ -50,10 +50,10 @@ export default function SniperGuide() {
                             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
                         />
                         <motion.div
-                            initial={{ opacity: 0, y: 100, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 100, scale: 0.95 }}
-                            className="fixed inset-x-4 bottom-4 md:inset-auto md:bottom-20 md:right-6 md:w-[500px] h-[80vh] md:h-[600px] bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col"
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] md:w-[500px] h-[80vh] md:h-[600px] bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col"
                         >
                             {/* Header */}
                             <div className="p-6 border-b border-border bg-muted/20 flex items-center justify-between">
@@ -79,8 +79,8 @@ export default function SniperGuide() {
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
                                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all ${activeTab === tab.id
-                                                ? "bg-primary text-primary-foreground shadow-md"
-                                                : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                                            ? "bg-primary text-primary-foreground shadow-md"
+                                            : "hover:bg-muted text-muted-foreground hover:text-foreground"
                                             }`}
                                     >
                                         <tab.icon size={16} />
