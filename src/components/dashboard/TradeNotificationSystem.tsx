@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     CheckCircle2,
     XCircle,
     TrendingUp,
-    TrendingDown,
     Clock,
     DollarSign,
     Share2,
     X,
     Copy,
-    Download
+    Trophy,
+    ArrowRight,
+    Wallet
 } from "lucide-react";
 import { PaperOrder } from "@/lib/paper-trading";
 
@@ -35,8 +36,14 @@ export function showTradeNotification(order: PaperOrder, type: 'OPENED' | 'CLOSE
         type,
         timestamp: Date.now()
     };
-    notificationQueue = [notification, ...notificationQueue].slice(0, 5); // Keep max 5
+    notificationQueue = [notification, ...notificationQueue].slice(0, 3); // Max 3 at a time to avoid clutter
     notificationListeners.forEach(listener => listener([...notificationQueue]));
+
+    // Auto dismiss after 7 seconds
+    setTimeout(() => {
+        notificationQueue = notificationQueue.filter(n => n.id !== notification.id);
+        notificationListeners.forEach(listener => listener([...notificationQueue]));
+    }, 7000);
 }
 
 export default function TradeNotificationSystem() {
@@ -44,12 +51,10 @@ export default function TradeNotificationSystem() {
     const [selectedNotification, setSelectedNotification] = useState<TradeNotification | null>(null);
 
     useEffect(() => {
-        // Subscribe to notification updates
         const listener = (newNotifications: TradeNotification[]) => {
             setNotifications(newNotifications);
         };
         notificationListeners.push(listener);
-
         return () => {
             notificationListeners = notificationListeners.filter(l => l !== listener);
         };
@@ -60,133 +65,26 @@ export default function TradeNotificationSystem() {
         setNotifications([...notificationQueue]);
     };
 
-    const formatDuration = (startTimestamp: number, endTimestamp?: number) => {
-        const end = endTimestamp || Date.now();
-        const durationMs = end - startTimestamp;
-        const seconds = Math.floor(durationMs / 1000);
-        const minutes = Math.floor(seconds / 60);
-        const hours = Math.floor(minutes / 60);
-        const days = Math.floor(hours / 24);
-
-        if (days > 0) return `${days}d ${hours % 24}h`;
-        if (hours > 0) return `${hours}h ${minutes % 60}m`;
-        if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-        return `${seconds}s`;
-    };
-
     return (
         <>
-            {/* Notification Stack (Top Right) */}
-            <div className="fixed top-20 right-6 z-[200] space-y-3 pointer-events-none">
+            {/* Notification Stack */}
+            <div className="fixed top-24 right-8 z-[100] space-y-4 pointer-events-none flex flex-col items-end">
                 <AnimatePresence mode="popLayout">
-                    {notifications.map((notification, index) => {
-                        const { order, type } = notification;
-                        const isWin = type === 'CLOSED' && (order.pnl || 0) >= 0;
-                        const isLoss = type === 'CLOSED' && (order.pnl || 0) < 0;
-                        const pnl = order.pnl || 0;
-                        const duration = formatDuration(order.timestamp, order.exitTimestamp);
-
-                        return (
-                            <motion.div
-                                key={notification.id}
-                                layout
-                                initial={{ opacity: 0, x: 100, scale: 0.9 }}
-                                animate={{ opacity: 1, x: 0, scale: 1 }}
-                                exit={{ opacity: 0, x: 100, scale: 0.9 }}
-                                transition={{ type: "spring", damping: 20, stiffness: 300 }}
-                                className={`
-                                    pointer-events-auto w-[360px] p-4 rounded-2xl border shadow-2xl backdrop-blur-xl
-                                    ${type === 'OPENED' ? 'bg-blue-500/10 border-blue-500/30' : ''}
-                                    ${isWin ? 'bg-green-500/10 border-green-500/30' : ''}
-                                    ${isLoss ? 'bg-red-500/10 border-red-500/30' : ''}
-                                `}
-                            >
-                                {/* Header */}
-                                <div className="flex items-center justify-between mb-3">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`p-1.5 rounded-lg ${type === 'OPENED' ? 'bg-blue-500/20' : isWin ? 'bg-green-500/20' : 'bg-red-500/20'}`}>
-                                            {type === 'OPENED' ? (
-                                                <TrendingUp size={16} className="text-blue-500" />
-                                            ) : isWin ? (
-                                                <CheckCircle2 size={16} className="text-green-500" />
-                                            ) : (
-                                                <XCircle size={16} className="text-red-500" />
-                                            )}
-                                        </div>
-                                        <div>
-                                            <p className={`text-sm font-bold ${type === 'OPENED' ? 'text-blue-500' : isWin ? 'text-green-500' : 'text-red-500'}`}>
-                                                {type === 'OPENED' ? 'Position Opened' : isWin ? 'Trade Won! 🎉' : 'Trade Lost'}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">{order.source.replace('_', ' ')}</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => dismissNotification(notification.id)}
-                                        className="p-1 hover:bg-muted rounded-lg transition-colors text-muted-foreground hover:text-foreground"
-                                    >
-                                        <X size={14} />
-                                    </button>
-                                </div>
-
-                                {/* Trade Details */}
-                                <div className="space-y-2">
-                                    <p className="text-sm text-foreground font-medium truncate">
-                                        {order.marketTitle}
-                                    </p>
-
-                                    <div className="flex items-center gap-4 text-xs">
-                                        <div className="flex items-center gap-1">
-                                            <span className={`px-1.5 py-0.5 rounded font-bold ${order.outcome === 'YES' ? 'bg-green-500/20 text-green-500' : 'bg-red-500/20 text-red-500'}`}>
-                                                {order.outcome}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-1 text-muted-foreground">
-                                            <DollarSign size={10} />
-                                            ${order.amount.toFixed(2)}
-                                        </div>
-                                        <div className="flex items-center gap-1 text-muted-foreground">
-                                            <Clock size={10} />
-                                            {duration}
-                                        </div>
-                                    </div>
-
-                                    {/* PnL (for closed trades) */}
-                                    {type === 'CLOSED' && (
-                                        <div className={`flex items-center justify-between p-2 rounded-lg ${isWin ? 'bg-green-500/10' : 'bg-red-500/10'}`}>
-                                            <span className="text-xs text-muted-foreground">Profit/Loss</span>
-                                            <span className={`text-lg font-bold ${isWin ? 'text-green-500' : 'text-red-500'}`}>
-                                                {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/30">
-                                    <button
-                                        onClick={() => setSelectedNotification(notification)}
-                                        className="flex-1 flex items-center justify-center gap-1 py-1.5 px-3 bg-primary/10 text-primary rounded-lg text-xs font-medium hover:bg-primary/20 transition-colors"
-                                    >
-                                        <Share2 size={12} />
-                                        Share Card
-                                    </button>
-                                    <button
-                                        onClick={() => dismissNotification(notification.id)}
-                                        className="py-1.5 px-3 bg-muted text-muted-foreground rounded-lg text-xs font-medium hover:bg-muted/80 transition-colors"
-                                    >
-                                        Dismiss
-                                    </button>
-                                </div>
-                            </motion.div>
-                        );
-                    })}
+                    {notifications.map((notification) => (
+                        <NotificationToast
+                            key={notification.id}
+                            notification={notification}
+                            onDismiss={() => dismissNotification(notification.id)}
+                            onShare={() => setSelectedNotification(notification)}
+                        />
+                    ))}
                 </AnimatePresence>
             </div>
 
-            {/* Share Card Modal */}
+            {/* PnL Card Generator Modal */}
             <AnimatePresence>
                 {selectedNotification && (
-                    <ShareCardModal
+                    <PnLCardModal
                         notification={selectedNotification}
                         onClose={() => setSelectedNotification(null)}
                     />
@@ -196,137 +94,225 @@ export default function TradeNotificationSystem() {
     );
 }
 
-// Share Card Modal Component
-function ShareCardModal({ notification, onClose }: { notification: TradeNotification; onClose: () => void }) {
+// --- Components ---
+
+function NotificationToast({ notification, onDismiss, onShare }: { notification: TradeNotification, onDismiss: () => void, onShare: () => void }) {
     const { order, type } = notification;
     const pnl = order.pnl || 0;
-    const isWin = pnl >= 0;
-    const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
-
-    const formatDuration = (startTimestamp: number, endTimestamp?: number) => {
-        const end = endTimestamp || Date.now();
-        const durationMs = end - startTimestamp;
-        const hours = Math.floor(durationMs / (1000 * 60 * 60));
-        const minutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
-        if (hours > 0) return `${hours}h ${minutes}m`;
-        return `${minutes}m`;
-    };
-
-    const handleCopyToClipboard = () => {
-        const text = `🎯 PolyGraalX Trade\n\n${order.outcome} on ${order.marketTitle}\n💰 P&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} (${roi >= 0 ? '+' : ''}${roi.toFixed(1)}%)\n⏱️ Duration: ${formatDuration(order.timestamp, order.exitTimestamp)}\n\n#PolyGraalX #Polymarket`;
-        navigator.clipboard.writeText(text);
-        alert('Copied to clipboard!');
-    };
+    const isWin = type === 'CLOSED' && pnl >= 0;
+    const isLoss = type === 'CLOSED' && pnl < 0;
+    const isOpened = type === 'OPENED';
 
     return (
-        <>
-            {/* Backdrop */}
+        <motion.div
+            layout
+            initial={{ opacity: 0, x: 50, scale: 0.95 }}
+            animate={{ opacity: 1, x: 0, scale: 1 }}
+            exit={{ opacity: 0, x: 50, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 25 }}
+            className={`
+                pointer-events-auto w-[380px] rounded-2xl border backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] overflow-hidden
+                ${isOpened ? 'bg-slate-900/90 border-slate-700/50' : ''}
+                ${isWin ? 'bg-green-950/90 border-green-500/30 shadow-green-500/10' : ''}
+                ${isLoss ? 'bg-red-950/90 border-red-500/30 shadow-red-500/10' : ''}
+            `}
+        >
+            {/* Progress Bar (Timer) */}
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={onClose}
-                className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[250]"
+                initial={{ width: "100%" }}
+                animate={{ width: "0%" }}
+                transition={{ duration: 7, ease: "linear" }}
+                className={`h-1 w-full ${isOpened ? 'bg-blue-500' : isWin ? 'bg-green-500' : 'bg-red-500'}`}
             />
 
-            {/* Modal */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[260] w-[400px]"
-            >
-                {/* The Card */}
-                <div
-                    id="share-card"
-                    className={`
-                        relative overflow-hidden rounded-3xl p-6
-                        ${isWin ? 'bg-gradient-to-br from-green-900/90 via-emerald-900/80 to-teal-900/90' : 'bg-gradient-to-br from-red-900/90 via-rose-900/80 to-pink-900/90'}
-                    `}
-                >
-                    {/* Background Pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                        <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                            <pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse">
-                                <path d="M 10 0 L 0 0 0 10" fill="none" stroke="white" strokeWidth="0.5" />
-                            </pattern>
-                            <rect width="100" height="100" fill="url(#grid)" />
-                        </svg>
-                    </div>
-
-                    {/* Header */}
-                    <div className="relative flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-                                <span className="text-lg font-bold text-white">P</span>
-                            </div>
-                            <span className="text-white/80 font-semibold">PolyGraalX</span>
+            <div className="p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl border ${isOpened ? 'bg-blue-500/20 border-blue-500/20 text-blue-400' :
+                                isWin ? 'bg-green-500/20 border-green-500/20 text-green-400' :
+                                    'bg-red-500/20 border-red-500/20 text-red-400'
+                            }`}>
+                            {isOpened ? <ActivityIcon /> : isWin ? <Trophy size={20} /> : <XCircle size={20} />}
                         </div>
-                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${isWin ? 'bg-green-500/30 text-green-300' : 'bg-red-500/30 text-red-300'}`}>
-                            {isWin ? '✓ WIN' : '✗ LOSS'}
+                        <div>
+                            <h4 className={`text-base font-bold leading-none mb-1 ${isOpened ? 'text-blue-100' : isWin ? 'text-green-100' : 'text-red-100'
+                                }`}>
+                                {isOpened ? 'New Position' : isWin ? 'Trade Take Profit' : 'Stop Loss Hit'}
+                            </h4>
+                            <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                                {order.source.replace('_', ' ')}
+                            </p>
                         </div>
                     </div>
+                    <button onClick={onDismiss} className="text-white/40 hover:text-white transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
 
-                    {/* Trade Info */}
-                    <div className="relative mb-6">
-                        <p className="text-white/60 text-sm mb-1">Market</p>
-                        <p className="text-white font-medium text-lg leading-tight">
-                            {order.marketTitle}
-                        </p>
-                    </div>
+                {/* Content */}
+                <div className="space-y-3">
+                    <p className="text-sm text-slate-300 font-medium leading-snug line-clamp-2">
+                        {order.marketTitle}
+                    </p>
 
-                    {/* Stats Grid */}
-                    <div className="relative grid grid-cols-3 gap-4 mb-6">
-                        <div className="text-center">
-                            <p className="text-white/50 text-xs uppercase mb-1">Position</p>
-                            <p className={`text-xl font-bold ${order.outcome === 'YES' ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className="grid grid-cols-2 gap-2">
+                        <div className="bg-black/20 rounded-lg p-2 border border-white/5">
+                            <p className="text-[10px] text-slate-400 uppercase">Side</p>
+                            <p className={`text-sm font-bold ${order.outcome === 'YES' ? 'text-green-400' : 'text-red-400'}`}>
                                 {order.outcome}
                             </p>
                         </div>
-                        <div className="text-center">
-                            <p className="text-white/50 text-xs uppercase mb-1">P&L</p>
-                            <p className={`text-xl font-bold ${isWin ? 'text-green-400' : 'text-red-400'}`}>
-                                {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        <div className="bg-black/20 rounded-lg p-2 border border-white/5">
+                            <p className="text-[10px] text-slate-400 uppercase">{type === 'CLOSED' ? 'Result' : 'Amount'}</p>
+                            <p className={`text-sm font-bold ${isOpened ? 'text-white' :
+                                    isWin ? 'text-green-400' : 'text-red-400'
+                                }`}>
+                                {type === 'CLOSED' ? (pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`) : `$${order.amount}`}
                             </p>
                         </div>
-                        <div className="text-center">
-                            <p className="text-white/50 text-xs uppercase mb-1">ROI</p>
-                            <p className={`text-xl font-bold ${isWin ? 'text-green-400' : 'text-red-400'}`}>
+                    </div>
+
+                    {/* Actions */}
+                    {type === 'CLOSED' && (
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={onShare}
+                            className={`w-full py-2.5 mt-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${isWin
+                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-900/40'
+                                    : 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-900/40'
+                                }`}
+                        >
+                            <Share2 size={16} />
+                            Create PnL Card
+                        </motion.button>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    );
+}
+
+function PnLCardModal({ notification, onClose }: { notification: TradeNotification, onClose: () => void }) {
+    const { order } = notification;
+    const pnl = order.pnl || 0;
+    const isWin = pnl >= 0;
+    const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
+    const bgGradient = isWin
+        ? 'from-emerald-900 via-green-900 to-slate-900'
+        : 'from-red-900 via-rose-900 to-slate-900';
+
+    const handleCopy = () => {
+        const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\n\nStart Trading on PolyGraalX`;
+        navigator.clipboard.writeText(text);
+        // Could show a "Copied" toast here
+    };
+
+    return (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 50 }}
+                className="relative max-w-sm w-full"
+            >
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    className="absolute -right-4 -top-4 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold z-10 hover:scale-110 transition-transform"
+                >
+                    <X size={20} />
+                </button>
+
+                {/* THE CARD */}
+                <div className={`relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl bg-gradient-to-br ${bgGradient}`}>
+                    {/* Background Noise/Effect */}
+                    <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
+                    {/* Top Decor */}
+                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/10 to-transparent" />
+
+                    <div className="relative p-8 flex flex-col items-center text-center">
+                        {/* Logo Area */}
+                        <div className="mb-6 flex items-center gap-2 opacity-80">
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-bold text-xl">P</div>
+                            <span className="text-white font-bold tracking-widest text-sm">POLYGRAAL X</span>
+                        </div>
+
+                        {/* Result Badge */}
+                        <div className={`mb-6 px-4 py-1.5 rounded-full border ${isWin ? 'bg-green-500/20 border-green-400/30 text-green-300' : 'bg-red-500/20 border-red-400/30 text-red-300'} text-xs font-bold uppercase tracking-widest`}>
+                            {isWin ? 'Trade Won' : 'Trade Loss'}
+                        </div>
+
+                        {/* ROI BIG */}
+                        <div className="mb-2">
+                            <span className={`text-6xl font-black tracking-tighter ${isWin ? 'text-transparent bg-clip-text bg-gradient-to-b from-green-300 to-green-600' : 'text-transparent bg-clip-text bg-gradient-to-b from-red-300 to-red-600'}`}>
                                 {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
-                            </p>
+                            </span>
                         </div>
-                    </div>
+                        <div className="mb-8 text-white/60 font-mono text-lg">
+                            {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
+                        </div>
 
-                    {/* Bottom Stats */}
-                    <div className="relative flex items-center justify-between text-sm text-white/60 pt-4 border-t border-white/10">
-                        <div className="flex items-center gap-1">
-                            <Clock size={12} />
-                            {formatDuration(order.timestamp, order.exitTimestamp)}
+                        {/* Grid Info */}
+                        <div className="w-full grid grid-cols-2 gap-3 mb-8">
+                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
+                                <p className="text-[10px] text-white/40 uppercase mb-1">Entry</p>
+                                <p className="text-white font-mono font-bold">${order.entryPrice.toFixed(3)}</p>
+                            </div>
+                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
+                                <p className="text-[10px] text-white/40 uppercase mb-1">Exit</p>
+                                <p className="text-white font-mono font-bold">${order.exitPrice?.toFixed(3) || '0.00'}</p>
+                            </div>
+                            <div className="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-3 text-left">
+                                <p className="text-[10px] text-white/40 uppercase mb-1">Market</p>
+                                <p className="text-white text-xs font-medium leading-tight line-clamp-2">{order.marketTitle}</p>
+                            </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <DollarSign size={12} />
-                            ${order.amount.toFixed(2)} invested
+
+                        {/* Footer */}
+                        <div className="w-full pt-6 border-t border-white/10 flex items-center justify-between text-white/40">
+                            <div className="flex flex-col items-start">
+                                <span className="text-[10px] uppercase">Verify on</span>
+                                <span className="text-xs font-bold text-white">Polymarket</span>
+                            </div>
+                            <div className="h-8 w-8 bg-white/10 rounded flex items-center justify-center">
+                                <ArrowRight size={14} className="-rotate-45" />
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex gap-3 mt-4">
-                    <button
-                        onClick={handleCopyToClipboard}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-white text-black rounded-xl font-bold hover:bg-white/90 transition-colors"
-                    >
-                        <Copy size={16} />
-                        Copy Text
-                    </button>
-                    <button
-                        onClick={onClose}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 bg-white/10 text-white rounded-xl font-bold hover:bg-white/20 transition-colors"
-                    >
-                        Close
-                    </button>
-                </div>
+                {/* Action Button */}
+                <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleCopy}
+                    className="mt-6 w-full py-4 bg-white text-black rounded-xl font-bold text-lg shadow-xl shadow-white/10 flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
+                >
+                    <Copy size={20} />
+                    Copy Details to Clipboard
+                </motion.button>
             </motion.div>
-        </>
+        </div>
+    );
+}
+
+// Simple Activity Icon
+function ActivityIcon() {
+    return (
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+        </svg>
     );
 }
