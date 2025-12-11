@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { Menu, Sun, Moon } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import { useTheme } from "@/contexts/ThemeContext";
+import FloatingWalletWidget from "@/components/dashboard/FloatingWalletWidget";
+import TradeNotificationSystem from "@/components/dashboard/TradeNotificationSystem";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
     const { theme, toggleTheme } = useTheme();
@@ -73,6 +75,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </div>
                 </main>
             </div>
+
+            {/* Floating Wallet Widget (Bottom Left) */}
+            <FloatingWalletWidget />
+
+            {/* Trade Notification System (Top Right) */}
+            <TradeNotificationSystem />
         </div>
     );
 }
+

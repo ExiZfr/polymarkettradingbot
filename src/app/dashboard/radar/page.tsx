@@ -15,6 +15,7 @@ import { paperStore } from '@/lib/paper-trading';
 import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
 import RadarGuide from '@/components/dashboard/RadarGuide';
 import SignalDetailsModal from '@/components/dashboard/SignalDetailsModal';
+import { showTradeNotification } from '@/components/dashboard/TradeNotificationSystem';
 
 interface WhaleSignal {
     id: number;
@@ -132,17 +133,18 @@ export default function RadarPage() {
 
         const result = paperStore.placeOrder({
             marketId: signal.market_id,
-            marketTitle: `Market #${signal.market_id}`, // In real app, we need title
+            marketTitle: `Market #${signal.market_id}`,
             type: 'BUY',
             outcome: outcomeToBuy,
-            entryPrice: signal.price, // Approx
-            amount: 100, // Defult copy amount
+            entryPrice: signal.price,
+            amount: 100,
             source: 'COPY_TRADING',
             notes: `${type} Trade of Whale ${signal.wallet_address.slice(0, 6)}`
         });
 
         if (result) {
-            // Show toast or notification (omitted for brevity)
+            // Show notification with order details
+            showTradeNotification(result, 'OPENED');
             console.log(`${type} trade executed: $100 on ${outcomeToBuy}`);
             setSelectedSignal(null);
         }

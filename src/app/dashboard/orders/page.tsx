@@ -22,6 +22,7 @@ import {
     X
 } from "lucide-react";
 import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
+import { showTradeNotification } from "@/components/dashboard/TradeNotificationSystem";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 
@@ -358,7 +359,12 @@ export default function OrderBookPage() {
         if (!order) return;
 
         const currentPrice = order.currentPrice || order.entryPrice;
-        paperStore.closeOrder(orderId, currentPrice);
+        const closedOrder = paperStore.closeOrder(orderId, currentPrice);
+
+        if (closedOrder) {
+            showTradeNotification(closedOrder, 'CLOSED');
+        }
+
         loadOrders();
     };
 
