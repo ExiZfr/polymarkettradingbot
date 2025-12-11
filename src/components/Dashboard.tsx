@@ -64,12 +64,43 @@ export default function Dashboard() {
     });
 
     const [consoleFilter, setConsoleFilter] = useState<'ALL' | 'ORDER' | 'SNIPE' | 'SIGNAL' | 'WARN'>('ALL');
-    const [wallet, setWallet] = useState({ balance: INITIAL_BALANCE });
+    const [wallet, setWallet] = useState<{ balance: number; positions?: any }>({ balance: INITIAL_BALANCE });
+
+    useEffect(() => {
+        const fetchBalance = async () => {
+            try {
+                const res = await fetch('/api/sniper/data');
+                if (res.ok) {
+                    const data = await res.json();
+
+                    // Convert Array of open trades to object map for widget compatibility
+                    const openTrades = data.trades ? data.trades.filter((t: any) => t.status === "OPEN") : [];
+                    const positionsMap = openTrades.reduce((acc: any, t: any) => {
+                        acc[t.trade_id] = t;
+                        return acc;
+                    }, {});
+
+                    setWallet({
+                        balance: data.capital_current_USDC,
+                        positions: positionsMap
+                    });
+                }
+            } catch (error) {
+                console.error("Failed to fetch wallet balance:", error);
+            }
+        };
+
+        fetchBalance();
+        const interval = setInterval(fetchBalance, 5000); // Live update
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="space-y-6">
             <OverviewStats stats={stats} />
-            <ActiveModules modules={modules} />
+            <ActiveModules modules={modules.map(m =>
+                m.id === 1 ? { ...m, stats: [{ label: "Active", value: "Yes" }, { label: "Balance", value: `$${wallet.balance.toFixed(2)}` }] } : m
+            )} />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
