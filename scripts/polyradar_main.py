@@ -26,6 +26,7 @@ from datetime import datetime
 from polyradar_module1_radar import WhaleRadar, SimulatedWhaleRadar, WhaleSignal
 from polyradar_module2_intelligence import WalletDatabase, WalletAnalyzer, WalletProfile
 from polyradar_module3_decision import DecisionEngine, TradingDecision
+from polyradar_paper_trading import submit_trade_to_paper_trading
 
 logging.basicConfig(
     level=logging.INFO,
@@ -147,6 +148,9 @@ class PolyRadar:
                         was_copied=True,
                         copy_size=decision.position_size_usd
                     )
+                    
+                    # ✨ NEW: Submit to paper trading queue
+                    submit_trade_to_paper_trading(decision, signal, profile)
                     
                     logger.info("✅ TRADE EXECUTED")
                     logger.info(f"   Position: ${decision.position_size_usd:,.2f}")

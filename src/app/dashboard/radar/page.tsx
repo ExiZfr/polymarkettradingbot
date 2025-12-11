@@ -13,6 +13,7 @@ import {
     Copy,
     CheckCircle2
 } from 'lucide-react';
+import { paperStore } from '@/lib/paper-trading';
 
 interface WhaleSignal {
     id: number;
@@ -79,11 +80,45 @@ export default function RadarPage() {
         }
     };
 
+    // Process pending trades from bot
+    const processPendingTrades = async () => {
+        try {
+            const res = await fetch('/api/radar/queue');
+            const data = await res.json();
+
+            if (data.success && data.trades && data.trades.length > 0) {
+                for (const trade of data.trades) {
+                    // Execute in paper trading
+                    const result = paperStore.placeOrder({
+                        marketId: trade.market_id,
+                        marketTitle: trade.market_title,
+                        type: 'BUY',
+                        outcome: trade.outcome,
+                        entryPrice: trade.price,
+                        amount: trade.amount,
+                        source: 'COPY_TRADING',
+                        notes: `Whale: ${trade.whale_wallet.slice(0, 10)}... | ${trade.wallet_category} | Conf: ${trade.confidence_score}/100`
+                    });
+
+                    if (result) {
+                        console.log(`[Radar] Auto-executed trade: $${trade.amount} on ${trade.outcome}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error processing trade queue:', error);
+        }
+    };
+
     useEffect(() => {
         fetchData();
+        processPendingTrades();
 
         // Poll every 10 seconds
-        const interval = setInterval(fetchData, 10000);
+        const interval = setInterval(() => {
+            fetchData();
+            processPendingTrades();
+        }, 10000);
 
         return () => clearInterval(interval);
     }, [filter]);
@@ -215,8 +250,8 @@ export default function RadarPage() {
                     <button
                         onClick={() => setFilter(null)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === null
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         All
@@ -224,8 +259,8 @@ export default function RadarPage() {
                     <button
                         onClick={() => setFilter('SMART_MONEY')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'SMART_MONEY'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         Smart Money
@@ -233,8 +268,8 @@ export default function RadarPage() {
                     <button
                         onClick={() => setFilter('INSIDER')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'INSIDER'
-                                ? 'bg-orange-500 text-white'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         Insider
