@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { paperStore } from '@/lib/paper-trading';
 import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
+import RadarGuide from '@/components/dashboard/RadarGuide';
 
 interface WhaleSignal {
     id: number;
@@ -399,6 +400,9 @@ export default function RadarPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Guide Button */}
+            <RadarGuide />
         </div>
     );
 }
