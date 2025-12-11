@@ -172,7 +172,7 @@ async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
     all_markets = []
     offset = 0
     limit = 100  # Fetch 100 at a time for efficiency
-    max_retries = 3
+    max_retries = 4  # Increased for better resilience with slow APIs
     api_calls_made = 0
     
     # Initialize tracker on first call
@@ -200,7 +200,7 @@ async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
                         url, 
                         params=params, 
                         headers=headers,
-                        timeout=30.0
+                        timeout=60.0  # Increased for pagination requests
                     )
                     response.raise_for_status()
                     data = response.json()
@@ -236,7 +236,8 @@ async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
                         return (all_markets, api_calls_made)
                         
                 except httpx.TimeoutException:
-                    wait_time = 2 ** retry
+                    # Linear backoff for timeouts: 5s, 10s, 15s, 20s
+                    wait_time = (retry + 1) * 5
                     print(f"⚠️  Request timeout. Retrying in {wait_time}s ({retry+1}/{max_retries})...")
                     await asyncio.sleep(wait_time)
                     
