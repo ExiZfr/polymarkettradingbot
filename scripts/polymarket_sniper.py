@@ -22,12 +22,44 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Tuple
 
+# File paths
+SCRIPT_DIR = Path(__file__).parent
+LEDGER_FILE = SCRIPT_DIR / "virtual_ledger.json"
+LOG_FILE = SCRIPT_DIR / "sniper.log"
+
+# Logger to redirect stdout to file + terminal
+class DualLogger:
+    def __init__(self):
+        self.terminal = sys.stdout
+        # Ensure log directory exists
+        if not LOG_FILE.parent.exists():
+            LOG_FILE.parent.mkdir(parents=True)
+        self.log = open(LOG_FILE, "a", encoding="utf-8")
+
+    def write(self, message):
+        try:
+            self.terminal.write(message)
+            self.log.write(message)
+            self.log.flush() # Ensure real-time logging
+        except Exception:
+            pass
+
+    def flush(self):
+        try:
+            self.terminal.flush()
+            self.log.flush()
+        except Exception:
+            pass
+
 # Windows console UTF-8 support for emojis
 if sys.platform == 'win32':
     try:
         sys.stdout.reconfigure(encoding='utf-8')
     except Exception:
         pass  # Fallback to default encoding
+
+# Hook stdout
+sys.stdout = DualLogger()
 
 try:
     import httpx
@@ -43,8 +75,8 @@ except ImportError:
 
 API_ENDPOINT = "https://gamma-api.polymarket.com"  # Polymarket Gamma API
 POLLING_INTERVAL_SECONDS = 1.0  # How often to scan for new markets
-INITIAL_CAPITAL_USDC = 10000.00  # Starting paper trading capital
-MAX_BET_USDC = 500.00  # Maximum risk per snipe
+INITIAL_CAPITAL_USDC = 1000.00  # Starting paper trading capital matched with UI
+MAX_BET_USDC = 100.00  # Maximum risk per snipe (Modified to fits smaller capital)
 PRICE_TOLERANCE = 0.05  # Minimum deviation from 0.50 to trigger snipe
 TAKE_PROFIT_TARGET_CENTS = 0.10  # Sell if price rises by this amount
 PLATFORM_FEE_RATE = 0.02  # 2% fee on profits only
@@ -53,9 +85,6 @@ PLATFORM_FEE_RATE = 0.02  # 2% fee on profits only
 ASSUMED_INITIAL_LIQUIDITY = 10000.0  # Assumed initial pool liquidity for slippage calc
 SLIPPAGE_FACTOR = 0.005  # Slippage multiplier based on bet size vs liquidity
 
-# File paths
-SCRIPT_DIR = Path(__file__).parent
-LEDGER_FILE = SCRIPT_DIR / "virtual_ledger.json"
 
 
 # =============================================================================

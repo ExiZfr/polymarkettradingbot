@@ -19,6 +19,7 @@ import {
     Search
 } from "lucide-react";
 import SniperGuide from "@/components/dashboard/SniperGuide";
+import FileLogsConsole from "@/components/dashboard/FileLogsConsole";
 
 interface Trade {
     trade_id: string;
@@ -108,7 +109,7 @@ function StatCard({ label, value, subValue, trend, color = "primary", icon: Icon
 
 export default function SniperPage() {
     const [ledger, setLedger] = useState<Ledger | null>(null);
-    const [isRunning, setIsRunning] = useState(false); // In a real app, fetch this status too
+    // const [isRunning, setIsRunning] = useState(true); // Deprecated: Always running 24/7 now
     const [isLoading, setIsLoading] = useState(true);
     const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
 
@@ -159,18 +160,13 @@ export default function SniperPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => setIsRunning(!isRunning)}
-                        className={`group relative overflow-hidden rounded-xl px-8 py-3 font-bold transition-all ${isRunning
-                                ? "bg-red-500/10 text-red-500 hover:bg-red-500/20 ring-1 ring-red-500/50"
-                                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25"
-                            }`}
-                    >
-                        <div className="flex items-center gap-3 relative z-10">
-                            {isRunning ? <Square size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" />}
-                            {isRunning ? "ARRÊTER LE BOT" : "LANCER LE SNIPER"}
-                        </div>
-                    </button>
+                    <div className="flex items-center gap-2 px-6 py-3 rounded-xl bg-green-500/10 text-green-500 border border-green-500/20 shadow-[0_0_15px_rgba(34,197,94,0.1)]">
+                        <span className="relative flex h-3 w-3">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                        <span className="font-bold text-sm tracking-wide">ACTIVE 24/7</span>
+                    </div>
 
                     <button
                         onClick={fetchLedger}
@@ -182,16 +178,14 @@ export default function SniperPage() {
                 </div>
             </div>
 
-            {/* Radar Activity Visualizer (Fake visualization for UI feeling) */}
-            <div className={`relative w-full h-2 overflow-hidden rounded-full bg-muted/30 ${isRunning ? 'opacity-100' : 'opacity-50 grayscale'}`}>
-                {isRunning && (
-                    <motion.div
-                        initial={{ x: "-100%" }}
-                        animate={{ x: "100%" }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
-                        className="absolute inset-y-0 w-1/3 bg-linear-to-r from-transparent via-primary to-transparent opacity-50"
-                    />
-                )}
+            {/* Radar Activity Visualizer */}
+            <div className="relative w-full h-2 overflow-hidden rounded-full bg-muted/30">
+                <motion.div
+                    initial={{ x: "-100%" }}
+                    animate={{ x: "100%" }}
+                    transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+                    className="absolute inset-y-0 w-1/3 bg-linear-to-r from-transparent via-primary to-transparent opacity-50"
+                />
             </div>
 
             {/* Stats Grid */}
@@ -229,29 +223,34 @@ export default function SniperPage() {
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Configuration Panel */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="lg:col-span-2 rounded-3xl border border-border bg-card/50 backdrop-blur-xl p-8"
-                >
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
-                            <Zap size={24} />
+                {/* Configuration Panel & Console */}
+                <div className="lg:col-span-2 space-y-6">
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="rounded-3xl border border-border bg-card/50 backdrop-blur-xl p-8"
+                    >
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-purple-500/10 rounded-lg text-purple-500">
+                                <Zap size={24} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Paramètres de Tir</h3>
+                                <p className="text-sm text-muted-foreground">Configuration actuelle du script Python</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 className="text-xl font-bold">Paramètres de Tir</h3>
-                            <p className="text-sm text-muted-foreground">Configuration actuelle du script Python</p>
-                        </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <ConfigBox label="Mise Max" value="$500.00" desc="Risque par trade" />
-                        <ConfigBox label="Tolerance" value="5%" desc="Écart vs 50/50" />
-                        <ConfigBox label="Take Profit" value="10¢" desc="Target gain" />
-                        <ConfigBox label="Slippage" value="Auto" desc="Simulation AMM" />
-                    </div>
-                </motion.div>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <ConfigBox label="Mise Max" value="$100.00" desc="Risque par trade" />
+                            <ConfigBox label="Tolerance" value="5%" desc="Écart vs 50/50" />
+                            <ConfigBox label="Take Profit" value="10¢" desc="Target gain" />
+                            <ConfigBox label="Slippage" value="Auto" desc="Simulation AMM" />
+                        </div>
+                    </motion.div>
+
+                    {/* Integrated Console */}
+                    <FileLogsConsole />
+                </div>
 
                 {/* Quick Status Panel */}
                 <motion.div
@@ -262,14 +261,10 @@ export default function SniperPage() {
                 >
                     <div className="flex items-center justify-between mb-2">
                         <h3 className="font-bold text-lg">Scanner Status</h3>
-                        {isRunning ? (
-                            <span className="flex h-3 w-3 relative">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                            </span>
-                        ) : (
-                            <span className="h-3 w-3 rounded-full bg-yellow-500"></span>
-                        )}
+                        <span className="flex h-3 w-3 relative">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
                     </div>
 
                     <div className="space-y-4 my-4">

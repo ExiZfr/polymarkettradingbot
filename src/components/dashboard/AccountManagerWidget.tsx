@@ -10,16 +10,32 @@ export default function AccountManagerWidget() {
     const [name, setName] = useState("Paper Account");
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const updateStats = () => {
-        const profile = paperStore.getActiveProfile();
-        setBalance(profile.currentBalance);
+    const updateStats = async () => {
+        // First try to get data from Sniper (Source of Truth)
+        try {
+            const res = await fetch('/api/sniper/data');
+            if (res.ok) {
+                const data = await res.json();
+                setBalance(data.capital_current_USDC);
+                // Can also update name if we store it there, but keeping local for now
+            } else {
+                // Fallback to local store
+                const profile = paperStore.getActiveProfile();
+                setBalance(profile.currentBalance);
+            }
+        } catch (e) {
+            const profile = paperStore.getActiveProfile();
+            setBalance(profile.currentBalance);
+        }
+
+        const profile = paperStore.getActiveProfile(); // Still get name
         setName(profile.username || "Paper Account");
     };
 
     useEffect(() => {
         updateStats();
-        // Subscribe to changes if we had an event system, for now manual update or polling
-        const interval = setInterval(updateStats, 2000);
+        // Poll for updates
+        const interval = setInterval(updateStats, 5000);
         return () => clearInterval(interval);
     }, []);
 
