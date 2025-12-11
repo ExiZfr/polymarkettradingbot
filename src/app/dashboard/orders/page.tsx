@@ -240,10 +240,7 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const currentPrice = order.currentPrice || order.entryPrice;
-                                if (window.confirm(`Close this position at $${currentPrice.toFixed(3)}?`)) {
-                                    onClose(order.id);
-                                }
+                                onClose(order.id);
                             }}
                             className="px-2 py-1 text-xs bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded transition-colors"
                         >
