@@ -171,7 +171,7 @@ async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
     """
     all_markets = []
     offset = 0
-    limit = 100  # Fetch 100 at a time for efficiency
+    limit = 50  # Reduced from 100 to prevent timeouts
     max_retries = 4  # Increased for better resilience with slow APIs
     api_calls_made = 0
     
