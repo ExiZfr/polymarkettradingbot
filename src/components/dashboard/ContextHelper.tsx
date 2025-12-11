@@ -50,7 +50,7 @@ export default function ContextHelper({ content }: { content: HelperContent }) {
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                        className="absolute z-50 w-[320px] md:w-[400px] bg-card border border-border shadow-2xl rounded-xl overflow-hidden right-0 mt-2"
+                        className="absolute z-[100] w-[320px] md:w-[400px] bg-card border border-border shadow-2xl rounded-xl overflow-hidden left-0 mt-2"
                         style={{ top: '100%' }}
                     >
                         {/* Header */}
