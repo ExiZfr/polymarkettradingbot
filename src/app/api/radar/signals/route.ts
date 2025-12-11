@@ -27,6 +27,7 @@ function generateMockSignals(limit: number = 10) {
             tx_hash: `0x${Math.random().toString(16).slice(2)}`,
             wallet_category: category,
             reputation_score: category === 'SMART_MONEY' ? 70 + Math.floor(Math.random() * 25) : 40 + Math.floor(Math.random() * 30),
+            gas_price: Math.floor(Math.random() * 50) + 30, // Mock gas price
             was_copied: Math.random() > 0.6 ? 1 : 0,
             copy_position_size: Math.random() > 0.6 ? Math.floor(Math.random() * 500) + 100 : 0,
             created_at: new Date().toISOString(),
@@ -54,7 +55,7 @@ export async function GET(request: NextRequest) {
 
         // If no real signals, use mock data for demo
         if (signals.length === 0) {
-            signals = generateMockSignals(15);
+            signals = generateMockSignals(15) as any;
             if (category) {
                 signals = signals.filter((s: any) => s.wallet_category === category);
             }
