@@ -14,12 +14,30 @@ function generateMockSignals(limit: number = 10) {
     const signals = [];
     const now = Math.floor(Date.now() / 1000);
 
+    // Real active markets for demo purposes
+    const realMarkets = [
+        // Trump Winning (Example ID) - Note: Using search search query usually works better if ID is obscure
+        // But for PolymarketLink to resolve via API, we need VALID IDs.
+        // Let's use some IDs that likely exist or use the search fallback.
+        // Actually, let's use a mix to test robustness.
+        "21742633", // Fed Rates (Example)
+        "100709", // The one user mentioned
+        "567890", // Random
+        "123456"  // Random
+    ];
+
     for (let i = 0; i < limit; i++) {
         const category = categories[Math.floor(Math.random() * categories.length)];
+        // Pick a "real" market ID often, or a random one
+        const useReal = Math.random() > 0.3;
+        const market_id = useReal
+            ? realMarkets[Math.floor(Math.random() * realMarkets.length)]
+            : String(100000 + Math.floor(Math.random() * 1000));
+
         signals.push({
             id: i + 1,
             wallet_address: `0x${Math.random().toString(16).slice(2, 10)}${Math.random().toString(16).slice(2, 10)}...`,
-            market_id: String(100000 + Math.floor(Math.random() * 1000)),
+            market_id: market_id,
             outcome: Math.random() > 0.5 ? 'YES' : 'NO',
             amount_usd: Math.floor(Math.random() * 50000) + 5000,
             price: Math.random() * 0.7 + 0.2,
