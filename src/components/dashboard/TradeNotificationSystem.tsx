@@ -201,8 +201,57 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
 
     const handleCopy = () => {
-        const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\n\nStart Trading on PolyGraalX.app`;
+        const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\nEntry: $${order.entryPrice.toFixed(4)}\nExit: $${(order.exitPrice || order.currentPrice || 0).toFixed(4)}\n\nTrade with PolyGraalX.app`;
         navigator.clipboard.writeText(text);
+
+        // Visual feedback
+        const btn = document.querySelector('[data-copy-btn]') as HTMLButtonElement;
+        if (btn) {
+            const original = btn.textContent;
+            btn.textContent = '✓ COPIED!';
+            setTimeout(() => btn.textContent = original, 2000);
+        }
+    };
+
+    const handleSaveImage = async () => {
+        try {
+            const cardElement = document.getElementById('pnl-card');
+            if (!cardElement) return;
+
+            // Use html2canvas dynamically imported
+            const html2canvas = (await import('html2canvas')).default;
+
+            const canvas = await html2canvas(cardElement, {
+                backgroundColor: null,
+                scale: 2, // Higher quality
+                logging: false,
+                useCORS: true,
+                allowTaint: true
+            });
+
+            // Convert to blob and download
+            canvas.toBlob((blob) => {
+                if (!blob) return;
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                const filename = `PolyGraalX_PnL_${order.outcome}_${new Date().getTime()}.png`;
+                link.href = url;
+                link.download = filename;
+                link.click();
+                URL.revokeObjectURL(url);
+
+                // Visual feedback
+                const btn = document.querySelector('[data-save-btn]') as HTMLButtonElement;
+                if (btn) {
+                    const original = btn.textContent;
+                    btn.textContent = '✓ SAVED!';
+                    setTimeout(() => btn.textContent = original, 2000);
+                }
+            }, 'image/png');
+        } catch (error) {
+            console.error('Failed to save image:', error);
+            alert('Failed to save image. Please try again.');
+        }
     };
 
     return (
@@ -340,6 +389,7 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleCopy}
+                        data-copy-btn
                         className="flex-1 py-3 bg-white text-black rounded-xl font-bold font-mono tracking-tight flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
                     >
                         <Copy size={16} /> COPY DATA
@@ -347,6 +397,8 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
+                        onClick={handleSaveImage}
+                        data-save-btn
                         className="flex-1 py-3 bg-white/5 text-white border border-white/10 rounded-xl font-bold font-mono tracking-tight flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
                     >
                         <Share2 size={16} /> SAVE IMAGE
