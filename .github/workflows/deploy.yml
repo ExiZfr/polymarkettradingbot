@@ -124,7 +124,12 @@ jobs:
                 pm2 start npm --name polygraalx -- start
             fi
             
-            echo "📡 [6/6] Starting Listener Service..."
+            echo "📡 [6/6] Starting Background Services..."
+            
+            # Install Python dependencies for sniper
+            echo "🐍 Installing Python dependencies..."
+            pip3 install httpx 2>/dev/null || pip install httpx 2>/dev/null || echo "httpx already installed or pip issue"
+            
             # Start or Restart Listener Service
             if pm2 describe polylistener > /dev/null 2>&1; then
                 echo "🔄 Restarting listener service..."
@@ -134,6 +139,15 @@ jobs:
                 pm2 start scripts/hyper-listener.js --name polylistener
             fi
             
+            # Start or Restart Python Sniper Bot
+            if pm2 describe polysniper > /dev/null 2>&1; then
+                echo "🔄 Restarting sniper bot..."
+                pm2 restart polysniper
+            else
+                echo "🎯 Starting sniper bot..."
+                pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3
+            fi
+            
             # Save PM2 config
             pm2 save
             
@@ -141,4 +155,6 @@ jobs:
             echo "✅ DEPLOYMENT SUCCESSFUL"
             echo "🌐 Main App: polygraalx (port 3001)"
             echo "📡 Listener: polylistener"
+            echo "🎯 Sniper: polysniper"
             echo "========================================"
+
