@@ -126,9 +126,16 @@ jobs:
             
             echo "📡 [6/6] Starting Background Services..."
             
-            # Install Python dependencies for sniper
+            # STOP crashing sniper first to prevent restart loops
+            pm2 stop polysniper 2>/dev/null || true
+            pm2 delete polysniper 2>/dev/null || true
+            
+            # Install Python dependencies for sniper (FORCE)
             echo "🐍 Installing Python dependencies..."
-            pip3 install httpx 2>/dev/null || pip install httpx 2>/dev/null || echo "httpx already installed or pip issue"
+            python3 -m pip install --user httpx || pip3 install httpx || apt-get install -y python3-httpx 2>/dev/null || echo "Trying system python..."
+            
+            # Verify httpx is installed
+            python3 -c "import httpx; print('✅ httpx installed successfully')" || echo "❌ httpx still not installed"
             
             # Start or Restart Listener Service
             if pm2 describe polylistener > /dev/null 2>&1; then
@@ -139,17 +146,15 @@ jobs:
                 pm2 start scripts/hyper-listener.js --name polylistener
             fi
             
-            # Start or Restart Python Sniper Bot
-            if pm2 describe polysniper > /dev/null 2>&1; then
-                echo "🔄 Restarting sniper bot..."
-                pm2 restart polysniper
-            else
-                echo "🎯 Starting sniper bot..."
-                pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3
-            fi
+            # Start Python Sniper Bot (fresh start)
+            echo "🎯 Starting sniper bot..."
+            pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3 --no-autorestart
             
             # Save PM2 config
             pm2 save
+            
+            # Show status
+            pm2 status
             
             echo "========================================"
             echo "✅ DEPLOYMENT SUCCESSFUL"
