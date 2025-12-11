@@ -184,10 +184,6 @@ async def fetch_markets(client: "httpx.AsyncClient") -> list:
                 break
                 
             offset += limit
-            
-            # Safety: max 5000 markets to prevent infinite loop
-            if offset > 5000:
-                break
         
         return all_markets
     except Exception as e:
