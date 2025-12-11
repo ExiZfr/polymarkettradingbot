@@ -130,8 +130,8 @@ function NotificationToast({ notification, onDismiss, onShare }: { notification:
                 <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-xl border ${isOpened ? 'bg-blue-500/20 border-blue-500/20 text-blue-400' :
-                                isWin ? 'bg-green-500/20 border-green-500/20 text-green-400' :
-                                    'bg-red-500/20 border-red-500/20 text-red-400'
+                            isWin ? 'bg-green-500/20 border-green-500/20 text-green-400' :
+                                'bg-red-500/20 border-red-500/20 text-red-400'
                             }`}>
                             {isOpened ? <ActivityIcon /> : isWin ? <Trophy size={20} /> : <XCircle size={20} />}
                         </div>
@@ -166,7 +166,7 @@ function NotificationToast({ notification, onDismiss, onShare }: { notification:
                         <div className="bg-black/20 rounded-lg p-2 border border-white/5">
                             <p className="text-[10px] text-slate-400 uppercase">{type === 'CLOSED' ? 'Result' : 'Amount'}</p>
                             <p className={`text-sm font-bold ${isOpened ? 'text-white' :
-                                    isWin ? 'text-green-400' : 'text-red-400'
+                                isWin ? 'text-green-400' : 'text-red-400'
                                 }`}>
                                 {type === 'CLOSED' ? (pnl >= 0 ? `+$${pnl.toFixed(2)}` : `-$${Math.abs(pnl).toFixed(2)}`) : `$${order.amount}`}
                             </p>
@@ -180,8 +180,8 @@ function NotificationToast({ notification, onDismiss, onShare }: { notification:
                             whileTap={{ scale: 0.98 }}
                             onClick={onShare}
                             className={`w-full py-2.5 mt-2 rounded-xl flex items-center justify-center gap-2 text-sm font-bold transition-all ${isWin
-                                    ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-900/40'
-                                    : 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-900/40'
+                                ? 'bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-900/40'
+                                : 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-900/40'
                                 }`}
                         >
                             <Share2 size={16} />
@@ -199,100 +199,144 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
     const pnl = order.pnl || 0;
     const isWin = pnl >= 0;
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
-    const bgGradient = isWin
-        ? 'from-emerald-900 via-green-900 to-slate-900'
-        : 'from-red-900 via-rose-900 to-slate-900';
+
+    // Aesthetic variables
+    const mainColor = isWin ? 'text-[#00df8f]' : 'text-[#ff4d4d]';
+    const glowShadow = isWin ? 'shadow-[#00df8f]/20' : 'shadow-[#ff4d4d]/20';
 
     const handleCopy = () => {
         const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\n\nStart Trading on PolyGraalX`;
         navigator.clipboard.writeText(text);
-        // Could show a "Copied" toast here
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 50 }}
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 50 }}
-                className="relative max-w-sm w-full"
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="relative flex flex-col items-center"
             >
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute -right-4 -top-4 w-10 h-10 bg-white text-black rounded-full flex items-center justify-center font-bold z-10 hover:scale-110 transition-transform"
+                    className="absolute -right-12 top-0 w-10 h-10 bg-white/10 hover:bg-white text-white hover:text-black rounded-full flex items-center justify-center transition-all z-20"
                 >
                     <X size={20} />
                 </button>
 
-                {/* THE CARD */}
-                <div className={`relative overflow-hidden rounded-3xl border border-white/10 shadow-2xl bg-gradient-to-br ${bgGradient}`}>
-                    {/* Background Noise/Effect */}
-                    <div className="absolute inset-0 opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+                {/* --- THE CARD ITSELF --- */}
+                <div
+                    id="pnl-card"
+                    className={`
+                        relative w-[600px] h-[340px] rounded-[40px] overflow-hidden
+                        bg-[#08080a] border border-white/5
+                        shadow-[0_20px_60px_-10px_rgba(0,0,0,0.8)] ${glowShadow}
+                        flex flex-col justify-between p-8
+                    `}
+                >
+                    {/* Background Texture */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-transparent pointer-events-none" />
+                    <div className="absolute inset-0 opacity-[0.03] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] pointer-events-none" />
 
-                    {/* Top Decor */}
-                    <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-white/10 to-transparent" />
-
-                    <div className="relative p-8 flex flex-col items-center text-center">
-                        {/* Logo Area */}
-                        <div className="mb-6 flex items-center gap-2 opacity-80">
-                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-black font-bold text-xl">P</div>
-                            <span className="text-white font-bold tracking-widest text-sm">POLYGRAAL X</span>
-                        </div>
-
-                        {/* Result Badge */}
-                        <div className={`mb-6 px-4 py-1.5 rounded-full border ${isWin ? 'bg-green-500/20 border-green-400/30 text-green-300' : 'bg-red-500/20 border-red-400/30 text-red-300'} text-xs font-bold uppercase tracking-widest`}>
-                            {isWin ? 'Trade Won' : 'Trade Loss'}
-                        </div>
-
-                        {/* ROI BIG */}
-                        <div className="mb-2">
-                            <span className={`text-6xl font-black tracking-tighter ${isWin ? 'text-transparent bg-clip-text bg-gradient-to-b from-green-300 to-green-600' : 'text-transparent bg-clip-text bg-gradient-to-b from-red-300 to-red-600'}`}>
-                                {roi >= 0 ? '+' : ''}{roi.toFixed(1)}%
-                            </span>
-                        </div>
-                        <div className="mb-8 text-white/60 font-mono text-lg">
-                            {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}
-                        </div>
-
-                        {/* Grid Info */}
-                        <div className="w-full grid grid-cols-2 gap-3 mb-8">
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
-                                <p className="text-[10px] text-white/40 uppercase mb-1">Entry</p>
-                                <p className="text-white font-mono font-bold">${order.entryPrice.toFixed(3)}</p>
-                            </div>
-                            <div className="bg-white/5 border border-white/5 rounded-2xl p-3">
-                                <p className="text-[10px] text-white/40 uppercase mb-1">Exit</p>
-                                <p className="text-white font-mono font-bold">${order.exitPrice?.toFixed(3) || '0.00'}</p>
-                            </div>
-                            <div className="col-span-2 bg-white/5 border border-white/5 rounded-2xl p-3 text-left">
-                                <p className="text-[10px] text-white/40 uppercase mb-1">Market</p>
-                                <p className="text-white text-xs font-medium leading-tight line-clamp-2">{order.marketTitle}</p>
+                    {/* Header */}
+                    <div className="flex justify-between items-start z-10">
+                        <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1 font-black text-white text-xl tracking-tighter">
+                                <span className="text-blue-500">Poly</span>GraalX
                             </div>
                         </div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-linear-to-r from-blue-500 to-purple-500 opacity-20 border border-white/10" />
+                            <span className="text-white/40 font-mono text-sm">Whale Hunter</span>
+                        </div>
+                    </div>
 
-                        {/* Footer */}
-                        <div className="w-full pt-6 border-t border-white/10 flex items-center justify-between text-white/40">
-                            <div className="flex flex-col items-start">
-                                <span className="text-[10px] uppercase">Verify on</span>
-                                <span className="text-xs font-bold text-white">Polymarket</span>
+                    {/* Middle Content */}
+                    <div className="flex-1 flex items-center z-10 mt-4 relative">
+                        <div className="flex-1 z-20">
+                            <div className="flex items-baseline gap-2 mb-1">
+                                <span className="text-white font-bold text-lg">{order.outcome} PERP</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${isWin ? 'bg-[#00df8f]/10 text-[#00df8f]' : 'bg-[#ff4d4d]/10 text-[#ff4d4d]'}`}>125X</span>
                             </div>
-                            <div className="h-8 w-8 bg-white/10 rounded flex items-center justify-center">
-                                <ArrowRight size={14} className="-rotate-45" />
+                            <h1 className={`text-[80px] leading-none font-black tracking-tighter ${mainColor} drop-shadow-[0_0_20px_rgba(0,0,0,0.5)]`}>
+                                {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
+                            </h1>
+                        </div>
+
+                        {/* RIGHT: THE GREEK GOD MASCOT PLACEHOLDER */}
+                        <div className="w-[240px] h-[280px] absolute right-0 bottom-[-40px] -mr-8 flex items-end justify-center pointer-events-none z-10">
+                            {/* Stylized Vector Bust */}
+                            <svg viewBox="0 0 200 240" className="w-full h-full drop-shadow-2xl">
+                                <defs>
+                                    <linearGradient id="bustGradient" x1="0" y1="0" x2="1" y2="1">
+                                        <stop offset="0%" stopColor="#e2e8f0" />
+                                        <stop offset="100%" stopColor="#64748b" />
+                                    </linearGradient>
+                                    <filter id="glow">
+                                        <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+                                        <feMerge>
+                                            <feMergeNode in="coloredBlur" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                                {/* Bust Shape */}
+                                <path
+                                    d="M100,40 C130,40 150,60 150,90 C150,115 135,135 110,140 L160,220 L40,220 L90,140 C65,135 50,115 50,90 C50,60 70,40 100,40 Z"
+                                    fill="url(#bustGradient)"
+                                    className="drop-shadow-lg"
+                                />
+                                {/* Cyber Visor */}
+                                <rect x="65" y="80" width="70" height="12" rx="4" fill={isWin ? "#00df8f" : "#ff4d4d"} filter="url(#glow)" />
+                                {/* Laurel Wreath */}
+                                <path d="M50,90 Q30,60 50,30" stroke="#f59e0b" strokeWidth="4" fill="none" opacity="0.8" />
+                                <path d="M150,90 Q170,60 150,30" stroke="#f59e0b" strokeWidth="4" fill="none" opacity="0.8" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    {/* Footer Data */}
+                    <div className="flex justify-between items-end z-10 w-full pr-[180px]"> {/* Padding right to avoid mascot overlap */}
+                        <div className="flex gap-12">
+                            <div>
+                                <p className="text-[10px] text-white/30 uppercase font-bold mb-1">Entry Price</p>
+                                <p className="text-white font-mono text-xl tracking-tight">{order.entryPrice.toFixed(2)}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-white/30 uppercase font-bold mb-1">Mark Price</p>
+                                <p className="text-white font-mono text-xl tracking-tight">{(order.exitPrice || order.currentPrice || 0).toFixed(2)}</p>
+                            </div>
+                        </div>
+
+                        {/* QR Code */}
+                        <div className="bg-white p-1 rounded-lg">
+                            <div className="w-12 h-12 bg-black border border-dashed border-white/20 flex items-center justify-center">
+                                <div className="w-4 h-4 bg-white rounded-sm" />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {/* Action Button */}
-                <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleCopy}
-                    className="mt-6 w-full py-4 bg-white text-black rounded-xl font-bold text-lg shadow-xl shadow-white/10 flex items-center justify-center gap-2 hover:bg-gray-100 transition-colors"
-                >
-                    <Copy size={20} />
-                    Copy Details to Clipboard
-                </motion.button>
+                {/* Actions */}
+                <div className="flex gap-4 mt-6 w-[600px]">
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={handleCopy}
+                        className="flex-1 py-3 bg-white text-black rounded-xl font-bold font-mono tracking-tight flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors"
+                    >
+                        <Copy size={16} /> COPY DATA
+                    </motion.button>
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex-1 py-3 bg-white/5 text-white border border-white/10 rounded-xl font-bold font-mono tracking-tight flex items-center justify-center gap-2 hover:bg-white/10 transition-colors"
+                    >
+                        <Share2 size={16} /> SAVE IMAGE
+                    </motion.button>
+                </div>
+
             </motion.div>
         </div>
     );
