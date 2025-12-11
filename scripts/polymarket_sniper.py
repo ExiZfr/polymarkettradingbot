@@ -61,13 +61,30 @@ if sys.platform == 'win32':
 # Hook stdout
 sys.stdout = DualLogger()
 
+# Auto-install httpx if missing
+def install_httpx():
+    import subprocess
+    print("📦 Installing httpx...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "httpx", "--quiet"])
+        print("✅ httpx installed successfully!")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to install httpx: {e}")
+        return False
+
 try:
     import httpx
     HTTPX_AVAILABLE = True
 except ImportError:
-    httpx = None
-    HTTPX_AVAILABLE = False
-    print("[WARN] httpx not installed. Run: pip install httpx")
+    print("[WARN] httpx not found. Attempting auto-install...")
+    if install_httpx():
+        import httpx
+        HTTPX_AVAILABLE = True
+    else:
+        httpx = None
+        HTTPX_AVAILABLE = False
+        print("[WARN] httpx not installed. Run: pip install httpx")
 
 # =============================================================================
 # 1. CONFIGURATION
