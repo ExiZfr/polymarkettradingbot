@@ -337,6 +337,8 @@ async def monitor_new_markets(ledger: dict,
             
             if new_count > 0:
                 print(f"✨ {new_count} new market(s) detected this scan!")
+                # Save ledger after detecting new markets
+                save_ledger(ledger)
             
             # Calculate optimal polling interval for next cycle
             optimal_interval = calculate_optimal_polling_interval()
