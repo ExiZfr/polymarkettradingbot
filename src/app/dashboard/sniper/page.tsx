@@ -287,11 +287,44 @@ export default function SniperPage() {
                         </span>
                     </div>
 
-                    <div className="space-y-4 my-4">
-                        <div className="flex justify-between text-sm border-b border-border/50 pb-2">
-                            <span className="text-muted-foreground">Marchés Scannés</span>
-                            <span className="font-mono">{ledger?.processed_market_ids.length || 0}</span>
+                    {/* Total Markets Analyzed - Big Counter */}
+                    <motion.div
+                        className="relative overflow-hidden rounded-2xl bg-linear-to-br from-blue-500/10 via-purple-500/10 to-blue-500/5 border border-blue-500/20 p-6 mb-4"
+                        whileHover={{ scale: 1.02 }}
+                        transition={{ type: "spring", stiffness: 300 }}
+                    >
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <Radar className="text-blue-500" size={20} />
+                                <span className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                                    Total Analysés
+                                </span>
+                            </div>
+                            <span className="flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                            </span>
                         </div>
+                        <motion.div
+                            key={ledger?.processed_market_ids.length || 0}
+                            initial={{ scale: 1.1, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", stiffness: 200 }}
+                            className="text-5xl font-black tracking-tighter text-foreground"
+                        >
+                            {(ledger?.processed_market_ids.length || 0).toLocaleString()}
+                        </motion.div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                            marchés détectés depuis le démarrage
+                        </p>
+
+                        {/* Subtle background pattern */}
+                        <div className="absolute top-0 right-0 opacity-5">
+                            <Search size={80} />
+                        </div>
+                    </motion.div>
+
+                    <div className="space-y-4 my-4">
                         <div className="flex justify-between text-sm border-b border-border/50 pb-2">
                             <span className="text-muted-foreground">Positions Ouvertes</span>
                             <span className="font-mono text-yellow-500 font-bold">{stats?.openTrades || 0}</span>
