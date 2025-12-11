@@ -200,62 +200,87 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
     const isWin = pnl >= 0;
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
 
+    // Internal Feedback System State
+    const [feedback, setFeedback] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    const showFeedback = (type: 'success' | 'error', message: string) => {
+        setFeedback({ type, message });
+        setTimeout(() => setFeedback(null), 3000);
+    };
+
     const handleCopy = () => {
         const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\nEntry: $${order.entryPrice.toFixed(4)}\nExit: $${(order.exitPrice || order.currentPrice || 0).toFixed(4)}\n\nTrade with PolyGraalX.app`;
         navigator.clipboard.writeText(text);
-
-        // Visual feedback
-        const btn = document.querySelector('[data-copy-btn]') as HTMLButtonElement;
-        if (btn) {
-            const original = btn.textContent;
-            btn.textContent = '✓ COPIED!';
-            setTimeout(() => btn.textContent = original, 2000);
-        }
+        showFeedback('success', 'Stats Copied to Clipboard');
     };
 
     const handleSaveImage = async () => {
+        // Find button to show loading state
+        const btn = document.querySelector('[data-save-btn]') as HTMLButtonElement;
+        const originalContent = btn ? btn.innerHTML : '';
+        if (btn) btn.innerHTML = '<span class="animate-spin inline-block">⏳</span> Generating...';
+
         try {
             const cardElement = document.getElementById('pnl-card');
-            if (!cardElement) return;
+            if (!cardElement) throw new Error("Card element not found");
 
-            // Use html2canvas dynamically imported
+            // Dynamic import
             const html2canvas = (await import('html2canvas')).default;
 
             const canvas = await html2canvas(cardElement, {
                 backgroundColor: null,
-                scale: 2, // Higher quality
+                scale: 2, // Retina
                 logging: false,
                 useCORS: true,
-                allowTaint: true
+                allowTaint: true,
             });
 
-            // Convert to blob and download
             canvas.toBlob((blob) => {
-                if (!blob) return;
+                if (!blob) throw new Error("Blob generation failed");
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                const filename = `PolyGraalX_PnL_${order.outcome}_${new Date().getTime()}.png`;
+                const filename = `PolyGraalX_PnL_${order.outcome}_${Date.now()}.png`;
                 link.href = url;
                 link.download = filename;
                 link.click();
                 URL.revokeObjectURL(url);
 
-                // Visual feedback
-                const btn = document.querySelector('[data-save-btn]') as HTMLButtonElement;
-                if (btn) {
-                    const original = btn.textContent;
-                    btn.textContent = '✓ SAVED!';
-                    setTimeout(() => btn.textContent = original, 2000);
-                }
+                showFeedback('success', 'PnL Card Saved Successfully');
             }, 'image/png');
+
         } catch (error) {
-            console.error('Failed to save image:', error);
-            alert('Failed to save image. Please try again.');
+            console.error('Save failed:', error);
+            // Non-intrusive error feedback
+            showFeedback('error', 'Download Failed: Install html2canvas on server');
+        } finally {
+            if (btn) btn.innerHTML = originalContent;
         }
     };
 
     return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl">
+
+            {/* New Premium Feedback Toast */}
+            <AnimatePresence>
+                {feedback && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 50, scale: 0.9 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
+                        className={`absolute bottom-12 z-[250] px-6 py-3 rounded-full border backdrop-blur-2xl shadow-2xl flex items-center gap-3 ${feedback.type === 'success'
+                                ? 'bg-[#0A0A0B] border-emerald-500/50 text-emerald-400 shadow-[0_0_30px_-5px_rgba(16,185,129,0.3)]'
+                                : 'bg-[#0A0A0B] border-rose-500/50 text-rose-400 shadow-[0_0_30px_-5px_rgba(244,63,94,0.3)]'
+                            }`}
+                    >
+                        <div className={`p-1 rounded-full ${feedback.type === 'success' ? 'bg-emerald-500/20' : 'bg-rose-500/20'}`}>
+                            {feedback.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                        </div>
+                        <span className="font-bold text-sm tracking-wide text-white">{feedback.message}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <motion.div
                 initial={{ opacity: 0, scale: 0.9, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -270,7 +295,7 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                     <X size={20} />
                 </button>
 
-                {/* --- THE ULTIMATE PNL CARD v2.1 (No 125x, Cleaner Header) --- */}
+                {/* --- THE PNL CARD (No Changes to Design) --- */}
                 <div
                     id="pnl-card"
                     className="relative w-[700px] h-[400px] rounded-[32px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] group border border-white/10"
