@@ -91,7 +91,10 @@ except ImportError:
 # =============================================================================
 
 API_ENDPOINT = "https://gamma-api.polymarket.com"  # Polymarket Gamma API
-POLLING_INTERVAL_SECONDS = 5.0  # How often to scan for new markets (adjusted to avoid rate limits)
+
+# Optimized for 1000 API calls/hour
+# Strategy: Dynamic polling that adapts based on pagination needs
+TARGET_API_CALLS_PER_HOUR = 950  # Target slightly below 1000 to have margin
 INITIAL_CAPITAL_USDC = 1000.00  # Starting paper trading capital matched with UI
 MAX_BET_USDC = 100.00  # Maximum risk per snipe (Modified to fits smaller capital)
 PRICE_TOLERANCE = 0.05  # Minimum deviation from 0.50 to trigger snipe
@@ -101,6 +104,14 @@ PLATFORM_FEE_RATE = 0.02  # 2% fee on profits only
 # AMM Slippage Simulation Parameters
 ASSUMED_INITIAL_LIQUIDITY = 10000.0  # Assumed initial pool liquidity for slippage calc
 SLIPPAGE_FACTOR = 0.005  # Slippage multiplier based on bet size vs liquidity
+
+# API Call Tracking (global state)
+api_call_tracker = {
+    "total_calls": 0,
+    "start_time": None,
+    "calls_per_scan": 0,
+    "optimal_interval": 3.6  # Start with ~1000 calls/hour (3600/1000)
+}
 
 
 
