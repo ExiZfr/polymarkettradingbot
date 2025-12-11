@@ -91,7 +91,7 @@ except ImportError:
 # =============================================================================
 
 API_ENDPOINT = "https://gamma-api.polymarket.com"  # Polymarket Gamma API
-POLLING_INTERVAL_SECONDS = 1.0  # How often to scan for new markets
+POLLING_INTERVAL_SECONDS = 5.0  # How often to scan for new markets (adjusted to avoid rate limits)
 INITIAL_CAPITAL_USDC = 1000.00  # Starting paper trading capital matched with UI
 MAX_BET_USDC = 100.00  # Maximum risk per snipe (Modified to fits smaller capital)
 PRICE_TOLERANCE = 0.05  # Minimum deviation from 0.50 to trigger snipe
@@ -152,14 +152,21 @@ def save_ledger(ledger: dict) -> None:
 # 3. RADAR MODULE (Market Detection)
 # =============================================================================
 
-async def fetch_markets(client: "httpx.AsyncClient") -> list:
+async def fetch_markets(client: "httpx.AsyncClient") -> tuple[list, int]:
     """
     Fetch ALL active markets from Polymarket API using pagination.
-    Returns empty list on failure.
+    Returns tuple of (markets list, number of API calls made).
+    Implements retry logic with exponential backoff.
     """
     all_markets = []
     offset = 0
-    limit = 100  # Fetch 100 at a time
+    limit = 100  # Fetch 100 at a time for efficiency
+    max_retries = 3
+    api_calls_made = 0
+    
+    # Initialize tracker on first call
+    if api_call_tracker["start_time"] is None:
+        api_call_tracker["start_time"] = time.time()
     
     try:
         while True:
@@ -170,25 +177,99 @@ async def fetch_markets(client: "httpx.AsyncClient") -> list:
                 "limit": limit,
                 "offset": offset
             }
-            response = await client.get(url, params=params, timeout=15.0)
-            response.raise_for_status()
-            data = response.json()
             
-            if not data or not isinstance(data, list):
-                break
-                
-            all_markets.extend(data)
-            
-            # If we got less than limit, we've reached the end
-            if len(data) < limit:
-                break
-                
-            offset += limit
+            # Retry logic with exponential backoff
+            for retry in range(max_retries):
+                try:
+                    headers = {
+                        "User-Agent": "PolymarketSniper/1.0",
+                        "Accept": "application/json"
+                    }
+                    response = await client.get(
+                        url, 
+                        params=params, 
+                        headers=headers,
+                        timeout=30.0
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    # Track API call
+                    api_calls_made += 1
+                    api_call_tracker["total_calls"] += 1
+                    
+                    if not data or not isinstance(data, list):
+                        return (all_markets, api_calls_made)  # Reached end
+                        
+                    all_markets.extend(data)
+                    
+                    # If we got less than limit, we've reached the end
+                    if len(data) < limit:
+                        return (all_markets, api_calls_made)
+                        
+                    offset += limit
+                    break  # Success, continue to next batch
+                    
+                except httpx.HTTPStatusError as e:
+                    status_code = e.response.status_code
+                    if status_code == 429:  # Rate limit
+                        wait_time = (2 ** retry) * 5  # Exponential backoff: 5s, 10s, 20s
+                        print(f"⚠️  Rate limited (429). Waiting {wait_time}s before retry {retry+1}/{max_retries}...")
+                        await asyncio.sleep(wait_time)
+                    elif status_code >= 500:  # Server error
+                        wait_time = 2 ** retry
+                        print(f"⚠️  Server error ({status_code}). Retrying in {wait_time}s ({retry+1}/{max_retries})...")
+                        await asyncio.sleep(wait_time)
+                    else:
+                        print(f"❌ API fetch failed: HTTP {status_code} - {e.response.text[:200]}")
+                        return (all_markets, api_calls_made)
+                        
+                except httpx.TimeoutException:
+                    wait_time = 2 ** retry
+                    print(f"⚠️  Request timeout. Retrying in {wait_time}s ({retry+1}/{max_retries})...")
+                    await asyncio.sleep(wait_time)
+                    
+                except httpx.ConnectError as e:
+                    print(f"❌ Connection failed: {e}. Check your internet connection.")
+                    return (all_markets, api_calls_made)
+                    
+            else:
+                # All retries exhausted
+                print(f"❌ API fetch failed after {max_retries} retries. Returning {len(all_markets)} markets.")
+                return (all_markets, api_calls_made)
         
-        return all_markets
+        return (all_markets, api_calls_made)
+        
     except Exception as e:
-        print(f"❌ API fetch failed: {e}")
-        return all_markets  # Return what we have so far
+        print(f"❌ Unexpected error in fetch_markets: {type(e).__name__}: {e}")
+        return (all_markets, api_calls_made)  # Return what we have so far
+
+
+def calculate_optimal_polling_interval() -> float:
+    """
+    Calculate the optimal polling interval based on API call tracking.
+    Goal: Maximize API usage up to TARGET_API_CALLS_PER_HOUR while scanning all markets.
+    
+    Returns:
+        Optimal polling interval in seconds
+    """
+    calls_per_scan = api_call_tracker.get("calls_per_scan", 1)
+    
+    # If we need X calls per scan and want to stay under TARGET_API_CALLS_PER_HOUR,
+    # we can do TARGET_API_CALLS_PER_HOUR / X scans per hour
+    # Interval = 3600 / (TARGET_API_CALLS_PER_HOUR / calls_per_scan)
+    # Simplified: interval = (3600 * calls_per_scan) / TARGET_API_CALLS_PER_HOUR
+    
+    if calls_per_scan > 0:
+        optimal = (3600 * calls_per_scan) / TARGET_API_CALLS_PER_HOUR
+        # Ensure minimum interval of 3 seconds to avoid hammering
+        optimal = max(3.0, optimal)
+        # Cap at 60 seconds maximum
+        optimal = min(60.0, optimal)
+        return optimal
+    
+    # Default fallback
+    return 3.6  # ~1000 calls/hour if 1 call per scan
 
 
 async def monitor_new_markets(ledger: dict, 
@@ -196,6 +277,7 @@ async def monitor_new_markets(ledger: dict,
                                on_new_market_callback) -> None:
     """
     Continuous monitoring loop. Detects new markets and triggers analysis.
+    Dynamically adjusts polling interval to maximize API usage up to 1000/hour.
     
     Args:
         ledger: Current state with processed_market_ids
@@ -205,30 +287,61 @@ async def monitor_new_markets(ledger: dict,
     processed_ids = set(ledger.get("processed_market_ids", []))
     
     print(f"🔍 Radar started. {len(processed_ids)} markets already processed.")
+    print(f"🎯 Target: ~{TARGET_API_CALLS_PER_HOUR} API calls/hour (max 1000)")
     
     cycle_count = 0
     while True:
         try:
             cycle_count += 1
-            if cycle_count % 5 == 0:
-                 print(f"👀 Scanning active markets... ({len(processed_ids)} known)")
-
-            markets = await fetch_markets(client)
+            scan_start = time.time()
             
+            # Fetch all markets and track API calls
+            markets, api_calls = await fetch_markets(client)
+            
+            # Update calls per scan tracking
+            if api_calls > 0:
+                api_call_tracker["calls_per_scan"] = api_calls
+            
+            # Calculate current API call rate
+            elapsed_hours = (time.time() - api_call_tracker["start_time"]) / 3600
+            current_rate = api_call_tracker["total_calls"] / elapsed_hours if elapsed_hours > 0 else 0
+            
+            # Display scan results every cycle
+            if cycle_count % 5 == 0 or cycle_count == 1:
+                print(f"👀 Scan #{cycle_count}: {len(markets)} markets | API calls: {api_calls} | Rate: {current_rate:.0f}/hour")
+            
+            # Process markets to detect new ones
+            new_count = 0
             for market in markets:
                 market_id = market.get("id")
                 if market_id and market_id not in processed_ids:
                     # New market detected!
+                    new_count += 1
                     processed_ids.add(market_id)
                     ledger["processed_market_ids"] = list(processed_ids)
                     
                     print(f"🆕 New market detected: {market.get('question', 'Unknown')[:60]}...")
                     await on_new_market_callback(market, ledger, client)
             
-            await asyncio.sleep(POLLING_INTERVAL_SECONDS)
+            if new_count > 0:
+                print(f"✨ {new_count} new market(s) detected this scan!")
+            
+            # Calculate optimal polling interval for next cycle
+            optimal_interval = calculate_optimal_polling_interval()
+            api_call_tracker["optimal_interval"] = optimal_interval
+            
+            # Show interval adjustment info every 10 cycles
+            if cycle_count % 10 == 0:
+                print(f"⏱️  Polling interval: {optimal_interval:.1f}s | Calls/scan: {api_calls} | Total API calls: {api_call_tracker['total_calls']}")
+            
+            await asyncio.sleep(optimal_interval)
             
         except asyncio.CancelledError:
             print("🛑 Radar stopped.")
+            # Print final stats
+            elapsed_hours = (time.time() - api_call_tracker["start_time"]) / 3600
+            final_rate = api_call_tracker["total_calls"] / elapsed_hours if elapsed_hours > 0 else 0
+            print(f"📊 Final stats: {api_call_tracker['total_calls']} API calls in {elapsed_hours:.2f}h = {final_rate:.0f} calls/hour")
             break
         except Exception as e:
             print(f"⚠️  Radar error: {e}")
@@ -740,6 +853,8 @@ async def main():
     print(f"📁 Ledger: {LEDGER_FILE}")
     print(f"💵 Max Bet: ${MAX_BET_USDC} | Price Tolerance: {PRICE_TOLERANCE}")
     print(f"🎯 Take Profit: {TAKE_PROFIT_TARGET_CENTS*100:.0f} cents")
+    print(f"📡 API Strategy: Dynamic polling (~{TARGET_API_CALLS_PER_HOUR} calls/hour)")
+    print(f"   Each scan fetches ALL active markets to detect new ones")
     print("=" * 60 + "\n")
     
     ledger = load_ledger()
