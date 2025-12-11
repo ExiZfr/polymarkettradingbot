@@ -24,6 +24,7 @@ import {
 import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
 import { showTradeNotification } from "@/components/dashboard/TradeNotificationSystem";
 import ClosePositionModal from "@/components/dashboard/ClosePositionModal";
+import PolymarketLink from "@/components/ui/PolymarketLink";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 
@@ -312,15 +313,13 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                                 </div>
                             )}
                             <div className="md:col-span-4 flex items-end">
-                                <a
-                                    href={`https://polymarket.com/?s=${order.marketId}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <PolymarketLink
+                                    marketId={order.marketId}
                                     className="flex items-center gap-2 text-xs text-primary hover:underline"
                                 >
                                     <ExternalLink size={12} />
                                     View on Polymarket
-                                </a>
+                                </PolymarketLink>
                             </div>
                         </div>
                     </motion.div>

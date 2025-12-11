@@ -13,6 +13,7 @@ import {
     Zap,
     Repeat
 } from "lucide-react";
+import PolymarketLink from "@/components/ui/PolymarketLink";
 
 interface WhaleSignal {
     id: number;
@@ -44,9 +45,6 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
     const colorClass = isYes ? 'text-green-500' : 'text-red-500';
     const bgClass = isYes ? 'bg-green-500/10' : 'bg-red-500/10';
     const borderClass = isYes ? 'border-green-500/20' : 'border-red-500/20';
-
-    // Use search URL since we don't have the slug
-    const polymarketUrl = `https://polymarket.com/?s=${signal.market_id}`;
 
     return (
         <AnimatePresence>
@@ -116,14 +114,10 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
                             <div className="p-4 rounded-xl bg-secondary/20 border border-border">
                                 <div className="flex items-center justify-between mb-3">
                                     <h3 className="font-bold text-foreground">Market Information</h3>
-                                    <a
-                                        href={polymarketUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                    <PolymarketLink
+                                        marketId={signal.market_id}
                                         className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-400 hover:underline"
-                                    >
-                                        View on Polymarket <ExternalLink size={12} />
-                                    </a>
+                                    />
                                 </div>
                                 <div className="p-3 bg-background rounded-lg border border-border text-sm text-muted-foreground font-mono">
                                     Market ID: {signal.market_id}<br />
