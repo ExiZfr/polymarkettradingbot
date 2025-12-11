@@ -14,6 +14,56 @@ import {
     RotateCcw,
     Info
 } from "lucide-react";
+import ContextHelper from "./ContextHelper";
+
+// Help Content Definitions
+const HELP_CONTENT = {
+    scoreThreshold: {
+        title: "Seuil de Confiance Global",
+        definition: "La note minimale qu'un signal doit obtenir pour être copié.",
+        technical: "Le moteur agrège tous les sous-scores (Win Rate, PnL, Timing) en une note finale sur 100. Si Note < Seuil, le trade est rejeté.",
+        lowScenario: {
+            label: "Bas (< 50)",
+            pros: "Volume de trading élevé, ne rate aucune opportunité.",
+            cons: "Risque élevé de copier de mauvais signaux (bruit)."
+        },
+        highScenario: {
+            label: "Haut (> 80)",
+            pros: "Sécurité maximale, copie uniquement l'élite.",
+            cons: "Peu d'activité, risque d'attendre des jours sans trade."
+        }
+    },
+    minTimeToExpiry: {
+        title: "Filtre Temporel (Expiration)",
+        definition: "Le temps restant minimum avant la fin du marché pour accepter un trade.",
+        technical: "Vérifie market.close_date - now. Rejette les marchés qui ferment trop tôt.",
+        lowScenario: {
+            label: "Court (ex: 1h)",
+            pros: "Permet de jouer la volatilité de dernière minute.",
+            cons: "Risque majeur que le prix soit déjà figé ou manipulé."
+        },
+        highScenario: {
+            label: "Long (ex: 48h)",
+            pros: "Trade sur des tendances long terme plus stables.",
+            cons: "Immobilise le capital plus longtemps."
+        }
+    },
+    slippageProtection: {
+        title: "Protection Anti-Slippage",
+        definition: "L'écart de prix maximum toléré entre le moment du signal et ton exécution.",
+        technical: "Si Prix_Actuel > Prix_Signal * (1 + Slippage), l'ordre d'achat est annulé.",
+        lowScenario: {
+            label: "Stricte (0.5%)",
+            pros: "Garantit que tu entres au même prix que la Whale.",
+            cons: "Beaucoup d'échecs d'exécution (le prix bouge trop vite)."
+        },
+        highScenario: {
+            label: "Large (> 5%)",
+            pros: "Taux d'exécution proche de 100%.",
+            cons: "Tu achètes souvent plus cher que prévu (rentabilité réduite)."
+        }
+    }
+};
 
 // Default Decision Engine configuration
 const DEFAULT_CONFIG = {
@@ -119,8 +169,8 @@ export default function DecisionEngineSettings({ onConfigChange }: DecisionEngin
                         onClick={saveConfig}
                         disabled={!hasChanges}
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${hasChanges
-                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                            : 'bg-muted text-muted-foreground cursor-not-allowed'
+                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                : 'bg-muted text-muted-foreground cursor-not-allowed'
                             }`}
                     >
                         <Save size={14} />
@@ -135,6 +185,7 @@ export default function DecisionEngineSettings({ onConfigChange }: DecisionEngin
                     <div className="flex items-center gap-2">
                         <Sliders className="w-4 h-4 text-purple-500" />
                         <span className="font-medium text-foreground">Score Threshold</span>
+                        <ContextHelper content={HELP_CONTENT.scoreThreshold} />
                     </div>
                     <span className="text-2xl font-bold text-purple-500">{config.scoreThreshold}</span>
                 </div>
@@ -174,9 +225,12 @@ export default function DecisionEngineSettings({ onConfigChange }: DecisionEngin
 
                     <div className="p-3 bg-secondary rounded-lg">
                         <div className="flex items-center justify-between mb-2">
-                            <div>
-                                <span className="text-sm font-medium text-foreground">Min Time to Expiry</span>
-                                <p className="text-xs text-muted-foreground">Reject markets expiring soon</p>
+                            <div className="flex items-center gap-2">
+                                <div>
+                                    <span className="text-sm font-medium text-foreground">Min Time to Expiry</span>
+                                    <p className="text-xs text-muted-foreground">Reject markets expiring soon</p>
+                                </div>
+                                <ContextHelper content={HELP_CONTENT.minTimeToExpiry} />
                             </div>
                             <span className="text-sm font-bold text-foreground">{Math.floor(config.minTimeToExpiry / 3600)}h</span>
                         </div>
@@ -398,9 +452,12 @@ export default function DecisionEngineSettings({ onConfigChange }: DecisionEngin
 
                 <div className="p-3 bg-secondary rounded-lg">
                     <div className="flex items-center justify-between mb-2">
-                        <div>
-                            <span className="text-sm font-medium text-foreground">Max Slippage Protection</span>
-                            <p className="text-xs text-muted-foreground">Reject trade if price moves more than this</p>
+                        <div className="flex items-center gap-2">
+                            <div>
+                                <span className="text-sm font-medium text-foreground">Max Slippage Protection</span>
+                                <p className="text-xs text-muted-foreground">Reject trade if price moves more than this</p>
+                            </div>
+                            <ContextHelper content={HELP_CONTENT.slippageProtection} />
                         </div>
                         <span className="text-sm font-bold text-foreground">{config.slippageProtection}%</span>
                     </div>
