@@ -19,48 +19,48 @@ import ContextHelper from "./ContextHelper";
 // Help Content Definitions
 const HELP_CONTENT = {
     scoreThreshold: {
-        title: "Seuil de Confiance Global",
-        definition: "La note minimale qu'un signal doit obtenir pour être copié.",
-        technical: "Le moteur agrège tous les sous-scores (Win Rate, PnL, Timing) en une note finale sur 100. Si Note < Seuil, le trade est rejeté.",
+        title: "Score de Confiance",
+        definition: "C'est la note minimale (sur 100) qu'un trade doit avoir pour que le bot le copie.",
+        technical: "Le bot analyse l'historique de la Whale, son taux de réussite et le timing. Plus la note est haute, plus le trade est 'sûr'.",
         lowScenario: {
-            label: "Bas (< 50)",
-            pros: "Volume de trading élevé, ne rate aucune opportunité.",
-            cons: "Risque élevé de copier de mauvais signaux (bruit)."
+            label: "Bas (ex: 40/100)",
+            pros: "Tu feras beaucoup de trades ! On ne rate rien.",
+            cons: "Tu risques de copier des trades moyens ou perdants."
         },
         highScenario: {
-            label: "Haut (> 80)",
-            pros: "Sécurité maximale, copie uniquement l'élite.",
-            cons: "Peu d'activité, risque d'attendre des jours sans trade."
+            label: "Haut (ex: 85/100)",
+            pros: "Sécurité avant tout. On ne copie que la crème de la crème.",
+            cons: "Tu peux passer des jours sans aucun trade (c'est normal)."
         }
     },
     minTimeToExpiry: {
-        title: "Filtre Temporel (Expiration)",
-        definition: "Le temps restant minimum avant la fin du marché pour accepter un trade.",
-        technical: "Vérifie market.close_date - now. Rejette les marchés qui ferment trop tôt.",
+        title: "Temps Restant (Expiration)",
+        definition: "Le bot refuse de parier sur un événement qui se termine trop tôt.",
+        technical: "Les dernières heures d'un pari sont souvent chaotiques et manipulées. On évite cette zone de turbulence.",
         lowScenario: {
             label: "Court (ex: 1h)",
-            pros: "Permet de jouer la volatilité de dernière minute.",
-            cons: "Risque majeur que le prix soit déjà figé ou manipulé."
+            pros: "Tu peux jouer sur la volatilité de dernière minute.",
+            cons: "C'est le Far West : les prix bougent trop vite, gros risque."
         },
         highScenario: {
-            label: "Long (ex: 48h)",
-            pros: "Trade sur des tendances long terme plus stables.",
-            cons: "Immobilise le capital plus longtemps."
+            label: "Long (ex: 24h)",
+            pros: "On parie sur des tendances stables et réfléchies.",
+            cons: "Ton argent est bloqué plus longtemps jusqu'au résultat."
         }
     },
     slippageProtection: {
-        title: "Protection Anti-Slippage",
-        definition: "L'écart de prix maximum toléré entre le moment du signal et ton exécution.",
-        technical: "Si Prix_Actuel > Prix_Signal * (1 + Slippage), l'ordre d'achat est annulé.",
+        title: "Protection de Prix (Slippage)",
+        definition: "La différence de prix maximale que tu acceptes entre le moment du signal et ton achat.",
+        technical: "Si la Whale achète à 0.50$ et que le prix saute à 0.60$ instantanément, acheter serait une erreur. Cette option te protège.",
         lowScenario: {
             label: "Stricte (0.5%)",
-            pros: "Garantit que tu entres au même prix que la Whale.",
-            cons: "Beaucoup d'échecs d'exécution (le prix bouge trop vite)."
+            pros: "Tu achètes au VRAI prix de la Whale (ou pas du tout).",
+            cons: "Beaucoup de tes ordres seront annulés si ça bouge vite."
         },
         highScenario: {
-            label: "Large (> 5%)",
-            pros: "Taux d'exécution proche de 100%.",
-            cons: "Tu achètes souvent plus cher que prévu (rentabilité réduite)."
+            label: "Large (5% +)",
+            pros: "Tes ordres passeront presque à coup sûr.",
+            cons: "Tu risques d'acheter un peu plus cher, ce qui réduit tes gains."
         }
     }
 };
@@ -169,8 +169,8 @@ export default function DecisionEngineSettings({ onConfigChange }: DecisionEngin
                         onClick={saveConfig}
                         disabled={!hasChanges}
                         className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition ${hasChanges
-                                ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                : 'bg-muted text-muted-foreground cursor-not-allowed'
+                            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                            : 'bg-muted text-muted-foreground cursor-not-allowed'
                             }`}
                     >
                         <Save size={14} />
