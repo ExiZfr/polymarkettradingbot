@@ -200,12 +200,8 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
     const isWin = pnl >= 0;
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
 
-    // Aesthetic variables
-    const mainColor = isWin ? 'text-[#00df8f]' : 'text-[#ff4d4d]';
-    const glowShadow = isWin ? 'shadow-[#00df8f]/20' : 'shadow-[#ff4d4d]/20';
-
     const handleCopy = () => {
-        const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\n\nStart Trading on PolyGraalX`;
+        const text = `🚀 PolyGraalX PnL Report\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%\nPnL: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}\n\nStart Trading on PolyGraalX.app`;
         navigator.clipboard.writeText(text);
     };
 
@@ -225,102 +221,111 @@ function PnLCardModal({ notification, onClose }: { notification: TradeNotificati
                     <X size={20} />
                 </button>
 
-                {/* --- THE CARD ITSELF --- */}
+                {/* --- THE ULTIMATE PNL CARD --- */}
                 <div
                     id="pnl-card"
-                    className="relative w-[640px] h-[360px] rounded-[32px] overflow-hidden shadow-[0_30px_80px_-15px_rgba(0,0,0,0.9)] group"
+                    className="relative w-[700px] h-[400px] rounded-[32px] overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] group border border-white/10"
                     style={{
                         backgroundImage: 'url(/images/pnl-card-clean.png)',
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }}
                 >
-                    {/* Dark overlay for text readability */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-transparent pointer-events-none" />
+                    {/* Dynamic Ambient Glow based on Outcome */}
+                    <div className={`absolute inset-0 opacity-40 bg-gradient-to-br ${isWin ? 'from-emerald-500/20 via-black/50 to-emerald-900/40' : 'from-rose-500/20 via-black/50 to-rose-900/40'} pointer-events-none mix-blend-overlay`} />
+                    <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] pointer-events-none" />
 
-                    {/* Content Layer */}
-                    <div className="relative z-10 h-full flex flex-col justify-between p-8 pl-10">
+                    {/* Content Container */}
+                    <div className="relative z-10 h-full flex flex-col justify-between p-6">
 
-                        {/* 1. Header: Branding & Outcome Badge */}
-                        <div className="flex justify-between items-start w-[380px]">
-                            <div className="flex flex-col">
-                                <div className="flex items-center gap-2 mb-1">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center border border-blue-400/30">
-                                        <span className="font-bold text-blue-400">P</span>
-                                    </div>
-                                    <span className="text-white font-black text-lg tracking-tight">
-                                        PolyGraalX.app
-                                    </span>
+                        {/* --- HEADER: Identity & Time --- */}
+                        <div className="flex justify-between items-center bg-black/40 backdrop-blur-md rounded-2xl p-3 border border-white/5">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <span className="font-black text-white text-lg">P</span>
                                 </div>
-                                <div className="text-white/40 text-[10px] font-mono uppercase tracking-widest pl-10">
-                                    Whale Trading Bot
+                                <div>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-white font-bold tracking-tight">PolyGraalX.app</span>
+                                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-white/50 font-mono uppercase tracking-wider">
+                                        <span>@WhaleHunter</span>
+                                        <span className="text-white/20">•</span>
+                                        <span>{new Date().toLocaleTimeString()}</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className={`px-3 py-1 rounded-md border backdrop-blur-md ${isWin ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 shadow-[0_0_15px_-3px_rgba(52,211,153,0.3)]' : 'bg-rose-500/10 border-rose-500/30 text-rose-400 shadow-[0_0_15px_-3px_rgba(251,113,133,0.3)]'} text-xs font-bold uppercase tracking-wider`}>
-                                {isWin ? 'WIN' : 'LOSS'}
+                            <div className={`px-4 py-1.5 rounded-lg border ${isWin ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border-rose-500/20 text-rose-400'} flex items-center gap-2 backdrop-blur-sm`}>
+                                <div className={`w-2 h-2 rounded-full ${isWin ? 'bg-emerald-400 shadow-[0_0_10px_#34d399]' : 'bg-rose-400 shadow-[0_0_10px_#fb7185]'} animate-pulse`} />
+                                <span className="text-xs font-black uppercase tracking-widest">{isWin ? 'PROFIT' : 'LOSS'}</span>
                             </div>
                         </div>
 
-                        {/* 2. Main Stats (ROI & PnL) */}
-                        <div className="flex-1 flex flex-col justify-center w-[400px]">
-                            <div className="flex items-center gap-3 mb-2 opacity-80">
-                                <span className="text-white font-bold text-xl truncate max-w-[280px]">
+                        {/* --- MIDDLE: The Big Numbers --- */}
+                        <div className="flex-1 flex flex-col justify-center pl-4 relative">
+                            {/* Market Ticker */}
+                            <div className="flex items-center gap-3 mb-2">
+                                <h2 className="text-2xl font-black text-white tracking-tight drop-shadow-md truncate max-w-[400px]">
                                     {order.outcome}
-                                </span>
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-white/10 text-white/50 border border-white/5">
+                                </h2>
+                                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/10 text-white/60 border border-white/10 backdrop-blur-sm">
                                     PERP
                                 </span>
+                                <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isWin ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/20' : 'bg-rose-500/20 text-rose-300 border border-rose-500/20'}`}>
+                                    125X
+                                </span>
                             </div>
 
-                            {/* ROI - The Hero */}
-                            <h1
-                                className="text-[80px] leading-[0.9] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-white to-white/70 filter drop-shadow-lg"
-                                style={{
-                                    textShadow: isWin
-                                        ? '0 0 30px rgba(52,211,153,0.4)'
-                                        : '0 0 30px rgba(244,63,94,0.4)'
-                                }}
-                            >
-                                <span className={isWin ? 'text-emerald-400' : 'text-rose-500'}>
+                            {/* ROI Display */}
+                            <div className="relative">
+                                <h1
+                                    className={`text-[96px] leading-[0.85] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-b from-white ${isWin ? 'via-emerald-100 to-emerald-200' : 'via-rose-100 to-rose-200'}`}
+                                    style={{
+                                        filter: `drop-shadow(0 0 40px ${isWin ? 'rgba(52,211,153,0.3)' : 'rgba(244,63,94,0.3)'})`
+                                    }}
+                                >
                                     {roi >= 0 ? '+' : ''}{roi.toFixed(2)}%
-                                </span>
-                            </h1>
-
-                            {/* PnL Value */}
-                            <div className="mt-2 flex items-center gap-2">
-                                <span className={`text-2xl font-mono font-medium ${isWin ? 'text-emerald-300' : 'text-rose-300'}`}>
+                                </h1>
+                                <p className={`font-mono text-2xl font-bold mt-2 ml-2 ${isWin ? 'text-emerald-400' : 'text-rose-400'}`}>
                                     {pnl >= 0 ? '+' : ''}${Math.abs(pnl).toFixed(2)}
-                                </span>
-                                <span className="text-white/30 text-sm font-bold uppercase">USDC</span>
-                            </div>
-                        </div>
-
-                        {/* 3. Footer: Prices & Timestamp */}
-                        <div className="flex items-end justify-between w-[380px] border-t border-white/10 pt-4 mt-2">
-                            <div className="flex gap-8">
-                                <div>
-                                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest mb-1">Entry</p>
-                                    <p className="text-white font-mono text-lg">{order.entryPrice.toFixed(3)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-[9px] text-white/30 uppercase font-bold tracking-widest mb-1">Mark</p>
-                                    <p className="text-white font-mono text-lg">{(order.exitPrice || order.currentPrice || 0).toFixed(3)}</p>
-                                </div>
-                            </div>
-
-                            <div className="text-right">
-                                <p className="text-[9px] text-white/20 uppercase tracking-widest mb-0.5">Scanned on</p>
-                                <p className="text-white/50 text-[10px] font-mono">
-                                    {new Date().toLocaleDateString()}
                                 </p>
                             </div>
                         </div>
+
+                        {/* --- FOOTER: Detailed Metrics Grid --- */}
+                        <div className="grid grid-cols-4 gap-2">
+                            {/* Card 1: Entry */}
+                            <div className="bg-black/40 backdrop-blur-md border border-white/5 rounded-xl p-2.5 hover:bg-white/5 transition-colors">
+                                <div className="text-[9px] uppercase text-white/30 font-bold tracking-wider mb-0.5">Entry Price</div>
+                                <div className="text-white font-mono font-medium">{order.entryPrice.toFixed(4)}</div>
+                            </div>
+
+                            {/* Card 2: Mark */}
+                            <div className="bg-black/40 backdrop-blur-md border border-white/5 rounded-xl p-2.5 hover:bg-white/5 transition-colors">
+                                <div className="text-[9px] uppercase text-white/30 font-bold tracking-wider mb-0.5">Mark Price</div>
+                                <div className="text-white font-mono font-medium">{(order.exitPrice || order.currentPrice || 0).toFixed(4)}</div>
+                            </div>
+
+                            {/* Card 3: Vol (Simulated) */}
+                            <div className="bg-black/40 backdrop-blur-md border border-white/5 rounded-xl p-2.5 hover:bg-white/5 transition-colors">
+                                <div className="text-[9px] uppercase text-white/30 font-bold tracking-wider mb-0.5">24h Vol</div>
+                                <div className="text-white/60 font-mono font-medium">$1.2M</div>
+                            </div>
+
+                            {/* Card 4: Watermark */}
+                            <div className="bg-blue-600/10 backdrop-blur-md border border-blue-500/20 rounded-xl p-2.5 flex flex-col justify-center items-center group-hover:bg-blue-600/20 transition-colors">
+                                <div className="text-[8px] uppercase text-blue-300/60 font-bold tracking-wider">Powered by</div>
+                                <div className="text-blue-300 font-bold text-xs">PolyGraalX</div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-4 mt-6 w-[600px]">
+                <div className="flex gap-4 mt-6 w-[700px]">
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
