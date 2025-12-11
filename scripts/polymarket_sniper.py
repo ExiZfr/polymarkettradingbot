@@ -154,23 +154,45 @@ def save_ledger(ledger: dict) -> None:
 
 async def fetch_markets(client: "httpx.AsyncClient") -> list:
     """
-    Fetch active markets from Polymarket API.
+    Fetch ALL active markets from Polymarket API using pagination.
     Returns empty list on failure.
     """
+    all_markets = []
+    offset = 0
+    limit = 100  # Fetch 100 at a time
+    
     try:
-        url = f"{API_ENDPOINT}/markets"
-        params = {
-            "closed": "false",
-            "active": "true",
-            "limit": 500
-        }
-        response = await client.get(url, params=params, timeout=10.0)
-        response.raise_for_status()
-        data = response.json()
-        return data if isinstance(data, list) else []
+        while True:
+            url = f"{API_ENDPOINT}/markets"
+            params = {
+                "closed": "false",
+                "active": "true",
+                "limit": limit,
+                "offset": offset
+            }
+            response = await client.get(url, params=params, timeout=15.0)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not data or not isinstance(data, list):
+                break
+                
+            all_markets.extend(data)
+            
+            # If we got less than limit, we've reached the end
+            if len(data) < limit:
+                break
+                
+            offset += limit
+            
+            # Safety: max 5000 markets to prevent infinite loop
+            if offset > 5000:
+                break
+        
+        return all_markets
     except Exception as e:
         print(f"❌ API fetch failed: {e}")
-        return []
+        return all_markets  # Return what we have so far
 
 
 async def monitor_new_markets(ledger: dict, 
