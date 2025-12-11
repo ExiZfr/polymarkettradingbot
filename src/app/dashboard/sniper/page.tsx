@@ -131,8 +131,8 @@ export default function SniperPage() {
 
     useEffect(() => {
         fetchLedger();
-        // Poll every 5 seconds for live updates
-        const interval = setInterval(fetchLedger, 5000);
+        // Poll every 15 seconds for live updates (optimized)
+        const interval = setInterval(fetchLedger, 15000);
         return () => clearInterval(interval);
     }, [fetchLedger]);
 

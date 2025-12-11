@@ -34,8 +34,8 @@ export default function AccountManagerWidget() {
 
     useEffect(() => {
         updateStats();
-        // Poll for updates
-        const interval = setInterval(updateStats, 5000);
+        // Poll for updates (optimized)
+        const interval = setInterval(updateStats, 30000);
         return () => clearInterval(interval);
     }, []);
 

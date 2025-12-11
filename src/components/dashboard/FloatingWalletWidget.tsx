@@ -47,8 +47,8 @@ export default function FloatingWalletWidget() {
         const handleUpdate = () => loadData();
         window.addEventListener('paper-update', handleUpdate);
 
-        // Poll every 2 seconds for price updates
-        const interval = setInterval(loadData, 2000);
+        // Poll every 10 seconds for price updates (optimized)
+        const interval = setInterval(loadData, 10000);
 
         return () => {
             window.removeEventListener('paper-update', handleUpdate);

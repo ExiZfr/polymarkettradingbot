@@ -115,7 +115,7 @@ export default function Dashboard() {
         const interval = setInterval(() => {
             fetchBalance();
             fetchSignals();
-        }, 3000);
+        }, 15000); // Optimized: 15 seconds
         return () => clearInterval(interval);
     }, []);
 

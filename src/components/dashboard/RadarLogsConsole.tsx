@@ -14,7 +14,7 @@ export default function RadarLogsConsole() {
                 const res = await fetch('/api/radar/logs');
                 if (res.ok) {
                     const data = await res.json();
-                    setLogs(data.logs || []);
+                    setLogs((data.logs || []).slice(-50)); // Limit to 50 entries
                 }
             } catch (e) {
                 console.error("Failed to fetch radar logs", e);
@@ -22,7 +22,7 @@ export default function RadarLogsConsole() {
         };
 
         fetchLogs();
-        const interval = setInterval(fetchLogs, 3000);
+        const interval = setInterval(fetchLogs, 15000); // 15 seconds (optimized)
         return () => clearInterval(interval);
     }, []);
 

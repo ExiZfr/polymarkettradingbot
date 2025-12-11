@@ -13,7 +13,7 @@ export default function FileLogsConsole() {
                 const res = await fetch('/api/sniper/logs');
                 if (res.ok) {
                     const data = await res.json();
-                    setLogs(data.logs || []);
+                    setLogs((data.logs || []).slice(-50)); // Limit to 50 entries
                 }
             } catch (e) {
                 console.error("Failed to fetch logs", e);
@@ -21,7 +21,7 @@ export default function FileLogsConsole() {
         };
 
         fetchLogs();
-        const interval = setInterval(fetchLogs, 2000); // 2 seconds poll
+        const interval = setInterval(fetchLogs, 10000); // 10 seconds poll (optimized)
         return () => clearInterval(interval);
     }, []);
 
