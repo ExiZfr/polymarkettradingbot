@@ -17,15 +17,17 @@ import {
     Percent,
     Target,
     Layers,
-    Lock
+    Lock,
+    Brain
 } from "lucide-react";
 import { paperStore, PaperTradingSettings, PaperProfile } from "@/lib/paper-trading";
+import DecisionEngineSettings from "@/components/dashboard/DecisionEngineSettings";
 
 export default function SettingsPage() {
     const [settings, setSettings] = useState<PaperTradingSettings | null>(null);
     const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [saved, setSaved] = useState(false);
-    const [activeTab, setActiveTab] = useState<'account'>('account');
+    const [activeTab, setActiveTab] = useState<'account' | 'decision'>('account');
     const [realTradingMode, setRealTradingMode] = useState(false);
 
     useEffect(() => {
@@ -71,7 +73,8 @@ export default function SettingsPage() {
             {/* Tabs */}
             <div className="flex gap-2 bg-secondary p-1 rounded-xl w-fit flex-wrap">
                 {[
-                    { id: 'account', label: 'Account', icon: Shield }
+                    { id: 'account', label: 'Account', icon: Shield },
+                    { id: 'decision', label: 'Decision Engine', icon: Brain }
                 ].map(tab => (
                     <button
                         key={tab.id}
@@ -86,7 +89,6 @@ export default function SettingsPage() {
                     </button>
                 ))}
             </div>
-
 
 
             {/* Account Settings */}
@@ -163,6 +165,11 @@ export default function SettingsPage() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Decision Engine Settings */}
+            {activeTab === 'decision' && (
+                <DecisionEngineSettings />
             )}
         </div>
     );

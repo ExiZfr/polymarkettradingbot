@@ -26,7 +26,6 @@ type NavItem = {
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Radar", href: "/dashboard/radar", icon: Radar, badge: "LIVE" },
-    { label: "Decision Engine", href: "/dashboard/decision", icon: Brain, badge: "AI" },
     { label: "Sniper", href: "/dashboard/sniper", icon: Crosshair, badge: "New" },
     { label: "Carnet d'Ordres", href: "/dashboard/orders", icon: BookOpen },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
