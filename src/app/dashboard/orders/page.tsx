@@ -193,7 +193,6 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                             <PolymarketLink
                                 marketId={order.marketId}
                                 className="text-muted-foreground hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
-                                title="View on Polymarket"
                             >
                                 <ExternalLink size={12} />
                             </PolymarketLink>
