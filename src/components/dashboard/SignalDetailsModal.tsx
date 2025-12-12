@@ -23,10 +23,10 @@ interface WhaleSignal {
     id: number;
     wallet_address: string;
     market_id: string;
-    market_slug?: string | null;           // ✅ NEW
-    market_question?: string;              // ✅ NEW
-    market_description?: string | null;    // ✅ NEW
-    market_image?: string | null;          // ✅ NEW
+    market_slug: string | null;
+    market_question: string;
+    market_description: string | null;
+    market_image: string | null;
     outcome: 'YES' | 'NO';
     amount_usd: number;
     price: number;
