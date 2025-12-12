@@ -59,10 +59,27 @@ fi
 echo ""
 
 ###############################################################################
+# 1.5 PYTHON DEPENDENCIES
+###############################################################################
+
+echo "${YELLOW}[1.5/5] Python Dependencies${NC}"
+echo "----------------------------------------"
+
+# Install dependencies for PolyRadar bot
+echo "→ Installing Python packages..."
+pip3 install --user web3 eth-abi requests aiohttp python-dotenv 2>&1 | grep -E "(Successfully|Requirement already)" || {
+    echo "${YELLOW}⚠ Some Python packages may have failed to install${NC}"
+}
+
+echo "${GREEN}✓ Python dependencies checked${NC}"
+
+echo ""
+
+###############################################################################
 # 2. CLOUDFLARE TUNNEL FIX
 ###############################################################################
 
-echo "${YELLOW}[2/4] Cloudflare Tunnel Configuration${NC}"
+echo "${YELLOW}[2/5] Cloudflare Tunnel Configuration${NC}"
 echo "----------------------------------------"
 
 # Create/Update cloudflared config
@@ -101,7 +118,7 @@ echo ""
 # 3. APPLICATION REBUILD & RESTART
 ###############################################################################
 
-echo "${YELLOW}[3/4] Application Rebuild${NC}"
+echo "${YELLOW}[3/5] Application Rebuild${NC}"
 echo "----------------------------------------"
 
 # Rebuild with new Prisma client
@@ -127,7 +144,7 @@ echo ""
 # 4. HEALTH CHECK
 ###############################################################################
 
-echo "${YELLOW}[4/4] Health Check${NC}"
+echo "${YELLOW}[4/5] Health Check${NC}"
 echo "----------------------------------------"
 
 # Wait for services to start
@@ -143,6 +160,25 @@ pm2 list | grep -E "(polygraal-web|cloudflared)" || true
 echo ""
 echo "Cloudflared Status (last 5 lines):"
 pm2 logs cloudflared --nostream --lines 5 2>/dev/null | tail -5 || echo "No logs available"
+
+###############################################################################
+# 5. POLYRADAR SERVICE CHECK
+###############################################################################
+
+echo "${YELLOW}[5/5] PolyRadar Service${NC}"
+echo "----------------------------------------"
+
+# Restart polyradar with new wrapper
+echo "→ Restarting PolyRadar with safe wrapper..."
+pm2 restart polyradar-whale-tracker || {
+    echo "${YELLOW}⚠ PolyRadar not in PM2, starting fresh${NC}"
+    pm2 delete polyradar-whale-tracker 2>/dev/null || true
+    pm2 start ecosystem.config.js --only polyradar-whale-tracker
+}
+
+echo "${GREEN}✓ PolyRadar service checked${NC}"
+
+echo ""
 
 # Check if app is responding
 echo ""

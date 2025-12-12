@@ -22,9 +22,12 @@ module.exports = {
         },
         {
             name: "polyradar-whale-tracker",
-            script: "scripts/polyradar_main.py",
+            script: "scripts/polyradar_safe_start.py",
             interpreter: "python3",
-            args: "--mode simulation --bankroll 10000",
+            cwd: process.cwd(),
+            max_restarts: 10,
+            min_uptime: "30s",
+            restart_delay: 10000,
             autorestart: true,
             watch: false,
             max_memory_restart: "300M",
@@ -32,7 +35,8 @@ module.exports = {
                 PYTHONUNBUFFERED: "1"
             },
             error_file: "logs/polyradar-error.log",
-            out_file: "logs/polyradar-out.log"
+            out_file: "logs/polyradar-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
 };
