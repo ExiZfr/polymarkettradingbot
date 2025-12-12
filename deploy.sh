@@ -28,6 +28,17 @@ then
     pm2 save
     echo "✅ Deployment Complete! Services are running."
     pm2 status
+    
+    # 6. Run post-deployment patch (Prisma migration + Cloudflare tunnel)
+    echo ""
+    echo "🔧 Running post-deployment patches..."
+    if [ -f "post-deploy.sh" ]; then
+        chmod +x post-deploy.sh
+        ./post-deploy.sh
+    else
+        echo "⚠️  post-deploy.sh not found, skipping patches"
+    fi
 else
     echo "❌ PM2 is not installed. Please install it globally: npm install -g pm2"
 fi
+
