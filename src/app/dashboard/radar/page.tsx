@@ -21,6 +21,10 @@ interface WhaleSignal {
     id: number;
     wallet_address: string;
     market_id: string;
+    market_slug: string | null;           // ✅ NEW: Market URL slug
+    market_question: string;              // ✅ NEW: Human-readable question
+    market_description: string | null;    // ✅ NEW: Market description
+    market_image: string | null;          // ✅ NEW: Market thumbnail
     outcome: 'YES' | 'NO';
     amount_usd: number;
     price: number;
@@ -357,18 +361,52 @@ export default function RadarPage() {
                                             </span>
                                         </div>
 
+                                        {/* Market Info */}
+                                        <div className="mb-2">
+                                            <h3 className="font-semibold text-foreground text-sm line-clamp-2 mb-1">
+                                                {signal.market_question}
+                                            </h3>
+                                            {signal.market_description && (
+                                                <p className="text-xs text-muted-foreground line-clamp-1">
+                                                    {signal.market_description}
+                                                </p>
+                                            )}
+                                            <div className="text-xs text-muted-foreground/60 mt-0.5">
+                                                ID: {signal.market_id}
+                                            </div>
+                                        </div>
+
                                         <div className="flex items-center justify-between text-sm">
-                                            <div className="flex items-center gap-1.5 truncate">
+                                            <div className="flex items-center gap-1.5">
                                                 <span className={`${signal.outcome === 'YES' ? 'text-green-500' : 'text-red-500'} font-bold`}>
                                                     {signal.outcome}
                                                 </span>
-                                                <span className="text-muted-foreground">on</span>
-                                                <span className="text-foreground truncate max-w-[150px] md:max-w-[300px]">Market #{signal.market_id}</span>
+                                                <span className="text-muted-foreground">@</span>
+                                                <span className="text-foreground">
+                                                    {(signal.price * 100).toFixed(0)}¢
+                                                </span>
                                             </div>
                                             <span className="font-bold text-foreground">
                                                 ${signal.amount_usd.toLocaleString()}
                                             </span>
                                         </div>
+
+                                        {/* Polymarket Link */}
+                                        {signal.market_slug && (
+                                            <div className="mt-2 pt-2 border-t border-border">
+                                                <a
+                                                    href={`https://polymarket.com/event/${signal.market_slug}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                                >
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                    View on Polymarket
+                                                </a>
+                                            </div>
+                                        )}
                                     </div>
 
                                     {/* Status Badge */}

@@ -242,16 +242,17 @@ model MarketSnapshot {
   @@map("market_snapshots")
 }
 
-// Cache for Polymarket market details (slug, title)
+// Cache for Polymarket market details (slug, title, description)
 // Used to generate accurate links across all modules
 model MarketCache {
-  id        String   @id // The Polymarket condition_id or market_id
-  slug      String   // URL slug e.g. "will-trump-win-2024"
-  title     String   // Human readable title
-  imageUrl  String?  // Optional thumbnail
-  resolved  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id // The Polymarket condition_id or market_id
+  slug        String   // URL slug e.g. "will-trump-win-2024"
+  title       String   // Human readable title
+  description String?  // Market description
+  imageUrl    String?  // Optional thumbnail
+  resolved    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("market_cache")
 }

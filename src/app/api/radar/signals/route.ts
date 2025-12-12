@@ -5,8 +5,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getWhaleSignals } from '@/lib/polyradar-db';
+import { PrismaClient } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
+
+const prisma = new PrismaClient();
 
 // Generate mock signals when database is empty
 function generateMockSignals(limit: number = 10) {
@@ -55,6 +58,102 @@ function generateMockSignals(limit: number = 10) {
     return signals;
 }
 
+/**
+ * Enrich signals with market metadata from MarketCache
+ */
+async function enrichSignalsWithMarketData(signals: any[]) {
+    if (!signals.length) return signals;
+
+    try {
+        // Get unique market IDs
+        const marketIds = [...new Set(signals.map(s => s.market_id))];
+        console.log(`[SignalEnrich] Enriching ${signals.length} signals with ${marketIds.length} unique markets`);
+
+        // Fetch all from PostgreSQL cache
+        const markets = await prisma.marketCache.findMany({
+            where: { id: { in: marketIds } }
+        });
+
+        const marketMap = new Map(markets.map(m => [m.id, m]));
+        console.log(`[SignalEnrich] Found ${markets.length} markets in cache`);
+
+        // Identify missing markets
+        const missingIds = marketIds.filter(id => !marketMap.has(id));
+
+        if (missingIds.length > 0) {
+            console.log(`[SignalEnrich] Fetching ${missingIds.length} missing markets from Polymarket API`);
+        }
+
+        // Fetch missing from Polymarket API
+        for (const id of missingIds) {
+            try {
+                const res = await fetch(`https://gamma-api.polymarket.com/markets/${id}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'User-Agent': 'PolyGraalX-Bot/1.0'
+                    }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    let slug = data.slug;
+                    let title = data.question || `Market #${id}`;
+                    let description = data.description || '';
+                    let imageUrl = data.image || null;
+
+                    if (!slug && data.events?.length > 0) {
+                        slug = data.events[0].slug;
+                        title = data.events[0].title || title;
+                        description = data.events[0].description || description;
+                        imageUrl = data.events[0].image || imageUrl;
+                    }
+
+                    if (slug) {
+                        // Cache it in PostgreSQL
+                        const cached = await prisma.marketCache.upsert({
+                            where: { id },
+                            update: { slug, title, description, imageUrl, updatedAt: new Date() },
+                            create: { id, slug, title, description, imageUrl, resolved: false }
+                        });
+
+                        marketMap.set(id, cached);
+                        console.log(`[SignalEnrich] Cached market ${id} -> ${slug}`);
+                    }
+                }
+            } catch (e) {
+                console.error(`[SignalEnrich] Failed to fetch market ${id}:`, e);
+            }
+        }
+
+        // Merge metadata into signals
+        const enriched = signals.map(signal => {
+            const market = marketMap.get(signal.market_id);
+
+            return {
+                ...signal,
+                market_slug: market?.slug || null,
+                market_question: market?.title || `Market #${signal.market_id}`,
+                market_description: market?.description || null,
+                market_image: market?.imageUrl || null
+            };
+        });
+
+        console.log(`[SignalEnrich] Enrichment complete`);
+        return enriched;
+
+    } catch (error) {
+        console.error('[SignalEnrich] Error enriching signals:', error);
+        // Return original signals on error
+        return signals.map(s => ({
+            ...s,
+            market_slug: null,
+            market_question: `Market #${s.market_id}`,
+            market_description: null,
+            market_image: null
+        }));
+    }
+}
+
 export async function GET(request: NextRequest) {
     try {
         const searchParams = request.nextUrl.searchParams;
@@ -79,18 +178,26 @@ export async function GET(request: NextRequest) {
             }
         }
 
+        // ✅ NEW: Enrich with market metadata
+        const enrichedSignals = await enrichSignalsWithMarketData(signals);
+
         return NextResponse.json({
             success: true,
-            count: signals.length,
-            signals,
+            count: enrichedSignals.length,
+            signals: enrichedSignals,
         });
     } catch (error) {
         console.error('Error fetching whale signals:', error);
         // Return mock data on error
+        const mockSignals = generateMockSignals(10);
+        const enriched = await enrichSignalsWithMarketData(mockSignals);
+
         return NextResponse.json({
             success: true,
-            count: 10,
-            signals: generateMockSignals(10),
+            count: enriched.length,
+            signals: enriched,
         });
+    } finally {
+        await prisma.$disconnect();
     }
 }

@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
-// In-memory cache as fallback when DB is not available
-const memoryCache = new Map<string, any>();
-const CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const prisma = new PrismaClient();
 
 /**
  * GET /api/markets/resolve?id=XXX
  * 
  * Resolves a Polymarket market_id to its slug, title, description, and other metadata.
- * Works WITHOUT database by using in-memory cache.
+ * Uses PostgreSQL MarketCache for persistent storage.
  */
 export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
@@ -21,12 +20,19 @@ export async function GET(request: NextRequest) {
     }
 
     try {
-        // Step 1: Check memory cache
-        const cached = memoryCache.get(id);
-        if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+        // Step 1: Check PostgreSQL MarketCache
+        const cached = await prisma.marketCache.findUnique({
+            where: { id }
+        });
+
+        if (cached) {
+            console.log(`[MarketResolver] Cache hit for ${id}`);
             return NextResponse.json({
                 id,
-                ...cached,
+                slug: cached.slug,
+                title: cached.title,
+                description: cached.description || '',
+                imageUrl: cached.imageUrl,
                 cached: true
             });
         }
@@ -80,20 +86,27 @@ export async function GET(request: NextRequest) {
             }, { status: 404 });
         }
 
-        // Step 4: Store in memory cache with all enriched data
-        const enrichedData = {
-            slug,
-            title,
-            imageUrl: imageUrl || undefined,
-            description,
-            endDate,
-            volume,
-            liquidity,
-            timestamp: Date.now()
-        };
+        // Step 4: Store in PostgreSQL MarketCache
+        await prisma.marketCache.upsert({
+            where: { id },
+            update: {
+                slug,
+                title,
+                description,
+                imageUrl,
+                updatedAt: new Date()
+            },
+            create: {
+                id,
+                slug,
+                title,
+                description,
+                imageUrl,
+                resolved: false
+            }
+        });
 
-        memoryCache.set(id, enrichedData);
-        console.log(`[MarketResolver] Cached ${id} -> ${slug}`);
+        console.log(`[MarketResolver] Cached ${id} -> ${slug} in PostgreSQL`);
 
         return NextResponse.json({
             id,
@@ -113,6 +126,8 @@ export async function GET(request: NextRequest) {
             error: 'Internal server error',
             fallbackUrl: `https://polymarket.com/?s=${id}`
         }, { status: 500 });
+    } finally {
+        await prisma.$disconnect();
     }
 }
 
