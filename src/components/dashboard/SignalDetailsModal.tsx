@@ -19,25 +19,7 @@ import {
 import PolymarketLink from "@/components/ui/PolymarketLink";
 import { useEffect, useState } from "react";
 
-interface WhaleSignal {
-    id: number;
-    wallet_address: string;
-    market_id: string;
-    market_slug: string | null;
-    market_question: string;
-    market_description: string | null;
-    market_image: string | null;
-    outcome: 'YES' | 'NO';
-    amount_usd: number;
-    price: number;
-    timestamp: number;
-    tx_hash: string;
-    wallet_category: string | null;
-    reputation_score: number | null;
-    was_copied: number;
-    copy_position_size: number;
-    created_at: string;
-}
+import { WhaleSignal } from "@/lib/polyradar-db";
 
 interface SignalDetailsModalProps {
     signal: WhaleSignal | null;

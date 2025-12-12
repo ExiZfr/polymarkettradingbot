@@ -16,26 +16,7 @@ import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
 import RadarGuide from '@/components/dashboard/RadarGuide';
 import SignalDetailsModal from '@/components/dashboard/SignalDetailsModal';
 import { showTradeNotification } from '@/components/dashboard/TradeNotificationSystem';
-
-interface WhaleSignal {
-    id: number;
-    wallet_address: string;
-    market_id: string;
-    market_slug: string | null;           // ✅ NEW: Market URL slug
-    market_question: string;              // ✅ NEW: Human-readable question
-    market_description: string | null;    // ✅ NEW: Market description
-    market_image: string | null;          // ✅ NEW: Market thumbnail
-    outcome: 'YES' | 'NO';
-    amount_usd: number;
-    price: number;
-    timestamp: number;
-    tx_hash: string;
-    wallet_category: string | null;
-    reputation_score: number | null;
-    was_copied: number;
-    copy_position_size: number;
-    created_at: string;
-}
+import { WhaleSignal, WhaleAnalytics } from '@/lib/polyradar-db';
 
 interface Analytics {
     total_signals: number;

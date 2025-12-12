@@ -12,6 +12,10 @@ export interface WhaleSignal {
     id: number;
     wallet_address: string;
     market_id: string;
+    market_slug?: string | null;           // Enriched by API
+    market_question?: string;              // Enriched by API
+    market_description?: string | null;    // Enriched by API
+    market_image?: string | null;          // Enriched by API
     outcome: 'YES' | 'NO';
     amount_usd: number;
     price: number;
