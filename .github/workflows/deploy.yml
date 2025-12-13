@@ -126,16 +126,32 @@ jobs:
             
             echo "📡 [6/6] Starting Background Services..."
             
+            # STOP old radar system
+            pm2 stop polyradar-whale-tracker 2>/dev/null || true
+            pm2 delete polyradar-whale-tracker 2>/dev/null || true
+            
             # STOP crashing sniper first to prevent restart loops
             pm2 stop polysniper 2>/dev/null || true
             pm2 delete polysniper 2>/dev/null || true
             
-            # Install Python dependencies for sniper (FORCE)
+            # Install Python dependencies for ALL services
             echo "🐍 Installing Python dependencies..."
+            
+            # For sniper
             python3 -m pip install --user httpx || pip3 install httpx || apt-get install -y python3-httpx 2>/dev/null || echo "Trying system python..."
+            
+            # For NEW whale tracker (IMPORTANT!)
+            if [ -f "scripts/whale_tracker_requirements.txt" ]; then
+              echo "📦 Installing whale tracker dependencies..."
+              pip3 install -r scripts/whale_tracker_requirements.txt || python3 -m pip install --user -r scripts/whale_tracker_requirements.txt
+            fi
             
             # Verify httpx is installed
             python3 -c "import httpx; print('✅ httpx installed successfully')" || echo "❌ httpx still not installed"
+            
+            # Verify whale tracker dependencies
+            python3 -c "import web3; print('✅ web3 installed successfully')" || echo "⚠️ web3 not installed"
+            python3 -c "import aiohttp; print('✅ aiohttp installed successfully')" || echo "⚠️ aiohttp not installed"
             
             # Start or Restart Listener Service
             if pm2 describe polylistener > /dev/null 2>&1; then
@@ -150,13 +166,19 @@ jobs:
             echo "🎯 Starting sniper bot..."
             pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3 --no-autorestart
             
-            # Start PolyRadar Whale Tracker
-            if pm2 describe polyradar-whale-tracker > /dev/null 2>&1; then
-                echo "🔄 Restarting PolyRadar..."
-                pm2 restart polyradar-whale-tracker
+            # Start NEW Whale Tracker v2.0 (replaces old polyradar)
+            if pm2 describe whale-tracker > /dev/null 2>&1; then
+                echo "🔄 Restarting Whale Tracker v2.0..."
+                pm2 restart whale-tracker
             else
-                echo "🐋 Starting PolyRadar whale tracker..."
-                pm2 start scripts/polyradar_main.py --name polyradar-whale-tracker --interpreter python3 -- --mode simulation --bankroll 10000
+                echo "🐋 Starting NEW Whale Tracker v2.0..."
+                # Use ecosystem.config.js if exists, otherwise manual start
+                if [ -f "ecosystem.config.js" ]; then
+                  pm2 start ecosystem.config.js --only whale-tracker
+                else
+                  # Fallback: start in simulation mode
+                  pm2 start scripts/whale_tracker.py --name whale-tracker --interpreter python3
+                fi
             fi
             
             # Save PM2 config
@@ -170,6 +192,6 @@ jobs:
             echo "🌐 Main App: polygraalx (port 3001)"
             echo "📡 Listener: polylistener"
             echo "🎯 Sniper: polysniper"
-            echo "🐋 PolyRadar: polyradar-whale-tracker"
+            echo "🐋 Whale Tracker: whale-tracker (NEW v2.0)"
             echo "========================================"
 
