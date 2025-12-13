@@ -624,9 +624,12 @@ class WhaleTracker:
                 abi=[self.order_filled_abi]
             )
             
-            # Web3.py v7: Poll for events using get_logs instead of filters
+            # Web3.py v7: Use eth.get_logs with event signature
             last_block = self.w3.eth.block_number
             logger.info(f"📊 Starting from block {last_block}")
+            
+            # Get event signature hash
+            event_signature = self.w3.keccak(text="OrderFilled(bytes32,address,address,uint256,uint256,uint256)").hex()
             
             while self.is_running:
                 try:
@@ -635,22 +638,30 @@ class WhaleTracker:
                     
                     # If new blocks, check for events
                     if current_block > last_block:
-                        # Get events from last_block+1 to current_block
-                        events = contract.events.OrderFilled.get_logs(
-                            fromBlock=last_block + 1,
-                            toBlock=current_block
-                        )
+                        # Get logs using eth.get_logs
+                        logs = self.w3.eth.get_logs({
+                            'address': CTF_EXCHANGE_ADDRESS,
+                            'fromBlock': hex(last_block + 1),
+                            'toBlock': hex(current_block),
+                            'topics': [event_signature]
+                        })
                         
-                        for event in events:
-                            transaction = await self.parse_transaction(event)
-                            
-                            if transaction:
-                                # Send to database
-                                success = await self.send_to_api(transaction)
-                            
-                            # Send to frontend console
-                            log_msg = f"🐋 {transaction.wallet_tag} | ${transaction.amount:,.0f} {transaction.outcome} @ {transaction.price} | {transaction.market_question[:50]}..."
-                            await self.send_log_to_console(log_msg, "INFO")
+                        for log in logs:
+                            # Parse log using contract ABI
+                            try:
+                                event = contract.events.OrderFilled().process_log(log)
+                                transaction = await self.parse_transaction(event)
+                                
+                                if transaction:
+                                    # Send to database
+                                    success = await self.send_to_api(transaction)
+                                    
+                                    # Send to frontend console
+                                    log_msg = f"🐋 {transaction.wallet_tag} | ${transaction.amount:,.0f} {transaction.outcome} @ {transaction.price} | {transaction.market_question[:50]}..."
+                                    await self.send_log_to_console(log_msg, "INFO")
+                            except Exception as parse_err:
+                                logger.error(f"Error parsing log: {parse_err}")
+                                continue
                         
                         # Update last processed block
                         last_block = current_block
