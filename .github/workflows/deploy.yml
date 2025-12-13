@@ -137,21 +137,32 @@ jobs:
             # Install Python dependencies for ALL services
             echo "🐍 Installing Python dependencies..."
             
+            # FIRST: Ensure pip is installed
+            if ! command -v pip3 &> /dev/null; then
+                echo "📦 Installing pip3..."
+                apt-get update -qq && apt-get install -y python3-pip || echo "Could not install pip via apt"
+            fi
+            
             # For sniper
-            python3 -m pip install --user httpx || pip3 install httpx || apt-get install -y python3-httpx 2>/dev/null || echo "Trying system python..."
+            python3 -m pip install --user httpx || pip3 install httpx || apt-get install -y python3-httpx 2>/dev/null || echo "httpx installation attempts completed"
             
             # For NEW whale tracker (IMPORTANT!)
             if [ -f "scripts/whale_tracker_requirements.txt" ]; then
               echo "📦 Installing whale tracker dependencies..."
-              pip3 install -r scripts/whale_tracker_requirements.txt || python3 -m pip install --user -r scripts/whale_tracker_requirements.txt
+              
+              # Try pip first
+              if command -v pip3 &> /dev/null; then
+                pip3 install -r scripts/whale_tracker_requirements.txt || python3 -m pip install --user -r scripts/whale_tracker_requirements.txt || echo "pip install failed, trying apt..."
+              fi
+              
+              # Fallback to apt for individual packages
+              apt-get install -y python3-web3 python3-aiohttp python3-dotenv 2>/dev/null || echo "apt install attempts completed"
             fi
             
-            # Verify httpx is installed
-            python3 -c "import httpx; print('✅ httpx installed successfully')" || echo "❌ httpx still not installed"
-            
-            # Verify whale tracker dependencies
-            python3 -c "import web3; print('✅ web3 installed successfully')" || echo "⚠️ web3 not installed"
-            python3 -c "import aiohttp; print('✅ aiohttp installed successfully')" || echo "⚠️ aiohttp not installed"
+            # Verify installations
+            python3 -c "import httpx; print('✅ httpx installed successfully')" || echo "⚠️ httpx not available"
+            python3 -c "import web3; print('✅ web3 installed successfully')" || echo "⚠️ web3 not available"
+            python3 -c "import aiohttp; print('✅ aiohttp installed successfully')" || echo "⚠️ aiohttp not available"
             
             # Start or Restart Listener Service
             if pm2 describe polylistener > /dev/null 2>&1; then
