@@ -66,7 +66,7 @@ export default function RadarPage() {
             // Calculate analytics from transactions
             if (data.transactions && data.transactions.length > 0) {
                 const uniqueAddresses = new Set(data.transactions.map((t: WhaleTransaction) => t.walletAddress));
-                const totalVol = data.transactions.reduce((sum: number, t: WhaleTransaction) => sum + t.amount, 0);
+                const totalVol = data.transactions.reduce((sum: number, t: WhaleTransaction) => sum + (t.amount || 0), 0);
 
                 // Tag distribution
                 const tagDist: Record<string, number> = {};
@@ -79,13 +79,13 @@ export default function RadarPage() {
                 data.transactions.forEach((t: WhaleTransaction) => {
                     const existing = whaleMap.get(t.walletAddress);
                     if (existing) {
-                        existing.volume += t.amount;
+                        existing.volume += (t.amount || 0);
                         existing.count += 1;
                     } else {
                         whaleMap.set(t.walletAddress, {
                             address: t.walletAddress,
                             tag: t.walletTag,
-                            volume: t.amount,
+                            volume: (t.amount || 0),
                             count: 1
                         });
                     }
@@ -105,7 +105,7 @@ export default function RadarPage() {
                     totalTransactions: data.transactions.length,
                     uniqueWhales: uniqueAddresses.size,
                     totalVolume: totalVol,
-                    avgTradeSize: totalVol / data.transactions.length,
+                    avgTradeSize: data.transactions.length > 0 ? totalVol / data.transactions.length : 0,
                     tagDistribution: tagDist,
                     topWhales
                 });
