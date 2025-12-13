@@ -228,14 +228,31 @@ class WhaleTrackerV3:
         """Send transaction to dashboard API"""
         try:
             url = f"{API_BASE_URL}/api/radar/transactions"
-            data = asdict(transaction)
+            
+            # Format data to match API expectations
+            data = {
+                "tx_hash": transaction.tx_hash,
+                "block_number": 0,  # Not applicable for API-based tracking
+                "timestamp": transaction.timestamp,
+                "wallet_address": transaction.wallet_address,
+                "wallet_tag": transaction.wallet_tag,
+                "market_id": transaction.market_id,
+                "market_question": transaction.market_question,
+                "market_slug": transaction.market_id,  # Use ID as slug for now
+                "outcome": transaction.outcome,
+                "amount": transaction.amount,
+                "price": transaction.price,
+                "shares": transaction.amount / transaction.price if transaction.price > 0 else 0
+            }
             
             async with self.session.post(url, json=data, timeout=5) as resp:
                 if resp.status != 200:
-                    logger.error(f"API error: {resp.status}")
+                    error_text = await resp.text()
+                    logger.error(f"API error: {resp.status} - {error_text[:100]}")
                     
         except Exception as e:
             logger.error(f"Failed to send to API: {e}")
+
     
     async def send_log(self, message: str, level: str):
         """Send log to dashboard console"""
