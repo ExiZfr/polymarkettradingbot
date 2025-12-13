@@ -238,17 +238,26 @@ export default function RadarPage() {
                     <button
                         onClick={() => setFilter(null)}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === null
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         All
                     </button>
                     <button
+                        onClick={() => setFilter('WINNER')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'WINNER'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
+                            }`}
+                    >
+                        Winner
+                    </button>
+                    <button
                         onClick={() => setFilter('SMART_MONEY')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'SMART_MONEY'
-                                ? 'bg-blue-500 text-white'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         Smart Money
@@ -256,20 +265,38 @@ export default function RadarPage() {
                     <button
                         onClick={() => setFilter('INSIDER')}
                         className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'INSIDER'
-                                ? 'bg-orange-500 text-white'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
                         Insider
                     </button>
                     <button
-                        onClick={() => setFilter('WINNER')}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'WINNER'
-                                ? 'bg-green-500 text-white'
-                                : 'bg-card text-muted-foreground hover:bg-accent'
+                        onClick={() => setFilter('LOOSER')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'LOOSER'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
                             }`}
                     >
-                        Winner
+                        Looser
+                    </button>
+                    <button
+                        onClick={() => setFilter('DUMB_MONEY')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'DUMB_MONEY'
+                            ? 'bg-orange-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
+                            }`}
+                    >
+                        Dumb Money
+                    </button>
+                    <button
+                        onClick={() => setFilter('UNKNOWN')}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition ${filter === 'UNKNOWN'
+                            ? 'bg-gray-500 text-white'
+                            : 'bg-card text-muted-foreground hover:bg-accent'
+                            }`}
+                    >
+                        Unknown
                     </button>
                 </div>
             </div>
