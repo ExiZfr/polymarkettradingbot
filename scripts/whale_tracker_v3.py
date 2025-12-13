@@ -234,6 +234,7 @@ class WhaleTrackerV3:
                 "tx_hash": transaction.tx_hash,
                 "block_number": 0,  # Not applicable for API-based tracking
                 "timestamp": transaction.timestamp,
+                "gas_price": 0.0,  # Not applicable for API-based tracking
                 "wallet_address": transaction.wallet_address,
                 "wallet_tag": transaction.wallet_tag,
                 "market_id": transaction.market_id,
