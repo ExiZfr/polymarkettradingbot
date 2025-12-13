@@ -195,12 +195,18 @@ jobs:
             # Save PM2 config
             pm2 save
             
+            # AUTO-FIX: Run auto-fix script to ensure correct process
+            echo "🤖 Running AUTO-FIX script..."
+            if [ -f "AUTO_FIX_RADAR.sh" ]; then
+              bash AUTO_FIX_RADAR.sh
+            fi
+            
             # Show status
             pm2 status
             
             echo "========================================"
             echo "✅ DEPLOYMENT SUCCESSFUL"
-            echo "🌐 Main App: polygraalx (port 3001)"
+            echo "🌐 Main App: polygraalx (port 3000)"
             echo "📡 Listener: polylistener"
             echo "🎯 Sniper: polysniper"
             echo "🐋 Whale Tracker: whale-tracker (NEW v2.0)"
