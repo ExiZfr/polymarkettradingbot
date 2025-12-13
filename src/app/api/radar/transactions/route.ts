@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
                 where: { address: body.wallet_address },
                 data: {
                     currentTag: body.wallet_tag,
-                    tagHistory: newTagHistory,
+                    tagHistory: newTagHistory as any,
                     winRate: body.wallet_win_rate || whale.winRate,
                     totalPnl: body.wallet_total_pnl || whale.totalPnl,
                     totalTrades: whale.totalTrades + 1,
