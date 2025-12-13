@@ -204,8 +204,7 @@ jobs:
             # Show status
             pm2 status
             
-            echo "========================================
-"
+            echo "========================================"
             echo "✅ DEPLOYMENT SUCCESSFUL"
             echo "🌐 Main App: polygraalx (port 3001)"
             echo "📡 Listener: polylistener"
