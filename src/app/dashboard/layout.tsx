@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, Sun, Moon } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
-import { useTheme } from "@/contexts/ThemeContext";
 import FloatingWalletWidget from "@/components/dashboard/FloatingWalletWidget";
 import TradeNotificationSystem from "@/components/dashboard/TradeNotificationSystem";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
-    const { theme, toggleTheme } = useTheme();
+    const [theme, setTheme] = useState<'light' | 'dark'>('dark');
+
+    useEffect(() => {
+        // Load theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(savedTheme as 'light' | 'dark');
+        document.documentElement.classList.toggle('dark', savedTheme === 'dark');
+    }, []);
+
+    const toggleTheme = () => {
+        const newTheme = theme === 'dark' ? 'light' : 'dark';
+        setTheme(newTheme);
+        localStorage.setItem('theme', newTheme);
+        document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    };
 
     return (
         <header className="h-16 flex items-center justify-between px-6 border-b border-border bg-background/80 backdrop-blur-xl z-20">
