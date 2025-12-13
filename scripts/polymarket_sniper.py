@@ -440,17 +440,35 @@ def analyze_sniping_opportunity(market_data: dict) -> Tuple[bool, Optional[str],
     # Find the outcome with lowest price (potential undervalued)
     min_idx = 0 if prices[0] <= prices[1] else 1
     min_price = prices[min_idx]
-    chosen_outcome = outcomes[min_idx] if min_idx < len(outcomes) else "YES"
+    m
+
+ax_idx = 1 if min_idx == 0 else 0
+    max_price = prices[max_idx]
     
     # Check for inefficiency: abs(price - 0.50) > PRICE_TOLERANCE
     deviation = abs(min_price - 0.50)
     
-    if deviation > PRICE_TOLERANCE and min_price < 0.50:
+    # SNIPE if there's a significant deviation from 50/50
+    # Strategy: Buy the underpriced outcome OR fade the overpriced one
+    if deviation > PRICE_TOLERANCE:
+        # Case 1: Underpriced outcome (e.g., YES @ 0.40)
+        if min_price < 0.50:
+            chosen_outcome = outcomes[min_idx] if min_idx < len(outcomes) else "YES"
+            chosen_price = min_price
+            chosen_amount = MAX_BET_USDC
+        # Case 2: Overpriced outcome - fade it by buying the opposite (e.g., NO @ 0.65 → buy YES)
+        elif max_price > 0.50:
+            chosen_outcome = outcomes[min_idx] if min_idx < len(outcomes) else "YES"
+            chosen_price = min_price
+            chosen_amount = MAX_BET_USDC
+        else:
+            return (False, None, 0, 0)
+        
         # Simulate slippage to get adjusted entry price
         liquidity = float(market_data.get("liquidity", ASSUMED_INITIAL_LIQUIDITY))
-        adjusted_price = simulate_slippage(min_price, MAX_BET_USDC, liquidity)
+        adjusted_price = simulate_slippage(chosen_price, chosen_amount, liquidity)
         
-        return (True, str(chosen_outcome), MAX_BET_USDC, adjusted_price)
+        return (True, str(chosen_outcome), chosen_amount, adjusted_price)
     
     return (False, None, 0, 0)
 
