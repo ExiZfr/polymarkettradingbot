@@ -69,7 +69,7 @@ export default function RadarPage() {
                 <div className="bg-card border border-border rounded-lg p-3 text-center">
                     <div className="text-2xl font-bold text-green-400">WINNER</div>
                     <div className="text-xs text-muted-foreground mt-1">
-            Win Rate ≥65% + PnL >$30k
+                        Win Rate ≥65% + PnL {'>'} $30k
                     </div>
                 </div>
                 <div className="bg-card border border-border rounded-lg p-3 text-center">
