@@ -28,7 +28,7 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
 from web3 import Web3
-from web3.providers import WebSocketProvider
+from web3.providers import HTTPProvider
 
 # Configuration
 logging.basicConfig(
@@ -467,17 +467,15 @@ class WhaleTracker:
         }
     
     async def connect_to_polygon(self) -> bool:
-        """Establish WebSocket connection to Polygon"""
+        """Establish connection to Polygon via HTTP"""
         try:
             logger.info(f"🔌 Connecting to Polygon...")
             logger.info(f"   RPC: {POLYGON_RPC_WSS[:50]}...")
             
-            # Web3.py v7 compatibility
-            provider = WebSocketProvider(
-                POLYGON_RPC_WSS,
-                websocket_kwargs={'max_size': 2**20}  # 1MB max message size
-            )
-            await provider.connect()
+            # Convert WebSocket URL to HTTP URL
+            http_url = POLYGON_RPC_WSS.replace('wss://', 'https://').replace('ws://', 'http://')
+            
+            provider = HTTPProvider(http_url)
             self.w3 = Web3(provider)
             
             # Verify connection
