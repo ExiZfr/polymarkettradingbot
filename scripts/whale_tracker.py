@@ -28,7 +28,7 @@ from typing import Dict, Optional, List
 from datetime import datetime
 from dataclasses import dataclass, asdict
 from web3 import Web3
-from web3.providers import WebsocketProvider
+from web3.providers import WebSocketProvider
 
 # Configuration
 logging.basicConfig(
@@ -472,7 +472,7 @@ class WhaleTracker:
             logger.info(f"🔌 Connecting to Polygon...")
             logger.info(f"   RPC: {POLYGON_RPC_WSS[:50]}...")
             
-            provider = WebsocketProvider(POLYGON_RPC_WSS)
+            provider = WebSocketProvider(POLYGON_RPC_WSS)
             self.w3 = Web3(provider)
             
             # Verify connection
