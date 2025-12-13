@@ -640,9 +640,9 @@ class WhaleTracker:
                     if current_block > last_block:
                         # Get logs using eth.get_logs
                         logs = self.w3.eth.get_logs({
-                            'address': CTF_EXCHANGE_ADDRESS,
-                            'fromBlock': hex(last_block + 1),
-                            'toBlock': hex(current_block),
+                            'address': Web3.to_checksum_address(CTF_EXCHANGE_ADDRESS),
+                            'fromBlock': last_block + 1,
+                            'toBlock': current_block,
                             'topics': [event_signature]
                         })
                         
