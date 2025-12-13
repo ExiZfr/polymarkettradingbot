@@ -68,11 +68,11 @@ NODE_ENV=production npm run build
 echo "✅ Build terminé"
 echo ""
 
-# 7. START NOUVEAU SYSTÈME SUR PORT 3000
+# 7. START NOUVEAU SYSTÈME SUR PORT 3001
 echo "🚀 [7/7] Démarrage nouveau système..."
 
-# IMPORTANT: Démarrer sur port 3000 (pas 3001)
-PORT=3000 pm2 start npm --name polygraalx -- start
+# IMPORTANT: Démarrer sur port 3001 (port utilisé par l'utilisateur)
+PORT=3001 pm2 start npm --name polygraalx -- start
 
 # Démarrer services complémentaires
 pm2 start scripts/hyper-listener.js --name polylistener 2>/dev/null || true
@@ -90,16 +90,16 @@ echo ""
 echo "📊 Process actifs:"
 pm2 list
 echo ""
-echo "🔍 Vérification port 3000:"
+echo "🔍 Vérification port 3001:"
 sleep 2
-curl -s http://localhost:3000/dashboard/radar | grep -o "Whale Radar v2.0\|PolyRadar" || echo "Page non accessible"
+curl -s http://localhost:3001/dashboard/radar | grep -o "Whale Radar v2.0\|PolyRadar" || echo "Page non accessible"
 echo ""
 echo "📝 Logs polygraalx (10 lignes):"
 pm2 logs polygraalx --lines 10 --nostream
 echo ""
 echo "=========================================="
 echo "🌐 ACCÈS:"
-echo "   http://votre-serveur:3000/dashboard/radar"
+echo "   http://votre-serveur:3001/dashboard/radar"
 echo ""
 echo "   FAITES CTRL+SHIFT+R (hard refresh)"
 echo "=========================================="

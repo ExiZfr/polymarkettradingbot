@@ -204,9 +204,10 @@ jobs:
             # Show status
             pm2 status
             
-            echo "========================================"
+            echo "========================================
+"
             echo "✅ DEPLOYMENT SUCCESSFUL"
-            echo "🌐 Main App: polygraalx (port 3000)"
+            echo "🌐 Main App: polygraalx (port 3001)"
             echo "📡 Listener: polylistener"
             echo "🎯 Sniper: polysniper"
             echo "🐋 Whale Tracker: whale-tracker (NEW v2.0)"
