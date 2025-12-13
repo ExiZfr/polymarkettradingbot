@@ -211,7 +211,7 @@ export default function RadarPage() {
                                 <span className="text-xs text-muted-foreground">Total Volume</span>
                             </div>
                             <p className="text-2xl font-bold text-foreground">
-                                ${Math.round(analytics.totalVolume).toLocaleString()}
+                                ${Math.round(analytics.totalVolume || 0).toLocaleString()}
                             </p>
                         </motion.div>
 
@@ -226,7 +226,7 @@ export default function RadarPage() {
                                 <span className="text-xs text-muted-foreground">Avg Trade</span>
                             </div>
                             <p className="text-2xl font-bold text-foreground">
-                                ${Math.round(analytics.avgTradeSize).toLocaleString()}
+                                ${Math.round(analytics.avgTradeSize || 0).toLocaleString()}
                             </p>
                         </motion.div>
                     </div>
@@ -375,7 +375,7 @@ export default function RadarPage() {
                                                     </span>
                                                 </div>
                                                 <span className="font-bold text-foreground">
-                                                    ${tx.amount.toLocaleString()}
+                                                    ${(tx.amount || 0).toLocaleString()}
                                                 </span>
                                             </div>
                                         </div>
@@ -464,7 +464,7 @@ export default function RadarPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <h3 className="text-sm text-muted-foreground mb-1">Amount</h3>
-                                    <p className="font-bold text-lg">${selectedTx.amount.toLocaleString()}</p>
+                                    <p className="font-bold text-lg">${(selectedTx.amount || 0).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <h3 className="text-sm text-muted-foreground mb-1">Outcome</h3>
