@@ -472,12 +472,17 @@ class WhaleTracker:
             logger.info(f"🔌 Connecting to Polygon...")
             logger.info(f"   RPC: {POLYGON_RPC_WSS[:50]}...")
             
-            provider = WebSocketProvider(POLYGON_RPC_WSS)
+            # Web3.py v7 compatibility
+            provider = WebSocketProvider(
+                POLYGON_RPC_WSS,
+                websocket_kwargs={'max_size': 2**20}  # 1MB max message size
+            )
+            await provider.connect()
             self.w3 = Web3(provider)
             
             # Verify connection
-            if await asyncio.to_thread(self.w3.is_connected):
-                block = await asyncio.to_thread(self.w3.eth.block_number)
+            if self.w3.is_connected():
+                block = self.w3.eth.block_number
                 logger.info(f"✅ Connected to Polygon! Block: {block}")
                 return True
             else:
