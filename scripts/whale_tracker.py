@@ -624,23 +624,36 @@ class WhaleTracker:
                 abi=[self.order_filled_abi]
             )
             
-            event_filter = contract.events.OrderFilled.create_filter(fromBlock='latest')
+            # Web3.py v7: Poll for events using get_logs instead of filters
+            last_block = self.w3.eth.block_number
+            logger.info(f"📊 Starting from block {last_block}")
             
             while self.is_running:
                 try:
-                    # Get new events
-                    events = await asyncio.to_thread(event_filter.get_new_entries)
+                    # Get current block
+                    current_block = self.w3.eth.block_number
                     
-                    for event in events:
-                        transaction = await self.parse_transaction(event)
+                    # If new blocks, check for events
+                    if current_block > last_block:
+                        # Get events from last_block+1 to current_block
+                        events = contract.events.OrderFilled.get_logs(
+                            fromBlock=last_block + 1,
+                            toBlock=current_block
+                        )
                         
-                        if transaction:
-                            # Send to database
-                            success = await self.send_to_api(transaction)
+                        for event in events:
+                            transaction = await self.parse_transaction(event)
+                            
+                            if transaction:
+                                # Send to database
+                                success = await self.send_to_api(transaction)
                             
                             # Send to frontend console
                             log_msg = f"🐋 {transaction.wallet_tag} | ${transaction.amount:,.0f} {transaction.outcome} @ {transaction.price} | {transaction.market_question[:50]}..."
                             await self.send_log_to_console(log_msg, "INFO")
+                        
+                        # Update last processed block
+                        last_block = current_block
                     
                     # Poll every 2 seconds
                     await asyncio.sleep(2)
