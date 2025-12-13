@@ -254,6 +254,82 @@ model MarketCache {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+
   @@map("market_cache")
 }
 
+// ============================================================================
+// WHALE RADAR MODULE - Transaction Tracking & Intelligent Tagging
+// ============================================================================
+
+// Records every whale transaction detected on Polygon blockchain
+model WhaleTransaction {
+  id              String   @id @default(cuid())
+  
+  // Blockchain Data
+  txHash          String   @unique
+  blockNumber     Int
+  timestamp       DateTime
+  gasPrice        Float
+  
+  // Wallet Info
+  walletAddress   String
+  walletTag       String   // WINNER, LOOSER, INSIDER, SMART_MONEY, DUMB_MONEY, UNKNOWN
+  walletWinRate   Float?   // % historical win rate
+  walletTotalPnl  Float?   // Total PnL in USD
+  
+  // Transaction Details
+  marketId        String
+  marketQuestion  String
+  marketSlug      String   // For constructing Polymarket URLs
+  outcome         String   // YES, NO, or other
+  amount          Float    // Amount in USD
+  price           Float    // Exact price at order time
+  shares          Float    // Number of shares purchased
+  
+  // Metadata
+  createdAt       DateTime @default(now())
+  
+  // Relations
+  whale           WhaleProfile? @relation(fields: [walletAddress], references: [address])
+  
+  @@index([walletAddress, timestamp])
+  @@index([timestamp(sort: Desc)])
+  @@index([walletTag])
+  @@map("whale_transactions")
+}
+
+// Profile and metrics for each whale wallet
+model WhaleProfile {
+  id              String   @id @default(cuid())
+  address         String   @unique
+  
+  // Classification
+  currentTag      String   // Current calculated tag
+  tagHistory      Json     // Historical tags over time
+  
+  // Performance Metrics
+  totalTrades     Int      @default(0)
+  totalVolume     Float    @default(0)
+  totalPnl        Float    @default(0)
+  winRate         Float    @default(0)
+  avgPositionSize Float    @default(0)
+  
+  // Streaks
+  currentStreak   Int      @default(0)  // Positive = wins, negative = losses
+  maxWinStreak    Int      @default(0)
+  maxLossStreak   Int      @default(0)
+  
+  // Timing
+  firstSeen       DateTime @default(now())
+  lastSeen        DateTime @default(now())
+  lastUpdated     DateTime @updatedAt
+  
+  // Relations
+  transactions    WhaleTransaction[]
+  
+  @@index([currentTag])
+  @@index([totalPnl(sort: Desc)])
+  @@index([winRate(sort: Desc)])
+  @@map("whale_profiles")
+}

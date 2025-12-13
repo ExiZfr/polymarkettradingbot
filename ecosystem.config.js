@@ -21,8 +21,8 @@ module.exports = {
             }
         },
         {
-            name: "polyradar-whale-tracker",
-            script: "scripts/polyradar_safe_start.py",
+            name: "whale-tracker",
+            script: "scripts/whale_tracker.py",
             interpreter: "python3",
             cwd: process.cwd(),
             max_restarts: 10,
@@ -32,10 +32,14 @@ module.exports = {
             watch: false,
             max_memory_restart: "300M",
             env: {
-                PYTHONUNBUFFERED: "1"
+                PYTHONUNBUFFERED: "1",
+                POLYGON_RPC_WSS: process.env.POLYGON_RPC_WSS || "",
+                API_BASE_URL: "http://localhost:3000",
+                WHALE_TRACKER_MODE: process.env.WHALE_TRACKER_MODE || "simulation",
+                MIN_WHALE_AMOUNT: process.env.MIN_WHALE_AMOUNT || "1000"
             },
-            error_file: "logs/polyradar-error.log",
-            out_file: "logs/polyradar-out.log",
+            error_file: "logs/whale-tracker-error.log",
+            out_file: "logs/whale-tracker-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
