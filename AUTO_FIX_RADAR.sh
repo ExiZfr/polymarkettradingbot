@@ -52,7 +52,11 @@ echo ""
 # 4. INSTALLER DÉPENDANCES
 echo "📦 [4/7] Installation dépendances..."
 npm install --prefer-offline
-sudo apt-get install -y python3-pip python3-web3 python3-aiohttp python3-dotenv 2>/dev/null || true
+sudo apt-get install -y python3-pip 2>/dev/null || true
+
+# Force install Python packages with --break-system-packages
+pip3 install --break-system-packages web3 aiohttp python-dotenv 2>/dev/null || echo "pip3 install failed"
+
 echo "✅ Dépendances installées"
 echo ""
 
