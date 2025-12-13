@@ -18,12 +18,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          POLYGON_RPC_WSS: ${{ secrets.POLYGON_RPC_WSS }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: ${{ secrets.SSH_PORT }}
-          envs: GITHUB_TOKEN,DATABASE_URL
+          envs: GITHUB_TOKEN,DATABASE_URL,POLYGON_RPC_WSS
           script_stop: false
           debug: true
           script: |
@@ -72,6 +73,20 @@ jobs:
             update_env "SESSION_SECRET" "polygraalx_super_secret_session_key_2024"
             update_env "TELEGRAM_BOT_TOKEN" "8042171984:AAHQyOuxL47aDVtc41FKWfUCD3eMn7_0kp0"
             update_env "TELEGRAM_ADMIN_CHAT_ID" "7139453099"
+            
+            # Whale Tracker Configuration
+            update_env "WHALE_TRACKER_MODE" "production"
+            update_env "MIN_WHALE_AMOUNT" "5000"
+            update_env "API_BASE_URL" "http://localhost:3001"
+            
+            # Polygon RPC (if provided in secrets)
+            if [ -n "$POLYGON_RPC_WSS" ]; then
+                update_env "POLYGON_RPC_WSS" "$POLYGON_RPC_WSS"
+                echo "✅ POLYGON_RPC_WSS configured for production mode"
+            else
+                echo "⚠️ POLYGON_RPC_WSS not provided - will use simulation mode"
+                update_env "WHALE_TRACKER_MODE" "simulation"
+            fi
             
             echo "✅ Env vars updated (all tokens configured)"
             
@@ -177,25 +192,36 @@ jobs:
             echo "🎯 Starting sniper bot..."
             pm2 start scripts/polymarket_sniper.py --name polysniper --interpreter python3 --no-autorestart
             
-            # Start NEW Whale Tracker v2.0 (FORCE START)
-            echo "🐋 Starting NEW Whale Tracker v2.0..."
+            # Start NEW Whale Tracker v2.0 (PRODUCTION MODE - REAL BLOCKCHAIN DATA)
+            echo "🐋 Starting NEW Whale Tracker v2.0 in PRODUCTION MODE..."
             
             # Stop any existing whale-tracker
             pm2 stop whale-tracker 2>/dev/null || true
             pm2 delete whale-tracker 2>/dev/null || true
             
-            # FORCE START in SIMULATION mode (generates test data)
-            echo "🔄 Starting whale-tracker in SIMULATION mode..."
-            export WHALE_TRACKER_MODE=simulation
-            export API_BASE_URL=http://localhost:3001
-            export MIN_WHALE_AMOUNT=1000
+            # Configure environment for PRODUCTION mode
+            echo "🔄 Configuring production environment..."
             
+            # Add POLYGON_RPC_WSS to .env if not exists
+            if ! grep -q "^POLYGON_RPC_WSS=" .env; then
+                echo "⚠️ POLYGON_RPC_WSS not found in .env"
+                echo "💡 Add your Alchemy/Infura WebSocket URL to GitHub Secrets"
+                echo "📝 For now, falling back to simulation mode..."
+                export WHALE_TRACKER_MODE=simulation
+            else
+                echo "✅ POLYGON_RPC_WSS configured"
+                export WHALE_TRACKER_MODE=production
+            fi
+            
+            export API_BASE_URL=http://localhost:3001
+            export MIN_WHALE_AMOUNT=5000
+            
+            # START whale-tracker with configured mode
             pm2 start scripts/whale_tracker.py \
               --name whale-tracker \
               --interpreter python3 \
-              --env WHALE_TRACKER_MODE=simulation \
-              --env API_BASE_URL=http://localhost:3001 \
-              --env MIN_WHALE_AMOUNT=1000
+              --restart-delay 10000 \
+              --max-restarts 5
             
             # Wait for startup
             sleep 3
@@ -203,21 +229,10 @@ jobs:
             # Verify whale-tracker is running
             if pm2 describe whale-tracker > /dev/null 2>&1; then
                 echo "✅ whale-tracker started successfully"
-                
-                # Show first 20 lines of logs
-                echo "📝 Initial logs:"
                 pm2 logs whale-tracker --lines 20 --nostream || true
             else
                 echo "❌ whale-tracker failed to start!"
-                echo "🔍 Attempting manual diagnostics..."
-                
-                # Try to run script directly to see error
-                cd scripts
-                python3 whale_tracker.py &
-                TRACKER_PID=$!
-                sleep 2
-                kill $TRACKER_PID 2>/dev/null || true
-                cd ..
+                python3 scripts/whale_tracker.py 2>&1 | head -30 || true
             fi
             
             # Save PM2 config
