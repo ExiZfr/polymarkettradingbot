@@ -8,10 +8,10 @@ import { prisma } from '@/lib/prisma';
  */
 export async function GET(
     request: NextRequest,
-    { params }: { params: { address: string } }
+    { params }: { params: Promise<{ address: string }> }
 ) {
     try {
-        const { address } = params;
+        const { address } = await params;
 
         const whale = await prisma.whaleProfile.findUnique({
             where: { address },
