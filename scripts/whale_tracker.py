@@ -308,17 +308,19 @@ class WhaleTrackerV3:
                 outcome = random.choice(outcomes)
                 amount = random.randint(1000, 50000)
                 price = round(random.uniform(0.30, 0.70), 2)
+                # Generate unique tx_hash with timestamp to avoid collisions on restart
+                unique_id = f"{int(datetime.utcnow().timestamp() * 1000)}_{count}"
                 
                 transaction = WhaleTransaction(
                     wallet_address=f"0x{''.join(random.choices('0123456789abcdef', k=40))}",
                     wallet_tag=tag,
-                    market_id=f"market_{count}",
+                    market_id=f"market_{unique_id}",
                     market_question=market,
                     outcome=outcome,
                     amount=float(amount),
                     price=price,
                     timestamp=datetime.utcnow().isoformat() + 'Z',
-                    tx_hash=f"sim_{count}"
+                    tx_hash=f"sim_{unique_id}"  # Unique hash with timestamp
                 )
                 
                 await self.send_to_api(transaction)
