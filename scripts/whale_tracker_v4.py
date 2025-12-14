@@ -85,10 +85,14 @@ class WhaleTrackerV4:
                 if whale_trades:
                     await self.log(f"✅ Processing {len(whale_trades)} whale trades", "success")
                     
+                # Clean old processed trades (older than 5 minutes)
+                current_time = datetime.now().timestamp()
+                self.processed_trades = {k: v for k, v in self.processed_trades.items() if current_time - v < 300}
+                
                 for trade in whale_trades:
                     trade_id = trade.get('id', str(hash(json.dumps(trade, default=str))))
-                    if trade_id not in processed_trades:
-                        processed_trades.add(trade_id)
+                    if trade_id not in self.processed_trades:
+                        self.processed_trades[trade_id] = current_time
                         await self.process_trade(trade)
                 
             except aiohttp.ClientError as e:
