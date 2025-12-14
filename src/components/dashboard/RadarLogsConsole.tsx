@@ -196,10 +196,10 @@ export default function RadarLogsConsole() {
 
                                     <div className="text-muted-foreground text-[10px] mt-1">
                                         {tx.walletAddress.substring(0, 10)}...
-                                        {tx.walletWinRate !== undefined && (
+                                        {tx.walletWinRate !== undefined && tx.walletWinRate !== null && (
                                             <span className="ml-2">| WR: {(tx.walletWinRate * 100).toFixed(0)}%</span>
                                         )}
-                                        {tx.walletTotalPnl !== undefined && (
+                                        {tx.walletTotalPnl !== undefined && tx.walletTotalPnl !== null && (
                                             <span className="ml-2">| PnL: ${tx.walletTotalPnl.toLocaleString()}</span>
                                         )}
                                     </div>
