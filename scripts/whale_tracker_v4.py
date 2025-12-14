@@ -91,7 +91,11 @@ class WhaleTrackerV4:
                 self.processed_trades = {k: v for k, v in self.processed_trades.items() if current_time - v < 300}
                 
                 for trade in whale_trades:
-                    trade_id = trade.get('id', str(hash(json.dumps(trade, default=str))))
+                    # Generate unique ID from wallet + market (not just market ID!)
+                    wallet = trade.get('maker', trade.get('taker', 'unknown'))
+                    market_id = trade.get('asset_id', trade.get('market', ''))
+                    trade_id = f"{wallet}_{market_id}"
+                    
                     if trade_id not in self.processed_trades:
                         self.processed_trades[trade_id] = current_time
                         await self.process_trade(trade)
