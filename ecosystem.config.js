@@ -21,7 +21,7 @@ module.exports = {
             }
         },
         {
-            name: "whale-tracker",
+            name: "polyradar-whale-tracker",  // Fixed: was "whale-tracker", aligned with post-deploy.sh
             script: "scripts/whale_tracker.py",
             interpreter: "python3",
             cwd: process.cwd(),
