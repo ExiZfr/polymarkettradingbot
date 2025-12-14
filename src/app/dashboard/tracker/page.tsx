@@ -116,11 +116,19 @@ export default function TrackerPage() {
 
     const getTagConfig = (tag: string) => {
         const lowerTag = tag.toLowerCase();
-        if (lowerTag.includes('legend')) return { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: Trophy };
-        if (lowerTag.includes('shark')) return { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Anchor };
-        if (lowerTag.includes('dolphin')) return { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: Activity };
-        if (lowerTag.includes('sniper')) return { color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/20', icon: Target };
-        if (lowerTag.includes('degen')) return { color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: Skull };
+
+        // Smart Tags
+        if (lowerTag.includes('insider')) return { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: Users };
+        if (lowerTag.includes('smart')) return { color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20', icon: Zap };
+        if (lowerTag.includes('winner')) return { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: Trophy };
+        if (lowerTag.includes('dumb')) return { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: Skull };
+        if (lowerTag.includes('loser')) return { color: 'text-orange-600', bg: 'bg-orange-500/10', border: 'border-orange-500/20', icon: TrendingUp };
+
+        // Standard Volume Tags
+        if (lowerTag.includes('whale')) return { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Anchor };
+        if (lowerTag.includes('shark')) return { color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', icon: Activity };
+        if (lowerTag.includes('dolphin')) return { color: 'text-sky-300', bg: 'bg-sky-500/10', border: 'border-sky-500/20', icon: Target };
+
         return { color: 'text-gray-400', bg: 'bg-gray-500/10', border: 'border-gray-500/20', icon: Zap };
     };
 
@@ -216,11 +224,14 @@ export default function TrackerPage() {
                                     className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500/50 transition-colors"
                                 >
                                     <option value="">All Categories</option>
-                                    <option value="legend">👑 Whale Legend</option>
-                                    <option value="shark">🦈 Shark</option>
-                                    <option value="dolphin">🐬 Dolphin</option>
-                                    <option value="sniper">🎯 Sniper</option>
-                                    <option value="degen">💀 Degen</option>
+                                    <option value="insider">👁️ Insider (High WR + New)</option>
+                                    <option value="smart">🧠 Smart Money (High WR)</option>
+                                    <option value="winner">🏆 Winner (High PnL)</option>
+                                    <option value="dumb">🤡 Dumb Money</option>
+                                    <option value="loser">💀 Loser</option>
+                                    <option value="whale">🐋 Whale (> $100k)</option>
+                                    <option value="shark">🦈 Shark (> $20k)</option>
+                                    <option value="dolphin">🐬 Dolphin (> $5k)</option>
                                 </select>
                             </div>
 
