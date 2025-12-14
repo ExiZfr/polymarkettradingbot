@@ -75,11 +75,18 @@ class WhaleTrackerV3:
         logger.info("🔍 Polling Polymarket API for whale trades...")
         await self.send_log("🚀 Whale Tracker v3.0 started (PRODUCTION)", "INFO")
         
+        poll_count = 0
         while True:
             try:
+                poll_count += 1
+                logger.info(f"📡 Poll #{poll_count}: Fetching recent trades from Polymarket API...")
+                
                 # Fetch recent trades from Polymarket
                 trades = await self.fetch_recent_trades()
                 
+                logger.info(f"📊 Received {len(trades)} trades from API")
+                
+                whale_count = 0
                 for trade in trades:
                     # Skip if already processed
                     trade_id = trade.get('id', '')
@@ -90,15 +97,23 @@ class WhaleTrackerV3:
                     amount = float(trade.get('size', 0)) * float(trade.get('price', 0))
                     
                     if amount >= MIN_WHALE_AMOUNT:
+                        whale_count += 1
+                        logger.info(f"🐋 Whale detected! Amount: ${amount:,.0f}")
                         # Process whale trade
                         await self.process_whale_trade(trade)
                         processed_trades.add(trade_id)
+                
+                if whale_count > 0:
+                    logger.info(f"✅ Processed {whale_count} whale trades in this batch")
+                else:
+                    logger.info(f"⏭️  No whales detected (all trades < ${MIN_WHALE_AMOUNT:,.0f})")
                 
                 # Poll every 5 seconds
                 await asyncio.sleep(5)
                 
             except Exception as e:
-                logger.error(f"Error in production loop: {e}")
+                logger.error(f"❌ Error in production loop: {e}")
+                logger.exception(e)  # Print full traceback
                 await asyncio.sleep(10)
     
     async def fetch_recent_trades(self) -> List[dict]:
@@ -114,6 +129,8 @@ class WhaleTrackerV3:
                 if resp.status == 200:
                     data = await resp.json()
                     return data if isinstance(data, list) else []
+                else:
+                    logger.error(f"API returned status {resp.status}")
                 return []
                 
         except Exception as e:
@@ -137,14 +154,12 @@ class WhaleTrackerV3:
             # Fetch market details
             market = await self.get_market_details(market_id)
             question = market.get('question', 'Unknown Market')
-            slug = market.get('slug', market_id)  # Extract slug for Polymarket links
-            description = market.get('description', '')
             
             # Create transaction
             transaction = WhaleTransaction(
                 wallet_address=wallet,
                 wallet_tag=tag,
-                market_id=slug,  # Use slug instead of market_id for links
+                market_id=market_id,
                 market_question=question,
                 outcome=outcome,
                 amount=amount,
@@ -157,9 +172,8 @@ class WhaleTrackerV3:
             await self.send_to_api(transaction)
             
             # Log
-            logger.info(f"🐋 [PROD] {tag} | ${amount:,.0f} {outcome} @ {price:.2f}")
+            logger.info(f"🐋 {tag} | ${amount:,.0f} {outcome} @ {price:.2f}")
             logger.info(f"   Market: {question[:60]}...")
-            logger.info(f"   Slug: {slug}")
             
         except Exception as e:
             logger.error(f"Error processing trade: {e}")
