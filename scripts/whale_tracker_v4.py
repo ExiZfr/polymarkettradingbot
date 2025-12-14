@@ -145,6 +145,12 @@ class WhaleTrackerV4:
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
             value = size * price
+            
+            # DEBUG: Log first trade to see actual values
+            if not hasattr(self, '_debug_logged'):
+                print(f"[DEBUG] Trade example: size={size}, price={price}, value=${value:.2f}")
+                self._debug_logged = True
+            
             return value >= WHALE_THRESHOLD
         except (ValueError, TypeError):
             return False
