@@ -52,12 +52,25 @@ export default function RadarPage() {
     // Fetch transactions
     const fetchData = async () => {
         try {
+            // Add timestamp to prevent caching
+            const timestamp = Date.now();
             const url = filter
-                ? `/api/radar/transactions?limit=50&tag=${filter}`
-                : '/api/radar/transactions?limit=50';
+                ? `/api/radar/transactions?limit=50&tag=${filter}&_t=${timestamp}`
+                : `/api/radar/transactions?limit=50&_t=${timestamp}`;
 
-            const res = await fetch(url);
+            console.log('[RadarPage] Fetching data from:', url);
+            const res = await fetch(url, {
+                headers: {
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
+            });
             const data = await res.json();
+            console.log('[RadarPage] Received data:', {
+                count: data.transactions?.length || 0,
+                firstTx: data.transactions?.[0],
+                timestamp: new Date().toISOString()
+            });
 
             if (data.transactions) {
                 setTransactions(data.transactions);
@@ -111,11 +124,12 @@ export default function RadarPage() {
                 });
             }
         } catch (error) {
-            console.error('Error fetching radar data:', error);
+            console.error('[RadarPage] Error fetching radar data:', error);
         }
     };
 
     useEffect(() => {
+        console.log('[RadarPage] useEffect triggered, filter:', filter);
         fetchData();
         const interval = setInterval(fetchData, 10000); // Poll every 10s
         return () => clearInterval(interval);
