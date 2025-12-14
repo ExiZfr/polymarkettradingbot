@@ -17,7 +17,8 @@ export const formatTimestamp = (date: Date | string): string => {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false
+        hour12: false,
+        timeZone: 'UTC'
     });
 };
 
@@ -29,7 +30,8 @@ export const formatTime = (date: Date | string): string => {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false
+        hour12: false,
+        timeZone: 'UTC'
     });
 };
 
