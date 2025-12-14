@@ -122,27 +122,22 @@ class WhaleTrackerV4:
                     trades = []
                     for trade in trades_data:
                         try:
-                            # CRITICAL: Extract ALL fields from Data-API response
-                            # The Data-API returns: title, market, outcome, slug, etc.
-                            market_data = trade.get('market', {}) if isinstance(trade.get('market'), dict) else {}
-                            
+                            # Data-API structure
                             trades.append({
-                                'id': trade.get('transactionHash', trade.get('id', '')),
-                                'maker': trade.get('maker', trade.get('proxyWallet', '')),
-                                'taker': trade.get('taker', trade.get('proxyWallet', '')),
-                                'asset_id': trade.get('asset_id', trade.get('conditionId', '')),
-                                'market_id': market_data.get('id', '') or trade.get('marketId', ''),
+                                'id': trade.get('transactionHash', ''),
+                                'maker': trade.get('proxyWallet', ''),
+                                'taker': trade.get('proxyWallet', ''),  # proxyWallet is the trader
+                                'asset_id': trade.get('conditionId', ''),
+                                'market': trade.get('slug', ''),
                                 'size': float(trade.get('size', 0)),
                                 'price': float(trade.get('price', 0)),
                                 'side': trade.get('side', 'BUY').upper(),
-                                'timestamp': trade.get('timestamp', trade.get('createdAt', '')),
-                                # EXTRACT from nested market object or top-level
-                                'market_question': market_data.get('question', trade.get('title', 'Unknown Market')),
-                                'market_slug': market_data.get('slug', trade.get('slug', '')),
-                                'market_description': market_data.get('description', trade.get('description', '')),
+                                'timestamp': trade.get('timestamp', ''),
+                                'market_question': trade.get('title', 'Unknown'),
+                                'market_slug': trade.get('slug', ''),
                                 'outcome': trade.get('outcome', '')
                             })
-                        except (ValueError, KeyError, TypeError) as e:
+                        except (ValueError, KeyError) as e:
                             # Skip malformed trades
                             continue
                     
@@ -170,22 +165,13 @@ class WhaleTrackerV4:
         try:
             # Extract trade data - taker is the trade initiator
             wallet = trade.get('taker', trade.get('maker', 'Unknown'))
-            market_id = trade.get('market_id', trade.get('asset_id', ''))
+            market_id = trade.get('asset_id', '')
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
             side = trade.get('side', 'UNKNOWN')
             
-            # PRIORITY 1: Use data already in trade object (from Data-API)
-            market_question = trade.get('market_question', '')
-            market_slug = trade.get('market_slug', '')
-            market_description = trade.get('market_description', '')
-            
-            # PRIORITY 2: Only enrich if data is missing
-            if not market_question or market_question == 'Unknown Market':
-                market_details = await self.get_full_market_details(market_id)
-                market_question = market_details.get('question', 'Unknown Market')
-                market_slug = market_details.get('slug', market_slug)
-                market_description = market_details.get('description', market_description)
+            # Get full market details
+            market = await self.get_full_market_details(market_id)
             
             # Get wallet profile
             profile = await self.get_wallet_profile(wallet)
@@ -205,9 +191,9 @@ class WhaleTrackerV4:
                 wallet_win_rate=profile.get('win_rate'),
                 wallet_pnl=profile.get('pnl'),
                 market_id=market_id,
-                market_question=market_question,
-                market_slug=market_slug,
-                outcome=trade.get('outcome', 'YES' if side.upper() == 'BUY' else 'NO'),
+                market_question=market.get('question', 'Unknown Market'),
+                market_slug=market.get('slug', ''),
+                outcome='YES' if side.upper() == 'BUY' else 'NO',
                 amount=size * price,
                 price=price,
                 timestamp=datetime.now(timezone.utc).isoformat(),
@@ -218,7 +204,7 @@ class WhaleTrackerV4:
             # Log with cluster info
             cluster_info = f" [Cluster: {cluster_name}]" if cluster_name else ""
             await self.log(
-                f"🐋 {tx.wallet_tag} | ${tx.amount:,.0f} {tx.outcome} @ {tx.price:.2f} | {market_question[:40]}{cluster_info}",
+                f"🐋 {tx.wallet_tag} | ${tx.amount:,.0f} {tx.outcome} @ {tx.price:.2f}{cluster_info}",
                 "success"
             )
             await self.send_transaction(tx)
@@ -307,24 +293,45 @@ class WhaleTrackerV4:
         return {}
     
     def calculate_tag(self, profile: dict) -> str:
-        """Calculate wallet tag based on trading history"""
-        pnl = profile.get('pnl', 0) or 0
-        volume = profile.get('volume', 0) or 0
-        win_rate = profile.get('win_rate', 0) or 0
-        
-        # Tier based on PnL and volume
-        if pnl > 100000 or volume > 1000000:
-            return "🐋 Whale Legend"
-        elif pnl > 50000 or volume > 500000:
+        """Calculate wallet tag based on smart trading history"""
+        # Ensure we have floats/ints
+        try:
+            pnl = float(profile.get('profit', 0) or profile.get('pnl', 0) or 0)
+            volume = float(profile.get('volume', 0) or 0)
+            win_rate = float(profile.get('winSplit', 0) or profile.get('win_rate', 0) or 0) 
+            trade_count = int(profile.get('tradeCount', 0) or 0)
+        except (ValueError, TypeError):
+            return "Unknown"
+
+        # 1. INSIDER 👁️ (New account, high success, decent volume)
+        if 0 < trade_count <= 10 and win_rate >= 0.8 and volume > 100:
+            return "👁️ Insider"
+            
+        # 2. SMART MONEY 🧠 (Proven success over time)
+        if win_rate >= 0.60 and volume > 5000:
+            return "🧠 Smart Money"
+            
+        # 3. WINNER 🏆 (High absolute profit)
+        if pnl > 10000:
+            return "🏆 Winner"
+            
+        # 4. DUMB MONEY 🤡 (High volume but losing)
+        if volume > 5000 and (win_rate < 0.40 or pnl < -5000):
+            return "🤡 Dumb Money"
+            
+        # 5. LOSER 💀 (Significant losses)
+        if pnl < -2000:
+            return "💀 Loser"
+            
+        # 6. WHALE 🐋 (Just high volume fallback)
+        if volume > 100000:
+            return "🐋 Whale"
+        elif volume > 20000:
             return "🦈 Shark"
-        elif pnl > 10000 or volume > 100000:
+        elif volume > 5000:
             return "🐬 Dolphin"
-        elif win_rate > 0.7:
-            return "🎯 Sniper"
-        elif pnl < -10000:
-            return "💸 Degen"
-        else:
-            return "🐟 Fish"
+            
+        return "🐟 Fish"
     
     async def send_transaction(self, tx: WhaleTransaction):
         """Send transaction to dashboard API"""

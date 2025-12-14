@@ -320,23 +320,28 @@ export default function TrackerPage() {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             onClick={() => setSelectedTx(tx)}
-                                            className="group cursor-pointer bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07] hover:shadow-lg hover:shadow-blue-500/10 rounded-2xl p-5 transition-all relative overflow-hidden"
+                                            className="group cursor-pointer bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07] hover:shadow-lg hover:shadow-blue-500/10 rounded-2xl p-4 md:p-5 transition-all relative overflow-hidden"
                                         >
                                             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between relative z-10">
 
-                                                {/* Left: Wallet */}
-                                                <div className="flex items-center gap-4 min-w-[200px]">
-                                                    <div className={`p-3 rounded-xl ${tagConfig.bg} ${tagConfig.border} border`}>
+                                                {/* Left: Wallet & Tag */}
+                                                <div className="flex items-center gap-4 w-full md:w-auto md:min-w-[200px]">
+                                                    <div className={`p-3 rounded-xl ${tagConfig.bg} ${tagConfig.border} border shrink-0`}>
                                                         <TagIcon className={`w-6 h-6 ${tagConfig.color}`} />
                                                     </div>
-                                                    <div>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className={`text-sm font-bold ${tagConfig.color}`}>{tx.wallet_tag}</span>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2 flex-wrap">
+                                                            <span className={`text-sm font-bold ${tagConfig.color} truncate`}>{tx.wallet_tag}</span>
+                                                            {tx.wallet_win_rate && (
+                                                                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-300 whitespace-nowrap">
+                                                                    {(tx.wallet_win_rate * 100).toFixed(0)}% WR
+                                                                </span>
+                                                            )}
                                                         </div>
                                                         <div className="flex items-center gap-2 mt-1">
                                                             <button
                                                                 onClick={(e) => copyAddress(e, tx.wallet_address)}
-                                                                className="flex items-center gap-1 text-xs text-gray-400 font-mono hover:text-white transition-colors"
+                                                                className="flex items-center gap-1 text-xs text-gray-400 font-mono hover:text-white transition-colors truncate"
                                                             >
                                                                 {tx.wallet_address.slice(0, 6)}...{tx.wallet_address.slice(-4)}
                                                                 {copied === tx.wallet_address ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
@@ -346,25 +351,27 @@ export default function TrackerPage() {
                                                 </div>
 
                                                 {/* Middle: Market Info */}
-                                                <div className="flex-1">
-                                                    <h3 className="text-sm font-medium text-gray-200 line-clamp-1 mb-2 group-hover:text-blue-300 transition-colors">
+                                                <div className="flex-1 w-full md:w-auto min-w-0">
+                                                    <h3 className="text-sm font-medium text-gray-200 line-clamp-2 mb-2 group-hover:text-blue-300 transition-colors">
                                                         {tx.market_question || "Unknown Market"}
                                                     </h3>
-                                                    <div className="flex items-center gap-3">
+                                                    <div className="flex flex-wrap items-center gap-y-2 gap-x-3">
                                                         <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border border-white/5 ${outcomeBg} ${outcomeColor}`}>
                                                             {tx.outcome}
                                                         </span>
-                                                        <span className="text-sm text-gray-500">at</span>
-                                                        <span className="text-sm font-bold text-white">{(tx.price * 100).toFixed(1)}¢</span>
-                                                        <span className="w-1 h-1 rounded-full bg-gray-700" />
-                                                        <span className="text-sm font-bold text-blue-400 shadow-blue-500/20 drop-shadow-sm">
-                                                            {formatAmount(tx.amount)}
-                                                        </span>
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-sm text-gray-500">@</span>
+                                                            <span className="text-sm font-bold text-white">{(tx.price * 100).toFixed(1)}¢</span>
+                                                            <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                                            <span className="text-sm font-bold text-blue-400 shadow-blue-500/20 drop-shadow-sm">
+                                                                {formatAmount(tx.amount)}
+                                                            </span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
                                                 {/* Right: Time & Chevron */}
-                                                <div className="flex items-center gap-4 min-w-[100px] justify-end">
+                                                <div className="flex items-center gap-4 w-full md:w-auto md:min-w-[100px] justify-between md:justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t border-white/5 md:border-0">
                                                     <div className="text-right">
                                                         <span className="text-xs text-gray-500 font-mono block">{formatTimeAgo(tx.timestamp)}</span>
                                                     </div>
