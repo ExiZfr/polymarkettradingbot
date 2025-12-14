@@ -137,12 +137,14 @@ class WhaleTrackerV3:
             # Fetch market details
             market = await self.get_market_details(market_id)
             question = market.get('question', 'Unknown Market')
+            slug = market.get('slug', market_id)  # Extract slug for Polymarket links
+            description = market.get('description', '')
             
             # Create transaction
             transaction = WhaleTransaction(
                 wallet_address=wallet,
                 wallet_tag=tag,
-                market_id=market_id,
+                market_id=slug,  # Use slug instead of market_id for links
                 market_question=question,
                 outcome=outcome,
                 amount=amount,
@@ -155,8 +157,9 @@ class WhaleTrackerV3:
             await self.send_to_api(transaction)
             
             # Log
-            logger.info(f"🐋 {tag} | ${amount:,.0f} {outcome} @ {price:.2f}")
+            logger.info(f"🐋 [PROD] {tag} | ${amount:,.0f} {outcome} @ {price:.2f}")
             logger.info(f"   Market: {question[:60]}...")
+            logger.info(f"   Slug: {slug}")
             
         except Exception as e:
             logger.error(f"Error processing trade: {e}")
