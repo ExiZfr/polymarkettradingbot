@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbo",
     "build": "next build",
-    "start": "next start -p 3001",
+    "start": "NODE_ENV=production next start -p 3001",
     "lint": "eslint",
     "listener": "node scripts/hyper-listener.js"
   },
