@@ -229,6 +229,8 @@ class WhaleTrackerV3:
         try:
             url = f"{API_BASE_URL}/api/radar/transactions"
             
+            logger.info(f"📤 Sending transaction to: {url}")
+            
             # Format data to match API expectations
             data = {
                 "tx_hash": transaction.tx_hash,
@@ -246,13 +248,21 @@ class WhaleTrackerV3:
                 "shares": transaction.amount / transaction.price if transaction.price > 0 else 0
             }
             
-            async with self.session.post(url, json=data, timeout=5) as resp:
-                if resp.status != 200:
-                    error_text = await resp.text()
-                    logger.error(f"API error: {resp.status} - {error_text[:100]}")
+            logger.info(f"📦 Payload: tx_hash={data['tx_hash']}, amount=${data['amount']:.0f}")
+            
+            async with self.session.post(url, json=data, timeout=10) as resp:
+                response_text = await resp.text()
+                if resp.status == 200 or resp.status == 201:
+                    logger.info(f"✅ API success ({resp.status}): {response_text[:100]}")
+                else:
+                    logger.error(f"❌ API error ({resp.status}): {response_text[:200]}")
                     
+        except aiohttp.ClientConnectorError as e:
+            logger.error(f"🔌 Connection error to {API_BASE_URL}: {e}")
+        except asyncio.TimeoutError:
+            logger.error(f"⏱️ Timeout connecting to {API_BASE_URL}")
         except Exception as e:
-            logger.error(f"Failed to send to API: {e}")
+            logger.error(f"💥 Failed to send to API: {type(e).__name__}: {e}")
 
     
     async def send_log(self, message: str, level: str):
