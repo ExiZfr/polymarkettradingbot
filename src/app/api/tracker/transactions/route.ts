@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
     try {
         const tx: WhaleTransactionInput = await request.json();
 
-        // Create transaction in database
+        // FIRST: Ensure whale profile exists (foreign key requirement)
+        await updateWhaleProfile(tx.wallet_address, tx);
+
+        // THEN: Create transaction in database
         const transaction = await prisma.whaleTransaction.create({
             data: {
                 txHash: tx.tx_hash,
@@ -50,9 +53,6 @@ export async function POST(request: NextRequest) {
                 // clusterName: tx.cluster_name || null // TODO: Uncomment after running migration
             }
         });
-
-        // Update whale profile
-        await updateWhaleProfile(tx.wallet_address, tx);
 
         return NextResponse.json({
             success: true,
