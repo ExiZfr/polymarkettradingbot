@@ -10,7 +10,9 @@ import {
     Activity,
     Filter,
     CheckCircle2,
-    ExternalLink
+    ExternalLink,
+    Copy,
+    X
 } from 'lucide-react';
 import RadarLogsConsole from '@/components/dashboard/RadarLogsConsole';
 
@@ -454,84 +456,157 @@ export default function RadarPage() {
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Transaction Details Modal */}
             {selectedTx && (
                 <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                    className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
                     onClick={() => setSelectedTx(null)}
                 >
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="bg-card rounded-xl border border-border max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6"
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        className="bg-[#0A0C10] rounded-2xl border border-white/10 w-full max-w-2xl overflow-hidden shadow-2xl relative"
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <h2 className="text-2xl font-bold mb-4">Transaction Details</h2>
+                        {/* Background Gradients */}
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+                        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-                        <div className="space-y-4">
+                        {/* Header */}
+                        <div className="relative p-6 border-b border-white/5 flex justify-between items-start gap-4">
                             <div>
-                                <h3 className="text-sm text-muted-foreground mb-1">Market</h3>
-                                <p className="font-semibold">{selectedTx.marketQuestion}</p>
-                                <a
-                                    href={`https://polymarket.com/event/${selectedTx.marketSlug}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline mt-2"
-                                >
-                                    <ExternalLink size={14} />
-                                    View on Polymarket
-                                </a>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <h3 className="text-sm text-muted-foreground mb-1">Amount</h3>
-                                    <p className="font-bold text-lg">${(selectedTx.amount ?? 0).toLocaleString()}</p>
+                                <h2 className="text-xl font-bold text-white leading-tight mb-2">
+                                    {selectedTx.marketQuestion}
+                                </h2>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <span className="font-mono text-xs bg-white/5 px-2 py-1 rounded border border-white/10">
+                                        ID: {selectedTx.marketSlug.slice(0, 10)}...
+                                    </span>
+                                    <span>•</span>
+                                    <span>{formatTimeAgo(new Date(selectedTx.timestamp))}</span>
                                 </div>
-                                <div>
-                                    <h3 className="text-sm text-muted-foreground mb-1">Outcome</h3>
-                                    <p className={`font-bold text-lg ${selectedTx.outcome === 'YES' ? 'text-green-500' : 'text-red-500'}`}>
-                                        {selectedTx.outcome ?? 'N/A'} @ {((selectedTx.price ?? 0) * 100).toFixed(0)}¢
+                            </div>
+                            <button
+                                onClick={() => setSelectedTx(null)}
+                                className="p-2 hover:bg-white/5 rounded-lg transition-colors text-muted-foreground hover:text-white"
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-6 relative">
+                            {/* Key Stats Grid */}
+                            <div className="grid grid-cols-3 gap-4">
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                        <DollarSign size={14} className="text-green-500" />
+                                        <span>Amount</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-white font-mono">
+                                        ${selectedTx.amount.toLocaleString()}
+                                    </p>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                        <TrendingUp size={14} className={selectedTx.outcome === 'YES' ? 'text-green-500' : 'text-red-500'} />
+                                        <span>Outcome</span>
+                                    </div>
+                                    <div className="flex items-baseline gap-2">
+                                        <span className={`text-2xl font-bold ${selectedTx.outcome === 'YES' ? 'text-green-500' : 'text-red-500'}`}>
+                                            {selectedTx.outcome}
+                                        </span>
+                                        <span className="text-sm text-muted-foreground">
+                                            @ {(selectedTx.price * 100).toFixed(0)}¢
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-white/5 border border-white/5">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
+                                        <Activity size={14} className="text-blue-500" />
+                                        <span>Estimated Shares</span>
+                                    </div>
+                                    <p className="text-2xl font-bold text-white font-mono">
+                                        {Math.floor(selectedTx.amount / selectedTx.price).toLocaleString()}
                                     </p>
                                 </div>
                             </div>
 
-                            <div>
-                                <h3 className="text-sm text-muted-foreground mb-1">Wallet</h3>
-                                <code className="text-xs bg-muted px-2 py-1 rounded">{selectedTx.walletAddress}</code>
-                                <div className="mt-2">
-                                    <span className={`px-2 py-1 rounded text-xs font-bold border ${getCategoryColor(selectedTx.walletTag)}`}>
+                            {/* Wallet Info */}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-transparent border border-white/5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <Users size={16} className="text-purple-400" />
+                                        <h3 className="font-semibold text-white">Whale Details</h3>
+                                    </div>
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getCategoryColor(selectedTx.walletTag)}`}>
                                         {selectedTx.walletTag}
                                     </span>
                                 </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <div className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/5 group">
+                                        <div className="flex items-center gap-2 text-muted-foreground">
+                                            <span className="text-xs uppercase tracking-wider">Address</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <code className="text-sm text-blue-400 font-mono">
+                                                {selectedTx.walletAddress}
+                                            </code>
+                                            <button
+                                                onClick={() => navigator.clipboard.writeText(selectedTx.walletAddress)}
+                                                className="p-1.5 hover:bg-white/10 rounded-md transition-colors text-muted-foreground hover:text-white"
+                                                title="Copy Address"
+                                            >
+                                                <Copy size={14} />
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {(selectedTx.walletWinRate != null || selectedTx.walletTotalPnl != null) && (
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center">
+                                                <span className="text-xs text-muted-foreground">Win Rate</span>
+                                                <span className="font-bold text-white bg-green-500/10 text-green-500 px-2 py-0.5 rounded text-sm">
+                                                    {((selectedTx.walletWinRate ?? 0) * 100).toFixed(1)}%
+                                                </span>
+                                            </div>
+                                            <div className="p-3 rounded-lg bg-black/20 border border-white/5 flex justify-between items-center">
+                                                <span className="text-xs text-muted-foreground">Profit/Loss</span>
+                                                <span className={`font-bold font-mono text-sm ${(selectedTx.walletTotalPnl ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                    ${(selectedTx.walletTotalPnl ?? 0).toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
-                            {selectedTx.walletWinRate != null && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <h3 className="text-sm text-muted-foreground mb-1">Win Rate</h3>
-                                        <p className="font-semibold">{((selectedTx.walletWinRate ?? 0) * 100).toFixed(1)}%</p>
-                                    </div>
-                                    <div>
-                                        <h3 className="text-sm text-muted-foreground mb-1">Total PnL</h3>
-                                        <p className={`font-semibold ${(selectedTx.walletTotalPnl ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            ${(selectedTx.walletTotalPnl ?? 0).toLocaleString()}
-                                        </p>
+                            {/* Tx Hash & Actions */}
+                            <div className="flex flex-col gap-4 pt-4 border-t border-white/5">
+                                <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
+                                    <span>Transaction Hash</span>
+                                    <div className="flex items-center gap-2">
+                                        <code className="font-mono text-xs">{selectedTx.txHash || selectedTx.id}</code>
+                                        <button
+                                            onClick={() => navigator.clipboard.writeText(selectedTx.txHash || selectedTx.id)}
+                                            className="hover:text-white transition-colors"
+                                        >
+                                            <Copy size={12} />
+                                        </button>
                                     </div>
                                 </div>
-                            )}
 
-                            <div>
-                                <h3 className="text-sm text-muted-foreground mb-1">Transaction Hash</h3>
-                                <code className="text-xs bg-muted px-2 py-1 rounded break-all">{selectedTx.txHash}</code>
+                                <a
+                                    href={`https://polymarket.com/event/${selectedTx.marketSlug}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-blue-500/20"
+                                >
+                                    <ExternalLink size={18} />
+                                    View on Polymarket
+                                </a>
                             </div>
-
-                            <button
-                                onClick={() => setSelectedTx(null)}
-                                className="w-full mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition"
-                            >
-                                Close
-                            </button>
                         </div>
                     </motion.div>
                 </div>
