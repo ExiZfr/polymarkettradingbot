@@ -229,9 +229,9 @@ export default function TrackerPage() {
                                     <option value="winner">🏆 Winner (High PnL)</option>
                                     <option value="dumb">🤡 Dumb Money</option>
                                     <option value="loser">💀 Loser</option>
-                                    <option value="whale">🐋 Whale (> $100k)</option>
-                                    <option value="shark">🦈 Shark (> $20k)</option>
-                                    <option value="dolphin">🐬 Dolphin (> $5k)</option>
+                                    <option value="whale">🐋 Whale (&gt; $100k)</option>
+                                    <option value="shark">🦈 Shark (&gt; $20k)</option>
+                                    <option value="dolphin">🐬 Dolphin (&gt; $5k)</option>
                                 </select>
                             </div>
 
