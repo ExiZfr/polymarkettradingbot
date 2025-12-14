@@ -124,7 +124,7 @@ class WhaleTrackerV4:
                                         'id': market.get('id', ''),
                                         'asset_id': market.get('conditionId', ''),
                                         'market': market.get('conditionId', ''),
-                                        'size': volume_24h / 100,  # Approximate trade size
+                                        'size': volume_24h,  # Use full 24h volume as "trade size"
                                         'price': float(market.get('bestBid', 0.5)),
                                         'side': 'buy',
                                         'maker': f"0x{market.get('id', 'unknown')[:40]}",
