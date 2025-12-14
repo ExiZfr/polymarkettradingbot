@@ -7,7 +7,7 @@ async function cleanSimulationData() {
 
     try {
         // Delete all transactions where tx_hash starts with "sim_"
-        const result = await prisma.radarTransaction.deleteMany({
+        const result = await prisma.whaleTransaction.deleteMany({
             where: {
                 txHash: {
                     startsWith: 'sim_'
