@@ -190,6 +190,10 @@ class WhaleTrackerV4:
             # Detect wallet clustering
             cluster_name = await self.detect_cluster(wallet, market_id, trade)
             
+            # Generate unique tx_hash from wallet + market + timestamp
+            unique_str = f"{wallet}_{market_id}_{datetime.now().timestamp()}"
+            tx_hash = f"0x{hash(unique_str) & 0xFFFFFFFFFFFFFFFF:016x}"
+            
             # Create transaction
             tx = WhaleTransaction(
                 wallet_address=wallet,
@@ -203,7 +207,7 @@ class WhaleTrackerV4:
                 amount=size * price,
                 price=price,
                 timestamp=datetime.now(timezone.utc).isoformat(),
-                tx_hash=trade.get('id', f"tx_{int(datetime.now().timestamp())}"),
+                tx_hash=tx_hash,
                 cluster_name=cluster_name
             )
             
