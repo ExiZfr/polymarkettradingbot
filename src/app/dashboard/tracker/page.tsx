@@ -18,8 +18,10 @@ import {
     Zap,
     Skull,
     Anchor,
-    Search
+    Search,
+    ArrowRight
 } from 'lucide-react';
+import TransactionDetails from '@/components/tracker/TransactionDetails';
 
 interface WhaleTransaction {
     wallet_address: string;
@@ -64,11 +66,13 @@ export default function TrackerPage() {
     const [copied, setCopied] = useState<string | null>(null);
     const [showLogs, setShowLogs] = useState(false);
     const [filter, setFilter] = useState({ tag: '', minAmount: 0 });
+    const [selectedTx, setSelectedTx] = useState<WhaleTransaction | null>(null);
 
     const fetchData = useCallback(async () => {
         try {
+            // Fetch more transactions to allow for better client-side filtering
             const [txRes, statsRes, logsRes] = await Promise.all([
-                fetch('/api/tracker/transactions?limit=100'),
+                fetch('/api/tracker/transactions?limit=200'),
                 fetch('/api/tracker/stats'),
                 fetch('/api/tracker/logs?limit=50')
             ]);
@@ -90,7 +94,8 @@ export default function TrackerPage() {
         return () => clearInterval(interval);
     }, [fetchData]);
 
-    const copyAddress = (address: string) => {
+    const copyAddress = (e: React.MouseEvent, address: string) => {
+        e.stopPropagation();
         navigator.clipboard.writeText(address);
         setCopied(address);
         setTimeout(() => setCopied(null), 2000);
@@ -141,8 +146,8 @@ export default function TrackerPage() {
                     <button
                         onClick={() => setShowLogs(!showLogs)}
                         className={`p-3 rounded-xl border transition-all ${showLogs
-                                ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                                : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'
+                            ? 'bg-purple-500/20 border-purple-500/50 text-purple-300 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                            : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'
                             }`}
                         title="Toggle Full Logs"
                     >
@@ -163,14 +168,14 @@ export default function TrackerPage() {
 
                 {/* Left Column: Stats & Filters & Leaderboard (1 Col) */}
                 <div className="xl:col-span-1 space-y-6">
-                    {/* Stats Grid - Vertical in Sidebar */}
+                    {/* Stats Grid */}
                     <div className="grid grid-cols-2 gap-3">
                         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4">
                             <div className="flex items-center gap-2 mb-2">
                                 <Activity className="w-4 h-4 text-purple-400" />
                                 <span className="text-xs text-gray-400">Tx Count</span>
                             </div>
-                            <p className="text-2xl font-bold">{stats?.totalTransactions || 0}</p>
+                            <p className="text-2xl font-bold">{stats?.totalTransactions.toLocaleString() || 0}</p>
                         </div>
                         <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4">
                             <div className="flex items-center gap-2 mb-2">
@@ -227,8 +232,8 @@ export default function TrackerPage() {
                                             key={amt}
                                             onClick={() => setFilter({ ...filter, minAmount: amt })}
                                             className={`px-2 py-2 rounded-lg text-xs font-medium transition-all ${filter.minAmount === amt
-                                                    ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
-                                                    : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                                                ? 'bg-blue-500 text-white shadow-lg shadow-blue-500/20'
+                                                : 'bg-white/5 text-gray-400 hover:bg-white/10'
                                                 }`}
                                         >
                                             {amt === 0 ? 'Any' : `$${amt / 1000}k`}
@@ -248,7 +253,6 @@ export default function TrackerPage() {
                         <div className="space-y-3">
                             {stats?.topWhales?.slice(0, 5).map((whale, idx) => {
                                 const config = getTagConfig(whale.tag);
-                                const Icon = config.icon;
                                 return (
                                     <div key={whale.address} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5 hover:border-white/10 transition-colors">
                                         <div className="flex items-center gap-3">
@@ -302,28 +306,25 @@ export default function TrackerPage() {
                                     <p className="text-gray-500 mt-2">Waiting for new transactions matching your filters...</p>
                                 </div>
                             ) : (
-                                filteredTransactions.map((tx, index) => {
+                                filteredTransactions.map((tx) => {
                                     const tagConfig = getTagConfig(tx.wallet_tag);
                                     const TagIcon = tagConfig.icon;
-                                    const isBuy = tx.outcome.toUpperCase() === 'YES'; // Just for color assumption (YES usually green in UI, but truly depends on market context)
-                                    // Actually outcome is YES/NO, position is implied. Let's color YES green, NO red.
-                                    const outcomeColor = tx.outcome === 'YES' ? 'text-green-400' : 'text-red-400';
-                                    const outcomeBg = tx.outcome === 'YES' ? 'bg-green-500/10' : 'bg-red-500/10';
+                                    const outcomeColor = tx.outcome === 'YES' ? 'text-green-400' : tx.outcome === 'NO' ? 'text-red-400' : 'text-blue-400';
+                                    const outcomeBg = tx.outcome === 'YES' ? 'bg-green-500/10' : tx.outcome === 'NO' ? 'bg-red-500/10' : 'bg-blue-500/10';
 
                                     return (
                                         <motion.div
                                             key={tx.tx_hash}
+                                            layoutId={tx.tx_hash}
                                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95 }}
-                                            className="group bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:bg-white/[0.07] rounded-2xl p-5 transition-all relative overflow-hidden"
+                                            onClick={() => setSelectedTx(tx)}
+                                            className="group cursor-pointer bg-white/5 backdrop-blur-sm border border-white/10 hover:border-blue-500/30 hover:bg-white/[0.07] hover:shadow-lg hover:shadow-blue-500/10 rounded-2xl p-5 transition-all relative overflow-hidden"
                                         >
-                                            {/* Glow Effect */}
-                                            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-blue-500/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between relative z-10">
 
-                                            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-
-                                                {/* Left: Wallet & Tag */}
+                                                {/* Left: Wallet */}
                                                 <div className="flex items-center gap-4 min-w-[200px]">
                                                     <div className={`p-3 rounded-xl ${tagConfig.bg} ${tagConfig.border} border`}>
                                                         <TagIcon className={`w-6 h-6 ${tagConfig.color}`} />
@@ -331,54 +332,45 @@ export default function TrackerPage() {
                                                     <div>
                                                         <div className="flex items-center gap-2">
                                                             <span className={`text-sm font-bold ${tagConfig.color}`}>{tx.wallet_tag}</span>
-                                                            {tx.wallet_win_rate && (
-                                                                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-gray-300">
-                                                                    {(tx.wallet_win_rate * 100).toFixed(0)}% WR
-                                                                </span>
-                                                            )}
                                                         </div>
-                                                        <button
-                                                            onClick={() => copyAddress(tx.wallet_address)}
-                                                            className="flex items-center gap-1.5 text-xs text-gray-400 font-mono mt-1 hover:text-white transition-colors"
-                                                        >
-                                                            {tx.wallet_address.slice(0, 6)}...{tx.wallet_address.slice(-4)}
-                                                            {copied === tx.wallet_address ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                                        </button>
+                                                        <div className="flex items-center gap-2 mt-1">
+                                                            <button
+                                                                onClick={(e) => copyAddress(e, tx.wallet_address)}
+                                                                className="flex items-center gap-1 text-xs text-gray-400 font-mono hover:text-white transition-colors"
+                                                            >
+                                                                {tx.wallet_address.slice(0, 6)}...{tx.wallet_address.slice(-4)}
+                                                                {copied === tx.wallet_address ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                {/* Middle: Market & Outcome */}
+                                                {/* Middle: Market Info */}
                                                 <div className="flex-1">
-                                                    <h3 className="text-sm font-medium text-gray-200 line-clamp-1 mb-2" title={tx.market_question}>
-                                                        {tx.market_question}
+                                                    <h3 className="text-sm font-medium text-gray-200 line-clamp-1 mb-2 group-hover:text-blue-300 transition-colors">
+                                                        {tx.market_question || "Unknown Market"}
                                                     </h3>
                                                     <div className="flex items-center gap-3">
                                                         <span className={`px-2.5 py-0.5 rounded-lg text-xs font-bold border border-white/5 ${outcomeBg} ${outcomeColor}`}>
                                                             {tx.outcome}
                                                         </span>
-                                                        <span className="text-sm text-gray-400">@</span>
+                                                        <span className="text-sm text-gray-500">at</span>
                                                         <span className="text-sm font-bold text-white">{(tx.price * 100).toFixed(1)}¢</span>
-                                                        <span className="w-1 h-1 rounded-full bg-gray-600" />
-                                                        <span className="text-sm font-bold text-blue-300 shadow-blue-500/20 drop-shadow-sm">
+                                                        <span className="w-1 h-1 rounded-full bg-gray-700" />
+                                                        <span className="text-sm font-bold text-blue-400 shadow-blue-500/20 drop-shadow-sm">
                                                             {formatAmount(tx.amount)}
                                                         </span>
                                                     </div>
                                                 </div>
 
-                                                {/* Right: Time & Action */}
-                                                <div className="flex flex-col items-end gap-2 min-w-[100px]">
-                                                    <span className="text-xs text-gray-500 font-mono">{formatTimeAgo(tx.timestamp)}</span>
-                                                    {tx.market_slug && (
-                                                        <a
-                                                            href={`https://polymarket.com/event/${tx.market_slug}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-medium text-gray-300 hover:text-white transition-all group-hover:border-white/20"
-                                                        >
-                                                            View
-                                                            <ExternalLink className="w-3 h-3" />
-                                                        </a>
-                                                    )}
+                                                {/* Right: Time & Chevron */}
+                                                <div className="flex items-center gap-4 min-w-[100px] justify-end">
+                                                    <div className="text-right">
+                                                        <span className="text-xs text-gray-500 font-mono block">{formatTimeAgo(tx.timestamp)}</span>
+                                                    </div>
+                                                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-500 group-hover:bg-blue-500/20 group-hover:text-blue-400 transition-colors">
+                                                        <ArrowRight className="w-4 h-4" />
+                                                    </div>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -403,9 +395,9 @@ export default function TrackerPage() {
                                     <div key={i} className="flex gap-3">
                                         <span className="text-gray-600 shrink-0">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
                                         <span className={`${log.level === 'error' ? 'text-red-400' :
-                                                log.level === 'warning' ? 'text-yellow-400' :
-                                                    log.level === 'success' ? 'text-green-400' :
-                                                        'text-gray-300'
+                                            log.level === 'warning' ? 'text-yellow-400' :
+                                                log.level === 'success' ? 'text-green-400' :
+                                                    'text-gray-300'
                                             }`}>
                                             {log.message}
                                         </span>
@@ -419,6 +411,16 @@ export default function TrackerPage() {
                     )}
                 </div>
             </div>
+
+            {/* Transaction Details Overlay */}
+            <AnimatePresence>
+                {selectedTx && (
+                    <TransactionDetails
+                        transaction={selectedTx}
+                        onClose={() => setSelectedTx(null)}
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }
