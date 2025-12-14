@@ -287,6 +287,9 @@ model WhaleTransaction {
   price           Float    // Exact price at order time
   shares          Float    // Number of shares purchased
   
+  // Clustering
+  clusterName     String?  // If part of a detected wallet cluster
+  
   // Metadata
   createdAt       DateTime @default(now())
   
@@ -333,3 +336,25 @@ model WhaleProfile {
   @@index([winRate(sort: Desc)])
   @@map("whale_profiles")
 }
+
+// Wallet clustering - detect coordinated trading patterns
+model WalletCluster {
+  id              String   @id @default(cuid())
+  clusterName     String   @unique // e.g., "Cluster_ABC123"
+  
+  // Detection
+  confidence      Float    // 0-1 confidence score
+  detectionMethod String   // "SAME_TX_TIMING", "SAME_MARKET_PATTERN", "MANUAL"
+  
+  // Member wallets (JSON array for flexibility)
+  addresses       Json     // ["0x123...", "0x456..."]
+  
+  // Stats
+  totalMembers    Int      @default(0)
+  totalVolume     Float    @default(0)
+  firstDetected   DateTime @default(now())
+  lastActivity    DateTime @default(now())
+  
+  @@map("wallet_clusters")
+}
+
