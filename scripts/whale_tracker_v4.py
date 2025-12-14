@@ -119,17 +119,19 @@ class WhaleTrackerV4:
                             for market in event['markets']:
                                 # DEBUG: Print first market to see real data
                                 if len(trades) == 0:
-                                    print(f"[DEBUG] First market data: {json.dumps(market, indent=2)[:500]}")
+                                    print(f"[DEBUG] Market liquidity: {market.get('liquidity')}")
                                 
-                                # Simulate a trade from market data
-                                volume_24h = float(market.get('volume24hr', 0))
-                                if volume_24h > 0:
+                                # Use liquidity as trade size (markets with activity)
+                                liquidity = float(market.get('liquidity', 0))
+                                if liquidity > 100:  # Only markets with >$100 liquidity
+                                    # Calculate approximate trade size as 1% of liquidity
+                                    trade_size = liquidity * 0.01
                                     trades.append({
                                         'id': market.get('id', ''),
                                         'asset_id': market.get('conditionId', ''),
                                         'market': market.get('conditionId', ''),
-                                        'size': volume_24h,  # Use full 24h volume as "trade size"
-                                        'price': float(market.get('bestBid', 0.5)),
+                                        'size': trade_size,
+                                        'price': 1.0,  # Normalize to $1 since we're using liquidity directly
                                         'side': 'buy',
                                         'maker': f"0x{market.get('id', 'unknown')[:40]}",
                                         'taker': 'unknown'
