@@ -61,7 +61,8 @@ export default function TrackerPage() {
                 fetch('/api/tracker/logs?limit=50')
             ]);
 
-            if (txRes.ok) setTransactions(await txRes.json());
+            const txData = await txRes.json();
+            if (txRes.ok) setTransactions(txData.transactions || []); // Extract array from paginated response
             if (statsRes.ok) setStats(await statsRes.json());
             if (logsRes.ok) setLogs(await logsRes.json());
         } catch (error) {
