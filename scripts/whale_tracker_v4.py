@@ -54,6 +54,7 @@ class WhaleTrackerV4:
         self.wallet_cache: Dict[str, dict] = {}
         self.market_cache: Dict[str, dict] = {}
         self.recent_trades_by_market: Dict[str, list] = {}  # For clustering
+        self.processed_trades: Dict[str, float] = {}  # FIX: Trade IDs with timestamp
         self.running = True
     
     async def start(self):
