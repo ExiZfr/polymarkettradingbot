@@ -131,13 +131,13 @@ jobs:
             fi
 
             # Start or Restart Main App using ecosystem.config.js
+            # FORCE DELETE AND RECREATE to ensure fresh config load (NODE_ENV, etc.)
             if pm2 describe polygraal-web > /dev/null 2>&1; then
-                echo "🔄 Restarting existing main app..."
-                pm2 restart polygraal-web
-            else
-                echo "▶️ Starting new main app process with ecosystem config..."
-                pm2 start ecosystem.config.js --only polygraal-web
+                echo "🔄 Deleting existing process to reload config..."
+                pm2 delete polygraal-web
             fi
+            echo "▶️ Starting main app with fresh config..."
+            pm2 start ecosystem.config.js --only polygraal-web
             
             echo "📡 [6/6] Starting Background Services..."
             
