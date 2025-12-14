@@ -35,7 +35,7 @@ module.exports = {
                 PYTHONUNBUFFERED: "1",
                 POLYGON_RPC_WSS: process.env.POLYGON_RPC_WSS || "",
                 API_BASE_URL: "http://localhost:3001",  // Fixed: was 3000, should be 3001 for production
-                WHALE_TRACKER_MODE: process.env.WHALE_TRACKER_MODE || "simulation",
+                WHALE_TRACKER_MODE: "production",  // Changed from "simulation" to track real Polymarket whales
                 MIN_WHALE_AMOUNT: process.env.MIN_WHALE_AMOUNT || "1000"
             },
             error_file: "logs/whale-tracker-error.log",
