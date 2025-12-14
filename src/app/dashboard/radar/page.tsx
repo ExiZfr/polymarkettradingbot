@@ -69,11 +69,19 @@ export default function RadarPage() {
             console.log('[RadarPage] Received data:', {
                 count: data.transactions?.length || 0,
                 firstTx: data.transactions?.[0],
+                firstTxTimestamp: data.transactions?.[0]?.timestamp,
                 timestamp: new Date().toISOString()
             });
 
             if (data.transactions) {
-                setTransactions(data.transactions);
+                // Force new array reference to ensure React detects the change
+                const freshTransactions = [...data.transactions];
+                console.log('[RadarPage] Setting transactions, first 3:', freshTransactions.slice(0, 3).map(t => ({
+                    id: t.id,
+                    timestamp: t.timestamp,
+                    amount: t.amount
+                })));
+                setTransactions(freshTransactions);
             }
 
             // Calculate analytics from transactions
