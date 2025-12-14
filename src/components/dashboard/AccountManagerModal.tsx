@@ -298,7 +298,7 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
 
                                                 <h3 className="text-[#e4e6ea] font-medium text-lg mb-1 truncate">{profile.username}</h3>
                                                 <div className="text-2xl font-mono font-bold text-[#e4e6ea] mb-4">
-                                                    ${(profile.currentBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ${(profile.currentBalance ?? 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </div>
 
                                                 <div className="flex items-center justify-between pt-4 border-t border-[#2d323b] mt-auto">
