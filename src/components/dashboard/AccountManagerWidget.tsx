@@ -71,7 +71,7 @@ export default function AccountManagerWidget() {
                         Balance
                     </span>
                     <span className="font-mono text-green-500 font-semibold text-sm">
-                        ${balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${(balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                 </div>
             </div>

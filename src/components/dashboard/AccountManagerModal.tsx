@@ -298,13 +298,13 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
 
                                                 <h3 className="text-[#e4e6ea] font-medium text-lg mb-1 truncate">{profile.username}</h3>
                                                 <div className="text-2xl font-mono font-bold text-[#e4e6ea] mb-4">
-                                                    ${profile.currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ${(profile.currentBalance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </div>
 
                                                 <div className="flex items-center justify-between pt-4 border-t border-[#2d323b] mt-auto">
                                                     <div className="text-xs text-[#8ba1be]">
-                                                        <span className={profile.totalPnL >= 0 ? "text-[#27aa80]" : "text-[#ef4444]"}>
-                                                            {profile.totalPnL >= 0 ? '+' : ''}{profile.totalPnL.toFixed(2)} PnL
+                                                        <span className={(profile.totalPnL ?? 0) >= 0 ? "text-[#27aa80]" : "text-[#ef4444]"}>
+                                                            {(profile.totalPnL ?? 0) >= 0 ? '+' : ''}{(profile.totalPnL ?? 0).toFixed(2)} PnL
                                                         </span>
                                                     </div>
                                                     <button

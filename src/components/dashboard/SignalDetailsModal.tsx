@@ -201,7 +201,7 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
                                             {signal.outcome}
                                         </div>
                                         <div className="text-xs text-white/50 font-mono mt-2">
-                                            Entry: <span className="text-white">${signal.price.toFixed(2)}</span>
+                                            Entry: <span className="text-white">${(signal.price ?? 0).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -215,7 +215,7 @@ export default function SignalDetailsModal({ signal, isOpen, onClose, onCopyTrad
                                         <div className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">Total Bet Size</div>
                                         <div className="text-3xl font-black text-white flex items-baseline gap-1">
                                             <span className="text-xl text-white/40">$</span>
-                                            {signal.amount_usd.toLocaleString()}
+                                            {(signal.amount_usd ?? 0).toLocaleString()}
                                         </div>
                                         <div className="flex gap-2 mt-2">
                                             <span className="text-[10px] bg-white/10 px-2 py-0.5 rounded text-white/60 border border-white/5">
