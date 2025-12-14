@@ -43,8 +43,8 @@ export async function POST(request: NextRequest) {
                     id,
                     slug: market.slug,
                     title: market.title,
-                    description: market.description,
-                    imageUrl: market.imageUrl,
+                    description: market.description ?? '',
+                    imageUrl: market.imageUrl ?? null,
                     cached: true
                 });
             } else {
@@ -86,8 +86,8 @@ export async function POST(request: NextRequest) {
                     // Cache it in PostgreSQL
                     await prisma.marketCache.upsert({
                         where: { id },
-                        update: { slug, title, description, imageUrl, updatedAt: new Date() },
-                        create: { id, slug, title, description, imageUrl, resolved: false }
+                        update: { slug, title, description: description || null, imageUrl: imageUrl || null, updatedAt: new Date() },
+                        create: { id, slug, title, description: description || null, imageUrl: imageUrl || null, resolved: false }
                     });
 
                     console.log(`[BulkResolve] Cached ${id} -> ${slug}`);
