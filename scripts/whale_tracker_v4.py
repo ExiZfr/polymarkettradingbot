@@ -91,12 +91,10 @@ class WhaleTrackerV4:
                 self.processed_trades = {k: v for k, v in self.processed_trades.items() if current_time - v < 300}
                 
                 for trade in whale_trades:
-                    # Generate unique ID from wallet + market (not just market ID!)
-                    wallet = trade.get('maker', trade.get('taker', 'unknown'))
-                    market_id = trade.get('asset_id', trade.get('market', ''))
-                    trade_id = f"{wallet}_{market_id}"
+                    # Use actual trade ID from CLOB API
+                    trade_id = trade.get('id', '')
                     
-                    if trade_id not in self.processed_trades:
+                    if trade_id and trade_id not in self.processed_trades:
                         self.processed_trades[trade_id] = current_time
                         await self.process_trade(trade)
                 
@@ -108,47 +106,41 @@ class WhaleTrackerV4:
             await asyncio.sleep(POLL_INTERVAL)
     
     async def fetch_recent_trades(self) -> list:
-        """Fetch recent trades from Polymarket Gamma API (events with recent activity)"""
+        """Fetch REAL trades from Polymarket CLOB API"""
         try:
-            # Use Gamma API to get active markets, then check for recent volume changes
-            url = f"{GAMMA_API}/events"
+            # Public trades endpoint - no auth required!
+            url = "https://clob.polymarket.com/data/trades"
             params = {
-                'closed': 'false',
-                'limit': 20,
-                'order': 'volume24hr'  # Markets with most recent volume
+                'limit': 100,  # Last 100 trades
             }
+            
             async with self.session.get(url, params=params, timeout=10) as resp:
                 if resp.status == 200:
-                    events = await resp.json()
+                    trades_data = await resp.json()
                     
-                    # Extract markets from events
+                    # Transform real trades to our format
                     trades = []
-                    for event in events:
-                        if 'markets' in event:
-                            for market in event['markets']:
-                                # DEBUG: Print first market to see real data
-                                if len(trades) == 0:
-                                    print(f"[DEBUG] Market liquidity: {market.get('liquidity')}")
-                                
-                                # Use liquidity as trade size (markets with activity)
-                                liquidity = float(market.get('liquidity', 0))
-                                if liquidity > 100:  # Only markets with >$100 liquidity
-                                    # Calculate approximate trade size as 1% of liquidity
-                                    trade_size = liquidity * 0.01
-                                    trades.append({
-                                        'id': market.get('id', ''),
-                                        'asset_id': market.get('conditionId', ''),
-                                        'market': market.get('conditionId', ''),
-                                        'size': trade_size,
-                                        'price': 1.0,  # Normalize to $1 since we're using liquidity directly
-                                        'side': 'buy',
-                                        'maker': f"0x{market.get('id', 'unknown')[:40]}",
-                                        'taker': 'unknown'
-                                    })
+                    for trade in trades_data:
+                        try:
+                            # Real trade data structure
+                            trades.append({
+                                'id': trade.get('id', ''),
+                                'maker': trade.get('maker', ''),
+                                'taker': trade.get('taker', ''),
+                                'asset_id': trade.get('asset_id', ''),
+                                'market': trade.get('asset_id', ''),  # Alias
+                                'size': float(trade.get('size', 0)),
+                                'price': float(trade.get('price', 0)),
+                                'side': trade.get('side', 'BUY').upper(),
+                                'timestamp': trade.get('timestamp', '')
+                            })
+                        except (ValueError, KeyError) as e:
+                            # Skip malformed trades
+                            continue
                     
-                    return trades[:50]  # Limit to 50
+                    return trades
                 else:
-                    await self.log(f"API returned {resp.status}", "warning")
+                    await self.log(f"CLOB API returned {resp.status}", "warning")
                     return []
         except Exception as e:
             await self.log(f"Fetch error: {e}", "warning")
@@ -161,11 +153,6 @@ class WhaleTrackerV4:
             price = float(trade.get('price', 0))
             value = size * price
             
-            # DEBUG: Log first trade to see actual values
-            if not hasattr(self, '_debug_logged'):
-                print(f"[DEBUG] Trade example: size={size}, price={price}, value=${value:.2f}")
-                self._debug_logged = True
-            
             return value >= WHALE_THRESHOLD
         except (ValueError, TypeError):
             return False
@@ -173,12 +160,12 @@ class WhaleTrackerV4:
     async def process_trade(self, trade: dict):
         """Process a whale trade and send to dashboard"""
         try:
-            # Extract trade data
-            wallet = trade.get('maker', trade.get('taker', 'Unknown'))
-            market_id = trade.get('asset_id', trade.get('market', ''))
+            # Extract trade data - taker is the trade initiator
+            wallet = trade.get('taker', trade.get('maker', 'Unknown'))
+            market_id = trade.get('asset_id', '')
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
-            side = trade.get('side', 'unknown')
+            side = trade.get('side', 'UNKNOWN')
             
             # Get full market details
             market = await self.get_full_market_details(market_id)
@@ -203,7 +190,7 @@ class WhaleTrackerV4:
                 market_id=market_id,
                 market_question=market.get('question', 'Unknown Market'),
                 market_slug=market.get('slug', ''),
-                outcome='YES' if side.lower() == 'buy' else 'NO',
+                outcome='YES' if side.upper() == 'BUY' else 'NO',
                 amount=size * price,
                 price=price,
                 timestamp=datetime.now(timezone.utc).isoformat(),
