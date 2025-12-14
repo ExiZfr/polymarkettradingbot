@@ -122,22 +122,27 @@ class WhaleTrackerV4:
                     trades = []
                     for trade in trades_data:
                         try:
-                            # Data-API structure
+                            # CRITICAL: Extract ALL fields from Data-API response
+                            # The Data-API returns: title, market, outcome, slug, etc.
+                            market_data = trade.get('market', {}) if isinstance(trade.get('market'), dict) else {}
+                            
                             trades.append({
-                                'id': trade.get('transactionHash', ''),
-                                'maker': trade.get('proxyWallet', ''),
-                                'taker': trade.get('proxyWallet', ''),  # proxyWallet is the trader
-                                'asset_id': trade.get('conditionId', ''),
-                                'market': trade.get('slug', ''),
+                                'id': trade.get('transactionHash', trade.get('id', '')),
+                                'maker': trade.get('maker', trade.get('proxyWallet', '')),
+                                'taker': trade.get('taker', trade.get('proxyWallet', '')),
+                                'asset_id': trade.get('asset_id', trade.get('conditionId', '')),
+                                'market_id': market_data.get('id', '') or trade.get('marketId', ''),
                                 'size': float(trade.get('size', 0)),
                                 'price': float(trade.get('price', 0)),
                                 'side': trade.get('side', 'BUY').upper(),
-                                'timestamp': trade.get('timestamp', ''),
-                                'market_question': trade.get('title', 'Unknown'),
-                                'market_slug': trade.get('slug', ''),
+                                'timestamp': trade.get('timestamp', trade.get('createdAt', '')),
+                                # EXTRACT from nested market object or top-level
+                                'market_question': market_data.get('question', trade.get('title', 'Unknown Market')),
+                                'market_slug': market_data.get('slug', trade.get('slug', '')),
+                                'market_description': market_data.get('description', trade.get('description', '')),
                                 'outcome': trade.get('outcome', '')
                             })
-                        except (ValueError, KeyError) as e:
+                        except (ValueError, KeyError, TypeError) as e:
                             # Skip malformed trades
                             continue
                     
@@ -165,13 +170,22 @@ class WhaleTrackerV4:
         try:
             # Extract trade data - taker is the trade initiator
             wallet = trade.get('taker', trade.get('maker', 'Unknown'))
-            market_id = trade.get('asset_id', '')
+            market_id = trade.get('market_id', trade.get('asset_id', ''))
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
             side = trade.get('side', 'UNKNOWN')
             
-            # Get full market details
-            market = await self.get_full_market_details(market_id)
+            # PRIORITY 1: Use data already in trade object (from Data-API)
+            market_question = trade.get('market_question', '')
+            market_slug = trade.get('market_slug', '')
+            market_description = trade.get('market_description', '')
+            
+            # PRIORITY 2: Only enrich if data is missing
+            if not market_question or market_question == 'Unknown Market':
+                market_details = await self.get_full_market_details(market_id)
+                market_question = market_details.get('question', 'Unknown Market')
+                market_slug = market_details.get('slug', market_slug)
+                market_description = market_details.get('description', market_description)
             
             # Get wallet profile
             profile = await self.get_wallet_profile(wallet)
@@ -191,9 +205,9 @@ class WhaleTrackerV4:
                 wallet_win_rate=profile.get('win_rate'),
                 wallet_pnl=profile.get('pnl'),
                 market_id=market_id,
-                market_question=market.get('question', 'Unknown Market'),
-                market_slug=market.get('slug', ''),
-                outcome='YES' if side.upper() == 'BUY' else 'NO',
+                market_question=market_question,
+                market_slug=market_slug,
+                outcome=trade.get('outcome', 'YES' if side.upper() == 'BUY' else 'NO'),
                 amount=size * price,
                 price=price,
                 timestamp=datetime.now(timezone.utc).isoformat(),
@@ -204,7 +218,7 @@ class WhaleTrackerV4:
             # Log with cluster info
             cluster_info = f" [Cluster: {cluster_name}]" if cluster_name else ""
             await self.log(
-                f"🐋 {tx.wallet_tag} | ${tx.amount:,.0f} {tx.outcome} @ {tx.price:.2f}{cluster_info}",
+                f"🐋 {tx.wallet_tag} | ${tx.amount:,.0f} {tx.outcome} @ {tx.price:.2f} | {market_question[:40]}{cluster_info}",
                 "success"
             )
             await self.send_transaction(tx)
