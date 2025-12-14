@@ -288,12 +288,33 @@ class WhaleTrackerV3:
         
         import random
         
+        # Real Polymarket markets with actual slugs
         markets = [
-            "Will Trump win 2024?",
-            "Bitcoin above 100k in 2025?",
-            "ETH to flip BTC?",
-            "Fed rate cut in Q1?",
-            "SPX new ATH by EOY?",
+            {
+                "question": "Will Trump win the 2024 Presidential Election?",
+                "slug": "will-trump-win-the-2024-presidential-election",
+                "description": "Resolves YES if Donald Trump wins the 2024 US Presidential Election"
+            },
+            {
+                "question": "Will Bitcoin hit $100k in 2025?",
+                "slug": "will-bitcoin-hit-100k-in-2025",
+                "description": "Resolves YES if BTC reaches $100,000 at any point in 2025"
+            },
+            {
+                "question": "Will Ethereum flip Bitcoin by market cap?",
+                "slug": "will-ethereum-flip-bitcoin",
+                "description": "Resolves YES if ETH market cap exceeds BTC market cap"
+            },
+            {
+                "question": "Fed rate cut in Q1 2025?",
+                "slug": "fed-rate-cut-q1-2025",
+                "description": "Resolves YES if Federal Reserve cuts rates in Q1 2025"
+            },
+            {
+                "question": "Will S&P 500 hit new ATH by year end?",
+                "slug": "will-spx-new-ath-2025",
+                "description": "Resolves YES if S&P 500 reaches new all-time high before Dec 31"
+            },
         ]
         
         tags = ['WINNER', 'INSIDER', 'SMART_MONEY', 'LOOSER', 'DUMB_MONEY', 'UNKNOWN']
@@ -314,8 +335,8 @@ class WhaleTrackerV3:
                 transaction = WhaleTransaction(
                     wallet_address=f"0x{''.join(random.choices('0123456789abcdef', k=40))}",
                     wallet_tag=tag,
-                    market_id=f"market_{unique_id}",
-                    market_question=market,
+                    market_id=market["slug"],  # Use real slug
+                    market_question=market["question"],
                     outcome=outcome,
                     amount=float(amount),
                     price=price,
@@ -326,7 +347,8 @@ class WhaleTrackerV3:
                 await self.send_to_api(transaction)
                 
                 logger.info(f"🐋 [SIM] {tag} | ${amount:,.0f} {outcome} @ {price}")
-                logger.info(f"   Market: {market}")
+                logger.info(f"   Market: {market['question']}")
+                logger.info(f"   Slug: {market['slug']}")
                 
                 count += 1
                 
