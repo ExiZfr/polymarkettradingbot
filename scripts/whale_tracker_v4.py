@@ -77,10 +77,13 @@ class WhaleTrackerV4:
         while self.running:
             try:
                 trades = await self.fetch_recent_trades()
+                await self.log(f"📊 Fetched {len(trades)} total trades from API", "info")
+                
                 whale_trades = [t for t in trades if self.is_whale_trade(t)]
+                await self.log(f"🔍 Found {len(whale_trades)} whale trades (>${WHALE_THRESHOLD})", "info")
                 
                 if whale_trades:
-                    await self.log(f"Found {len(whale_trades)} whale trades", "info")
+                    await self.log(f"✅ Processing {len(whale_trades)} whale trades", "success")
                     
                 for trade in whale_trades:
                     trade_id = trade.get('id', str(hash(json.dumps(trade, default=str))))
