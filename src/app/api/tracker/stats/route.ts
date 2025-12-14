@@ -42,7 +42,8 @@ export async function GET() {
             });
         }
 
-        const transactions = await txResponse.json();
+        const response = await txResponse.json();
+        const transactions = response.transactions || []; // Extract array from paginated response
 
         // Calculate stats
         const totalTransactions = transactions.length;
