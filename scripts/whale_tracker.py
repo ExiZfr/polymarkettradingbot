@@ -26,7 +26,8 @@ logger = logging.getLogger(__name__)
 MODE = os.getenv('WHALE_TRACKER_MODE', 'simulation')
 MIN_WHALE_AMOUNT = float(os.getenv('MIN_WHALE_AMOUNT', '5000'))
 API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:3001')
-POLYMARKET_API = "https://gamma-api.polymarket.com"
+POLYMARKET_API = "https://data-api.polymarket.com"  # Fixed: was gamma-api, should be data-api
+
 
 # Tracking
 processed_trades = set()
