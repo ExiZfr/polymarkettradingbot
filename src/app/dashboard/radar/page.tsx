@@ -371,7 +371,7 @@ export default function RadarPage() {
                                                     </span>
                                                     <span className="text-muted-foreground">@</span>
                                                     <span className="text-foreground">
-                                                        {(tx.price * 100).toFixed(0)}¢
+                                                        {((tx.price ?? 0) * 100).toFixed(0)}¢
                                                     </span>
                                                 </div>
                                                 <span className="font-bold text-foreground">
@@ -464,12 +464,12 @@ export default function RadarPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <h3 className="text-sm text-muted-foreground mb-1">Amount</h3>
-                                    <p className="font-bold text-lg">${(selectedTx.amount || 0).toLocaleString()}</p>
+                                    <p className="font-bold text-lg">${(selectedTx.amount ?? 0).toLocaleString()}</p>
                                 </div>
                                 <div>
                                     <h3 className="text-sm text-muted-foreground mb-1">Outcome</h3>
                                     <p className={`font-bold text-lg ${selectedTx.outcome === 'YES' ? 'text-green-500' : 'text-red-500'}`}>
-                                        {selectedTx.outcome} @ {(selectedTx.price * 100).toFixed(0)}¢
+                                        {selectedTx.outcome ?? 'N/A'} @ {((selectedTx.price ?? 0) * 100).toFixed(0)}¢
                                     </p>
                                 </div>
                             </div>
@@ -484,16 +484,16 @@ export default function RadarPage() {
                                 </div>
                             </div>
 
-                            {selectedTx.walletWinRate !== null && (
+                            {selectedTx.walletWinRate != null && (
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <h3 className="text-sm text-muted-foreground mb-1">Win Rate</h3>
-                                        <p className="font-semibold">{(selectedTx.walletWinRate * 100).toFixed(1)}%</p>
+                                        <p className="font-semibold">{((selectedTx.walletWinRate ?? 0) * 100).toFixed(1)}%</p>
                                     </div>
                                     <div>
                                         <h3 className="text-sm text-muted-foreground mb-1">Total PnL</h3>
-                                        <p className={`font-semibold ${(selectedTx.walletTotalPnl || 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                                            ${selectedTx.walletTotalPnl?.toLocaleString() || '0'}
+                                        <p className={`font-semibold ${(selectedTx.walletTotalPnl ?? 0) >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            ${(selectedTx.walletTotalPnl ?? 0).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

@@ -187,7 +187,7 @@ export default function RadarLogsConsole() {
                                     </div>
 
                                     <div className="text-white font-semibold">
-                                        🐋 ${tx.amount.toLocaleString()} {tx.outcome} @ {tx.price.toFixed(2)}
+                                        🐋 ${(tx.amount ?? 0).toLocaleString()} {tx.outcome ?? 'N/A'} @ {(tx.price ?? 0).toFixed(2)}
                                     </div>
 
                                     <div className="text-blue-300 text-[11px] mt-1 truncate">
@@ -254,19 +254,19 @@ export default function RadarLogsConsole() {
                                 <div className="grid grid-cols-2 gap-3 text-sm">
                                     <div>
                                         <div className="text-muted-foreground text-xs">Amount</div>
-                                        <div className="font-bold text-green-400">${selectedTx.amount.toLocaleString()}</div>
+                                        <div className="font-bold text-green-400">${(selectedTx.amount ?? 0).toLocaleString()}</div>
                                     </div>
                                     <div>
                                         <div className="text-muted-foreground text-xs">Outcome</div>
-                                        <div className="font-bold">{selectedTx.outcome}</div>
+                                        <div className="font-bold">{selectedTx.outcome ?? 'N/A'}</div>
                                     </div>
                                     <div>
                                         <div className="text-muted-foreground text-xs">Price</div>
-                                        <div className="font-bold">{selectedTx.price.toFixed(2)}</div>
+                                        <div className="font-bold">{(selectedTx.price ?? 0).toFixed(2)}</div>
                                     </div>
                                     <div>
                                         <div className="text-muted-foreground text-xs">Timestamp</div>
-                                        <div className="text-xs">{new Date(selectedTx.timestamp).toLocaleString()}</div>
+                                        <div className="text-xs">{selectedTx.timestamp ? new Date(selectedTx.timestamp).toLocaleString() : 'N/A'}</div>
                                     </div>
                                 </div>
                             </div>
@@ -294,19 +294,19 @@ export default function RadarLogsConsole() {
                                         <span className="text-muted-foreground">Address</span>
                                         <span className="font-mono text-xs">{selectedTx.walletAddress}</span>
                                     </div>
-                                    {selectedTx.walletWinRate !== undefined && (
+                                    {selectedTx.walletWinRate != null && (
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-muted-foreground">Win Rate</span>
                                             <span className="font-bold text-green-400">
-                                                {(selectedTx.walletWinRate * 100).toFixed(1)}%
+                                                {((selectedTx.walletWinRate ?? 0) * 100).toFixed(1)}%
                                             </span>
                                         </div>
                                     )}
-                                    {selectedTx.walletTotalPnl !== undefined && (
+                                    {selectedTx.walletTotalPnl != null && (
                                         <div className="flex items-center justify-between text-sm">
                                             <span className="text-muted-foreground">Total PnL</span>
-                                            <span className={`font-bold ${selectedTx.walletTotalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                ${selectedTx.walletTotalPnl.toLocaleString()}
+                                            <span className={`font-bold ${(selectedTx.walletTotalPnl ?? 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                ${(selectedTx.walletTotalPnl ?? 0).toLocaleString()}
                                             </span>
                                         </div>
                                     )}
