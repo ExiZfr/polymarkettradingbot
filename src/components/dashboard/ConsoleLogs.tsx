@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { Terminal, Zap, ShoppingCart, Target, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { formatTimestamp } from "@/lib/date-utils";
 
 export type LogType = {
     id: number;
@@ -101,7 +102,7 @@ export default function ConsoleLogs({ logs, filter, setFilter }: ConsoleProps) {
                                 animate={{ opacity: 1, x: 0 }}
                                 className={`flex items-start gap-3 p-2 rounded border-l-2 ${getLogColor(log.level)} transition-colors`}
                             >
-                                <span className="opacity-50 w-20 shrink-0 select-none text-muted-foreground">{log.timestamp}</span>
+                                <span className="opacity-50 w-20 shrink-0 select-none text-muted-foreground">{formatTimestamp(log.timestamp)}</span>
                                 <span className={`font-bold w-12 shrink-0 ${log.level === 'EXEC' ? 'text-green-500' :
                                     log.level === 'WARN' ? 'text-amber-500' :
                                         log.level === 'ERR' ? 'text-destructive' : 'text-indigo-500'

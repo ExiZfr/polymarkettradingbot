@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Settings, Wallet } from "lucide-react";
 import { paperStore } from "@/lib/paper-trading";
 import AccountManagerModal from "./AccountManagerModal";
+import { formatBalance } from "@/lib/date-utils";
 
 export default function AccountManagerWidget() {
     const [balance, setBalance] = useState(0);
