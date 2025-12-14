@@ -21,8 +21,8 @@ module.exports = {
             }
         },
         {
-            name: "polyradar-whale-tracker",  // Fixed: was "whale-tracker", aligned with post-deploy.sh
-            script: "scripts/whale_tracker.py",
+            name: "whale-tracker-v4",
+            script: "scripts/whale_tracker_v4.py",
             interpreter: "python3",
             cwd: process.cwd(),
             max_restarts: 10,
@@ -33,13 +33,12 @@ module.exports = {
             max_memory_restart: "300M",
             env: {
                 PYTHONUNBUFFERED: "1",
-                POLYGON_RPC_WSS: process.env.POLYGON_RPC_WSS || "",
-                API_BASE_URL: "http://localhost:3001",  // Fixed: was 3000, should be 3001 for production
-                WHALE_TRACKER_MODE: "production",  // Changed from "simulation" to track real Polymarket whales
-                MIN_WHALE_AMOUNT: process.env.MIN_WHALE_AMOUNT || "1000"
+                API_BASE_URL: "http://127.0.0.1:3001",  // Fixed: Use 3001 (production port)
+                WHALE_THRESHOLD: "10",  // Testing: lowered to $10
+                POLL_INTERVAL: "10"
             },
-            error_file: "logs/whale-tracker-error.log",
-            out_file: "logs/whale-tracker-out.log",
+            error_file: "logs/whale-tracker-v4-error.log",
+            out_file: "logs/whale-tracker-v4-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
