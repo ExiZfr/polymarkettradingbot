@@ -141,8 +141,9 @@ class WhaleTrackerV3:
     async def process_whale_trade(self, trade: dict):
         """Process a whale trade"""
         try:
-            wallet = trade.get('maker', 'unknown')
-            market_id = trade.get('market', '')
+            # Map data-api fields
+            wallet = trade.get('proxyWallet', trade.get('maker', 'unknown'))
+            market_id = trade.get('conditionId', trade.get('market', ''))
             outcome = trade.get('outcome', 'YES')
             size = float(trade.get('size', 0))
             price = float(trade.get('price', 0))
@@ -152,21 +153,21 @@ class WhaleTrackerV3:
             profile = await self.get_wallet_profile(wallet)
             tag = self.calculate_tag(wallet, profile, trade)
             
-            # Fetch market details
-            market = await self.get_market_details(market_id)
-            question = market.get('question', 'Unknown Market')
+            # Use fields directly from data-api response
+            question = trade.get('title', 'Unknown Market')
+            slug = trade.get('slug', market_id)
             
             # Create transaction
             transaction = WhaleTransaction(
                 wallet_address=wallet,
                 wallet_tag=tag,
-                market_id=market_id,
+                market_id=slug,  # Use slug for links
                 market_question=question,
                 outcome=outcome,
                 amount=amount,
                 price=price,
                 timestamp=datetime.utcnow().isoformat() + 'Z',
-                tx_hash=trade.get('id', '')
+                tx_hash=trade.get('transactionHash', trade.get('id', ''))
             )
             
             # Send to API
@@ -175,6 +176,7 @@ class WhaleTrackerV3:
             # Log
             logger.info(f"🐋 {tag} | ${amount:,.0f} {outcome} @ {price:.2f}")
             logger.info(f"   Market: {question[:60]}...")
+            logger.info(f"   Slug: {slug}")
             
         except Exception as e:
             logger.error(f"Error processing trade: {e}")
