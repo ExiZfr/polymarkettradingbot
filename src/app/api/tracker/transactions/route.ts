@@ -107,8 +107,24 @@ export async function GET(request: NextRequest) {
             prisma.whaleTransaction.count({ where })
         ]);
 
+        // Transform Prisma camelCase to snake_case for frontend compatibility
+        const transformedTransactions = transactions.map(tx => ({
+            wallet_address: tx.walletAddress,
+            wallet_tag: tx.walletTag,
+            wallet_win_rate: tx.walletWinRate,
+            wallet_pnl: tx.walletTotalPnl,
+            market_id: tx.marketId,
+            market_question: tx.marketQuestion,
+            market_slug: tx.marketSlug,
+            outcome: tx.outcome,
+            amount: tx.amount,
+            price: tx.price,
+            timestamp: tx.timestamp.toISOString(),
+            tx_hash: tx.txHash
+        }));
+
         return NextResponse.json({
-            transactions,
+            transactions: transformedTransactions,
             pagination: {
                 total,
                 page,
