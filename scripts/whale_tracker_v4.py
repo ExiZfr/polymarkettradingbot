@@ -117,6 +117,10 @@ class WhaleTrackerV4:
                     for event in events:
                         if 'markets' in event:
                             for market in event['markets']:
+                                # DEBUG: Print first market to see real data
+                                if len(trades) == 0:
+                                    print(f"[DEBUG] First market data: {json.dumps(market, indent=2)[:500]}")
+                                
                                 # Simulate a trade from market data
                                 volume_24h = float(market.get('volume24hr', 0))
                                 if volume_24h > 0:
