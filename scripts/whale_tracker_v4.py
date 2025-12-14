@@ -21,7 +21,7 @@ import random
 API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:3000')
 POLYMARKET_API = "https://clob.polymarket.com"
 GAMMA_API = "https://gamma-api.polymarket.com"
-WHALE_THRESHOLD = float(os.getenv('WHALE_THRESHOLD', '1000'))  # Min $ for whale trade
+WHALE_THRESHOLD = float(os.getenv('WHALE_THRESHOLD', '10'))  # Min $ for whale trade (TESTING: lowered to $10)
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', '10'))  # Seconds between polls
 
 # Tracking
