@@ -2,13 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Wallet, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Activity } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, ChevronUp, ChevronDown, Activity, Settings } from "lucide-react";
 import { paperStore, PaperProfile, PaperOrder } from "@/lib/paper-trading";
+import AccountManagerModal from "./AccountManagerModal";
 
 export default function FloatingWalletWidget() {
     const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [openOrders, setOpenOrders] = useState<PaperOrder[]>([]);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [previousBalance, setPreviousBalance] = useState<number>(0);
     const [balanceFlash, setBalanceFlash] = useState<'up' | 'down' | null>(null);
 
@@ -156,6 +158,17 @@ export default function FloatingWalletWidget() {
                                     </div>
                                 </div>
 
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setIsModalOpen(true);
+                                    }}
+                                    className="w-full py-2 flex items-center justify-center gap-2 rounded-lg bg-secondary/50 hover:bg-secondary text-xs font-medium transition-colors"
+                                >
+                                    <Settings size={12} />
+                                    Manage Portfolios
+                                </button>
+
                                 {/* Open Positions Preview */}
                                 {openOrders.length > 0 && (
                                     <div className="pt-2 border-t border-border/50">
@@ -191,6 +204,12 @@ export default function FloatingWalletWidget() {
                     )}
                 </AnimatePresence>
             </motion.div>
+
+            <AccountManagerModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onUpdate={loadData}
+            />
         </motion.div>
     );
 }

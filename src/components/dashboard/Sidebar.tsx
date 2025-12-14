@@ -14,7 +14,7 @@ import {
     Radar,
     Brain,
 } from "lucide-react";
-import AccountManagerWidget from "./AccountManagerWidget";
+
 
 type NavItem = {
     label: string;
@@ -107,7 +107,7 @@ export default function Sidebar({
 
                 {/* Bottom Section */}
                 <div className="p-4 border-t border-border bg-muted/30">
-                    <AccountManagerWidget />
+
 
                     {/* Sign Out Button */}
                     <button
