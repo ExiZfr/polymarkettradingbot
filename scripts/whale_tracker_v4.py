@@ -106,10 +106,10 @@ class WhaleTrackerV4:
             await asyncio.sleep(POLL_INTERVAL)
     
     async def fetch_recent_trades(self) -> list:
-        """Fetch REAL trades from Polymarket CLOB API"""
+        """Fetch REAL trades from Polymarket Data-API (public, no auth)"""
         try:
-            # Public trades endpoint - no auth required!
-            url = "https://clob.polymarket.com/data/trades"
+            # Public Data-API endpoint - no authentication required!
+            url = "https://data-api.polymarket.com/trades"
             params = {
                 'limit': 100,  # Last 100 trades
             }
@@ -122,17 +122,20 @@ class WhaleTrackerV4:
                     trades = []
                     for trade in trades_data:
                         try:
-                            # Real trade data structure
+                            # Data-API structure
                             trades.append({
-                                'id': trade.get('id', ''),
-                                'maker': trade.get('maker', ''),
-                                'taker': trade.get('taker', ''),
-                                'asset_id': trade.get('asset_id', ''),
-                                'market': trade.get('asset_id', ''),  # Alias
+                                'id': trade.get('transactionHash', ''),
+                                'maker': trade.get('proxyWallet', ''),
+                                'taker': trade.get('proxyWallet', ''),  # proxyWallet is the trader
+                                'asset_id': trade.get('conditionId', ''),
+                                'market': trade.get('slug', ''),
                                 'size': float(trade.get('size', 0)),
                                 'price': float(trade.get('price', 0)),
                                 'side': trade.get('side', 'BUY').upper(),
-                                'timestamp': trade.get('timestamp', '')
+                                'timestamp': trade.get('timestamp', ''),
+                                'market_question': trade.get('title', 'Unknown'),
+                                'market_slug': trade.get('slug', ''),
+                                'outcome': trade.get('outcome', '')
                             })
                         except (ValueError, KeyError) as e:
                             # Skip malformed trades
@@ -140,7 +143,7 @@ class WhaleTrackerV4:
                     
                     return trades
                 else:
-                    await self.log(f"CLOB API returned {resp.status}", "warning")
+                    await self.log(f"Data-API returned {resp.status}", "warning")
                     return []
         except Exception as e:
             await self.log(f"Fetch error: {e}", "warning")
