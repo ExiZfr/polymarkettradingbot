@@ -21,17 +21,6 @@ module.exports = {
             log_date_format: "YYYY-MM-DD HH:mm:ss"
         },
         {
-            name: "polygraal-sniper",
-            script: "scripts/polymarket_sniper.py",
-            interpreter: "python3",
-            autorestart: true,
-            watch: false,
-            max_memory_restart: "500M",
-            env: {
-                PYTHONUNBUFFERED: "1"
-            }
-        },
-        {
             name: "whale-tracker-v4",
             script: "scripts/whale_tracker_v4.py",
             interpreter: "python3",
