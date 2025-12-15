@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build --no-turbopack",
+    "build": "mv venv _venv 2>/dev/null; next build; mv _venv venv 2>/dev/null || true",
     "start": "NODE_ENV=production next start -p 3001",
     "lint": "eslint",
     "listener": "node scripts/hyper-listener.js"
