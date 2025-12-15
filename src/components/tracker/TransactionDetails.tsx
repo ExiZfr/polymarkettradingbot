@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion';
 import { X, ExternalLink, Activity, DollarSign, TrendingUp, Wallet, Clock, Trophy, Target, Share2 } from 'lucide-react';
 
+import type { WhaleTransaction } from '@/types/tracker';
+
 interface TransactionDetailsProps {
-    transaction: any;
+    transaction: WhaleTransaction;
     onClose: () => void;
 }
 
