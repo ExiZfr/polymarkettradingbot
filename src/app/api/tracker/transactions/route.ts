@@ -120,6 +120,8 @@ export async function GET(request: NextRequest) {
             market_id: tx.marketId,
             market_question: tx.marketQuestion,
             market_slug: tx.marketSlug,
+            market_url: tx.marketUrl,
+            market_image: tx.marketImage,
             outcome: tx.outcome,
             amount: tx.amount,
             price: tx.price,
