@@ -44,7 +44,7 @@ module.exports = {
         {
             name: "crypto-oracle",
             script: "scripts/crypto_oracle.py",
-            interpreter: "python3",
+            interpreter: "./venv/bin/python",  // Use venv Python
             cwd: process.cwd(),
             max_restarts: 5,
             min_uptime: "30s",
