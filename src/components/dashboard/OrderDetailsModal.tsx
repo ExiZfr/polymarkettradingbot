@@ -26,7 +26,6 @@ interface OrderDetailsModalProps {
 
 export default function OrderDetailsModal({ order, livePrice, onClose, onClosePosition }: OrderDetailsModalProps) {
     const [copied, setCopied] = useState(false);
-    const [marketSlug, setMarketSlug] = useState<string | null>(null);
 
     // Resolve current price: Live > Stored > Entry
     const currentPrice = livePrice
@@ -40,23 +39,6 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
 
     const durationMs = Date.now() - order.timestamp;
     const durationHours = durationMs / (1000 * 60 * 60);
-
-    // Fetch Slug for proper redirect
-    useEffect(() => {
-        async function fetchSlug() {
-            try {
-                const res = await fetch(`https://gamma-api.polymarket.com/markets/${order.marketId}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data.slug) setMarketSlug(data.slug);
-                    else if (data.events && data.events[0]?.slug) setMarketSlug(data.events[0].slug);
-                }
-            } catch (e) {
-                console.warn("Failed to fetch market slug", e);
-            }
-        }
-        fetchSlug();
-    }, [order.marketId]);
 
     const handleCopyStats = () => {
         const text = `Polygraal Trade 🛸\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${isProfit ? '+' : ''}${roi.toFixed(2)}%\nPnL: $${pnl.toFixed(2)}\nEntry: $${order.entryPrice.toFixed(3)}\nExit: $${currentPrice.toFixed(3)}\n\n#Polymarket #Crypto`;
@@ -81,6 +63,11 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
         hidden: { opacity: 0, y: 10 },
         visible: { opacity: 1, y: 0 }
     };
+
+    // Use stored slug if available (from new orders), otherwise default to old or ID
+    const marketLink = order.marketSlug
+        ? `https://polymarket.com/event/${order.marketSlug}`
+        : `https://polymarket.com/market/${order.marketId}`;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">
@@ -169,27 +156,6 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                                 <p className="text-lg font-bold text-white/90">${order.amount.toFixed(2)}</p>
                             </motion.div>
                         </div>
-
-                        {/* Chart Area */}
-                        <motion.div variants={itemVariants} className="relative w-full rounded-3xl bg-[#131316] border border-white/5 overflow-hidden shadow-inner group min-h-[250px] flex flex-col">
-                            <div className="absolute top-4 left-5 z-20 flex items-center justify-between w-[calc(100%-40px)]">
-                                <h3 className="flex items-center gap-2 text-xs font-bold text-white/50 group-hover:text-white/80 transition-colors">
-                                    <Activity size={14} className="text-blue-500" /> PRICE ACTION
-                                </h3>
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-white/5 text-white/30">24H</span>
-                            </div>
-                            {/* Gradient Overlay for Depth */}
-                            <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#131316] to-transparent z-10 pointer-events-none" />
-
-                            <div className="flex-1 w-full pt-12 pb-4 px-0">
-                                <MiniPriceChart
-                                    marketId={order.marketId}
-                                    entryPrice={order.entryPrice}
-                                    outcome={order.outcome}
-                                    className="w-full h-full opacity-90 transition-opacity"
-                                />
-                            </div>
-                        </motion.div>
 
                         {/* Details List */}
                         <motion.div variants={itemVariants} className="grid grid-cols-2 gap-4">
@@ -304,11 +270,11 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                             </button>
                         )}
                         <a
-                            href={marketSlug ? `https://polymarket.com/event/${marketSlug}` : `https://polymarket.com/market/${order.marketId}`}
+                            href={marketLink}
                             target="_blank"
                             className="w-full py-3.5 rounded-xl font-bold text-white/50 bg-white/5 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white/10"
                         >
-                            <span>{marketSlug ? 'Open on Polymarket' : 'Loading Link...'}</span>
+                            <span>Open on Polymarket</span>
                             <ExternalLink size={16} />
                         </a>
                     </div>

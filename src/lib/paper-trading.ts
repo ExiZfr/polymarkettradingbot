@@ -39,6 +39,7 @@ export interface PaperOrder {
     source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
     stopLoss?: number;
     takeProfit?: number;
+    marketSlug?: string;
     notes?: string;
 }
 
@@ -347,6 +348,7 @@ export const paperStore = {
     placeOrder: (orderData: {
         marketId: string;
         marketTitle: string;
+        marketSlug?: string;
         marketImage?: string;
         type: 'BUY' | 'SELL';
         outcome: 'YES' | 'NO';
@@ -398,6 +400,7 @@ export const paperStore = {
             marketId: orderData.marketId,
             profileId: profile.id, // Link to profile
             marketTitle: orderData.marketTitle,
+            marketSlug: orderData.marketSlug,
             marketImage: orderData.marketImage,
             type: orderData.type,
             outcome: orderData.outcome,

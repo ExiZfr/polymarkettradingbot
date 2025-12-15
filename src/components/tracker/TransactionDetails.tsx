@@ -26,6 +26,7 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
         const order = paperStore.placeOrder({
             marketId: transaction.market_id,
             marketTitle: transaction.market_question,
+            marketSlug: transaction.market_slug,
             marketImage: transaction.market_image || undefined,
             type: 'BUY',
             outcome: transaction.outcome as 'YES' | 'NO',
@@ -50,6 +51,7 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
         const order = paperStore.placeOrder({
             marketId: transaction.market_id,
             marketTitle: transaction.market_question,
+            marketSlug: transaction.market_slug,
             marketImage: transaction.market_image || undefined,
             type: 'BUY',
             outcome: inverseOutcome,
@@ -251,8 +253,8 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                             onClick={handleCopyTrade}
                             disabled={copyStatus !== 'idle'}
                             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${copyStatus === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                    copyStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                                        'bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20 hover:border-green-500/40'
+                                copyStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                    'bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20 hover:border-green-500/40'
                                 }`}
                         >
                             {copyStatus === 'success' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -262,8 +264,8 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                             onClick={handleInverseTrade}
                             disabled={inverseStatus !== 'idle'}
                             className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${inverseStatus === 'success' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                                    inverseStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                                        'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20 hover:border-orange-500/40'
+                                inverseStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                    'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20 hover:border-orange-500/40'
                                 }`}
                         >
                             {inverseStatus === 'success' ? <Check className="w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
