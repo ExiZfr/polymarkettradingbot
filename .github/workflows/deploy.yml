@@ -217,8 +217,8 @@ jobs:
             export MIN_WHALE_AMOUNT=5000
             
             # START whale-tracker with configured mode
-            pm2 start scripts/whale_tracker.py \
-              --name whale-tracker \
+            pm2 start scripts/whale_tracker_v4.py \
+              --name whale-tracker-v4 \
               --interpreter python3 \
               --restart-delay 10000 \
               --max-restarts 5
@@ -227,12 +227,12 @@ jobs:
             sleep 3
             
             # Verify whale-tracker is running
-            if pm2 describe whale-tracker > /dev/null 2>&1; then
-                echo "✅ whale-tracker started successfully"
-                pm2 logs whale-tracker --lines 20 --nostream || true
+            if pm2 describe whale-tracker-v4 > /dev/null 2>&1; then
+                echo "✅ whale-tracker-v4 started successfully"
+                pm2 logs whale-tracker-v4 --lines 20 --nostream || true
             else
-                echo "❌ whale-tracker failed to start!"
-                python3 scripts/whale_tracker.py 2>&1 | head -30 || true
+                echo "❌ whale-tracker-v4 failed to start!"
+                python3 scripts/whale_tracker_v4.py 2>&1 | head -30 || true
             fi
             
             # Save PM2 config
