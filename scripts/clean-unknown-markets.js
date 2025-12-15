@@ -9,10 +9,10 @@ async function cleanDatabase() {
         const result = await prisma.whaleTransaction.deleteMany({
             where: {
                 OR: [
-                    { market_question: 'Unknown Market' },
-                    { market_question: { contains: 'Unknown' } },
-                    { market_slug: '' },
-                    { market_slug: null }
+                    { marketQuestion: 'Unknown Market' },
+                    { marketQuestion: { contains: 'Unknown' } },
+                    { marketSlug: '' },
+                    { marketSlug: null }
                 ]
             }
         });
