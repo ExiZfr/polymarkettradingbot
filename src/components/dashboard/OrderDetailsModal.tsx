@@ -64,10 +64,10 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
         visible: { opacity: 1, y: 0 }
     };
 
-    // Use stored slug if available (from new orders), otherwise default to old or ID
-    const marketLink = order.marketSlug
-        ? `https://polymarket.com/event/${order.marketSlug}`
-        : `https://polymarket.com/market/${order.marketId}`;
+    // Use stored URL first (from tracker DB), otherwise slug, otherwise ID fallback
+    const marketLink = order.marketUrl
+        || (order.marketSlug ? `https://polymarket.com/event/${order.marketSlug}` : null)
+        || `https://polymarket.com/market/${order.marketId}`;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">

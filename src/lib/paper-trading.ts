@@ -40,6 +40,7 @@ export interface PaperOrder {
     stopLoss?: number;
     takeProfit?: number;
     marketSlug?: string;
+    marketUrl?: string;
     notes?: string;
 }
 
@@ -349,6 +350,7 @@ export const paperStore = {
         marketId: string;
         marketTitle: string;
         marketSlug?: string;
+        marketUrl?: string;
         marketImage?: string;
         type: 'BUY' | 'SELL';
         outcome: 'YES' | 'NO';
@@ -401,6 +403,7 @@ export const paperStore = {
             profileId: profile.id, // Link to profile
             marketTitle: orderData.marketTitle,
             marketSlug: orderData.marketSlug,
+            marketUrl: orderData.marketUrl,
             marketImage: orderData.marketImage,
             type: orderData.type,
             outcome: orderData.outcome,
