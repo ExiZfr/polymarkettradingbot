@@ -22,6 +22,25 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const limit = parseInt(searchParams.get('limit') || '100');
     const category = searchParams.get('category') || 'all';
+    const period = searchParams.get('period') || 'all'; // 'daily', 'weekly', 'monthly', 'all'
+
+    // Calculate cutoff timestamp based on period
+    const now = new Date();
+    let cutoffDate: Date | null = null;
+
+    switch (period) {
+        case 'daily':
+            cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+        case 'weekly':
+            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+        case 'monthly':
+            cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+        default:
+            cutoffDate = null;
+    }
 
     try {
         // Fetch crypto markets
@@ -62,6 +81,12 @@ export async function GET(request: Request) {
                 for (const activity of activities) {
                     const address = activity.proxyWallet || activity.user;
                     if (!address) continue;
+
+                    // Filter by timestamp if period is set
+                    if (cutoffDate && activity.timestamp) {
+                        const activityDate = new Date(activity.timestamp);
+                        if (activityDate < cutoffDate) continue;
+                    }
 
                     const size = parseFloat(activity.usdcSize) || 0;
                     if (size < 50) continue; // Skip small trades
@@ -167,6 +192,7 @@ export async function GET(request: Request) {
         return NextResponse.json({
             leaderboard,
             stats,
+            period,
             lastUpdate: new Date().toISOString()
         });
 

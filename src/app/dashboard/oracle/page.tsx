@@ -45,24 +45,14 @@ export default function OraclePage() {
     const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard'>('signals');
     const [leaderboardStats, setLeaderboardStats] = useState<any>(null);
     const [filterConfidence, setFilterConfidence] = useState<string>('all');
+    const [leaderboardPeriod, setLeaderboardPeriod] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
+    const fetchLeaderboard = useCallback(async (period: string) => {
         try {
-            // Fetch signals and leaderboard in parallel
-            const [signalsRes, leaderboardRes] = await Promise.all([
-                fetch('/api/oracle/signals'),
-                fetch('/api/oracle/leaderboard?limit=100')
-            ]);
-
-            if (signalsRes.ok) {
-                const signalsData = await signalsRes.json();
-                setSignals(signalsData.signals || []);
-            }
-
-            if (leaderboardRes.ok) {
-                const leaderboardData = await leaderboardRes.json();
-                setLeaderboard(leaderboardData.leaderboard?.map((t: any) => ({
+            const res = await fetch(`/api/oracle/leaderboard?limit=100&period=${period}`);
+            if (res.ok) {
+                const data = await res.json();
+                setLeaderboard(data.leaderboard?.map((t: any) => ({
                     address: t.address,
                     pnl: t.totalPnl,
                     winRate: t.winRate,
@@ -71,8 +61,25 @@ export default function OraclePage() {
                     score: t.score,
                     cryptoTrades: t.cryptoTrades
                 })) || []);
-                setLeaderboardStats(leaderboardData.stats);
+                setLeaderboardStats(data.stats);
             }
+        } catch (error) {
+            console.error('Failed to fetch leaderboard:', error);
+        }
+    }, []);
+
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        try {
+            // Fetch signals
+            const signalsRes = await fetch('/api/oracle/signals');
+            if (signalsRes.ok) {
+                const signalsData = await signalsRes.json();
+                setSignals(signalsData.signals || []);
+            }
+
+            // Fetch leaderboard with current period
+            await fetchLeaderboard(leaderboardPeriod);
 
             setLastUpdate(new Date());
         } catch (error) {
@@ -80,7 +87,14 @@ export default function OraclePage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [fetchLeaderboard, leaderboardPeriod]);
+
+    // Refetch leaderboard when period changes
+    useEffect(() => {
+        if (!loading) {
+            fetchLeaderboard(leaderboardPeriod);
+        }
+    }, [leaderboardPeriod, fetchLeaderboard, loading]);
 
     useEffect(() => {
         fetchData();
@@ -433,10 +447,44 @@ export default function OraclePage() {
                         >
                             <div className="rounded-xl border border-border overflow-hidden">
                                 <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-4 py-3 border-b border-border">
-                                    <h2 className="font-semibold text-amber-400 flex items-center gap-2">
-                                        <Trophy className="w-5 h-5" />
-                                        Top Crypto Traders
-                                    </h2>
+                                    <div className="flex items-center justify-between">
+                                        <h2 className="font-semibold text-amber-400 flex items-center gap-2">
+                                            <Trophy className="w-5 h-5" />
+                                            Top Crypto Traders
+                                        </h2>
+
+                                        {/* Period Filter Buttons */}
+                                        <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-1">
+                                            {[
+                                                { value: 'daily', label: '24h' },
+                                                { value: 'weekly', label: '7j' },
+                                                { value: 'monthly', label: '30j' },
+                                                { value: 'all', label: 'All' }
+                                            ].map((period) => (
+                                                <button
+                                                    key={period.value}
+                                                    onClick={() => setLeaderboardPeriod(period.value as any)}
+                                                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${leaderboardPeriod === period.value
+                                                            ? 'bg-amber-500/20 text-amber-400 shadow-sm'
+                                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                                        }`}
+                                                >
+                                                    {period.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Stats Row */}
+                                    {leaderboardStats && (
+                                        <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                                            <span>{leaderboardStats.total} traders</span>
+                                            <span>•</span>
+                                            <span>Avg Score: {leaderboardStats.avgScore}%</span>
+                                            <span>•</span>
+                                            <span className="text-emerald-400">{leaderboardStats.topTraders} top performers</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className="divide-y divide-border">
