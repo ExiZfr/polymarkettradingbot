@@ -156,14 +156,26 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                             <ExternalLink className="w-4 h-4" />
                         </a>
 
-                        <button className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors border border-white/5 hover:border-white/20">
+                        <a
+                            href={`https://polygonscan.com/address/${transaction.wallet_address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors border border-white/5 hover:border-white/20"
+                        >
+                            <Activity className="w-4 h-4" />
+                            View on Polygonscan
+                            <ExternalLink className="w-3 h-3 opacity-50" />
+                        </a>
+                        <a
+                            href={`https://polymarket.com/profile/${transaction.wallet_address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors border border-white/5 hover:border-white/20"
+                        >
                             <Wallet className="w-4 h-4" />
-                            Check Wallet
-                        </button>
-                        <button className="flex items-center justify-center gap-2 py-3 bg-white/5 hover:bg-white/10 text-gray-300 hover:text-white rounded-xl text-sm font-medium transition-colors border border-white/5 hover:border-white/20">
-                            <Share2 className="w-4 h-4" />
-                            Share Trade
-                        </button>
+                            Polymarket Profile
+                            <ExternalLink className="w-3 h-3 opacity-50" />
+                        </a>
                     </div>
 
                 </div>
