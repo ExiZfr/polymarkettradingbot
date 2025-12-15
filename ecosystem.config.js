@@ -40,6 +40,25 @@ module.exports = {
             error_file: "logs/whale-tracker-v4-error.log",
             out_file: "logs/whale-tracker-v4-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
+        },
+        {
+            name: "crypto-oracle",
+            script: "scripts/crypto_oracle.py",
+            interpreter: "python3",
+            cwd: process.cwd(),
+            max_restarts: 5,
+            min_uptime: "30s",
+            restart_delay: 30000,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "500M",
+            env: {
+                PYTHONUNBUFFERED: "1",
+                POLY_PRIVATE_KEY: ""  // Set via: pm2 set crypto-oracle:POLY_PRIVATE_KEY <key>
+            },
+            error_file: "logs/crypto-oracle-error.log",
+            out_file: "logs/crypto-oracle-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
 };
