@@ -301,44 +301,130 @@ class WhaleTrackerV4:
         return {}
     
     def calculate_tag(self, profile: dict) -> str:
-        """Calculate wallet tag based on smart trading history"""
-        # Ensure we have floats/ints
+        """Calculate wallet tag using advanced multi-factor scoring system"""
         try:
+            # Extract metrics with safe defaults
             pnl = float(profile.get('profit', 0) or profile.get('pnl', 0) or 0)
             volume = float(profile.get('volume', 0) or 0)
-            win_rate = float(profile.get('winSplit', 0) or profile.get('win_rate', 0) or 0) 
+            win_rate = float(profile.get('winSplit', 0) or profile.get('win_rate', 0) or 0)
             trade_count = int(profile.get('tradeCount', 0) or 0)
         except (ValueError, TypeError):
-            return "Unknown"
-
-        # 1. INSIDER 👁️ (New account, high success, decent volume)
-        if 0 < trade_count <= 10 and win_rate >= 0.8 and volume > 100:
-            return "👁️ Insider"
-            
-        # 2. SMART MONEY 🧠 (Proven success over time)
-        if win_rate >= 0.60 and volume > 5000:
-            return "🧠 Smart Money"
-            
-        # 3. WINNER 🏆 (High absolute profit)
-        if pnl > 10000:
-            return "🏆 Winner"
-            
-        # 4. DUMB MONEY 🤡 (High volume but losing)
-        if volume > 5000 and (win_rate < 0.40 or pnl < -5000):
-            return "🤡 Dumb Money"
-            
-        # 5. LOSER 💀 (Significant losses)
-        if pnl < -2000:
-            return "💀 Loser"
-            
-        # 6. WHALE 🐋 (Just high volume fallback)
+            return "🐟 Fish"
+        
+        # Insufficient data fallback
+        if trade_count == 0 or volume == 0:
+            return "🐟 Fish"
+        
+        # Calculate derived metrics
+        avg_trade_size = volume / trade_count if trade_count > 0 else 0
+        roi = (pnl / volume * 100) if volume > 0 else 0  # Return on Investment %
+        profit_per_trade = pnl / trade_count if trade_count > 0 else 0
+        
+        # === SCORING SYSTEM ===
+        scores = {
+            'insider': 0,
+            'smart_money': 0,
+            'winner': 0,
+            'dumb_money': 0,
+            'loser': 0
+        }
+        
+        # --- INSIDER SCORE ---
+        # New accounts with exceptional performance
+        if trade_count <= 15:
+            if win_rate >= 0.75:
+                scores['insider'] += 50
+            if win_rate >= 0.85:
+                scores['insider'] += 30
+            if volume > 1000:
+                scores['insider'] += 20
+            if avg_trade_size > 500:  # Large bets confidence
+                scores['insider'] += 25
+            if roi > 20:  # High ROI early on
+                scores['insider'] += 30
+        
+        # --- SMART MONEY SCORE ---
+        # Consistent profitable performance over time
+        if trade_count >= 10:
+            if win_rate >= 0.55:
+                scores['smart_money'] += 30
+            if win_rate >= 0.65:
+                scores['smart_money'] += 40
+            if roi > 10:
+                scores['smart_money'] += 35
+            if pnl > 0:
+                scores['smart_money'] += 25
+            if pnl > 5000:
+                scores['smart_money'] += 20
+            # Bonus for volume + profitability combo
+            if volume > 10000 and roi > 5:
+                scores['smart_money'] += 30
+        
+        # --- WINNER SCORE ---
+        # Absolute profit dominance
+        if pnl > 5000:
+            scores['winner'] += 40
+        if pnl > 15000:
+            scores['winner'] += 50
+        if pnl > 30000:
+            scores['winner'] += 40
+        if win_rate >= 0.60 and pnl > 10000:
+            scores['winner'] += 30
+        
+        # --- DUMB MONEY SCORE ---
+        # High activity but poor results
+        if volume > 5000:
+            if win_rate < 0.45:
+                scores['dumb_money'] += 40
+            if win_rate < 0.35:
+                scores['dumb_money'] += 30
+            if roi < -10:
+                scores['dumb_money'] += 35
+            if pnl < -5000:
+                scores['dumb_money'] += 40
+            # Chasing losses pattern
+            if trade_count > 20 and roi < -5:
+                scores['dumb_money'] += 25
+        
+        # --- LOSER SCORE ---
+        # Consistent negative performance
+        if pnl < -1000:
+            scores['loser'] += 30
+        if pnl < -5000:
+            scores['loser'] += 40
+        if pnl < -10000:
+            scores['loser'] += 40
+        if roi < -15:
+            scores['loser'] += 35
+        if win_rate < 0.40 and pnl < -2000:
+            scores['loser'] += 30
+        
+        # === DETERMINE TAG FROM HIGHEST SCORE ===
+        max_score = max(scores.values())
+        
+        # Require minimum score threshold to assign "smart" tags
+        if max_score >= 80:
+            for tag, score in scores.items():
+                if score == max_score:
+                    if tag == 'insider':
+                        return "👁️ Insider"
+                    elif tag == 'smart_money':
+                        return "🧠 Smart Money"
+                    elif tag == 'winner':
+                        return "🏆 Winner"
+                    elif tag == 'dumb_money':
+                        return "🤡 Dumb Money"
+                    elif tag == 'loser':
+                        return "💀 Loser"
+        
+        # === FALLBACK: VOLUME-BASED TIERS ===
         if volume > 100000:
             return "🐋 Whale"
         elif volume > 20000:
             return "🦈 Shark"
         elif volume > 5000:
             return "🐬 Dolphin"
-            
+        
         return "🐟 Fish"
     
     async def send_transaction(self, tx: WhaleTransaction):
