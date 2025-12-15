@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
     const interval = searchParams.get('interval') || 'day';
     const fidelity = searchParams.get('fidelity') || '60';
 
+    // Debug Log
+    console.log(`[PriceHistory] Request: id=${tokenId}, outcome=${outcome}, interval=${interval}`);
+
     if (!tokenId) {
         return NextResponse.json({ error: 'Missing id parameter' }, { status: 400 });
     }
@@ -22,46 +25,51 @@ export async function GET(request: NextRequest) {
         if (outcome) {
             try {
                 // Try to fetch market details from Gamma API to get clobTokenIds
-                // Note: The ID passed might be a condition ID or a slug, but Gamma API usually accepts Condition ID as ID ?
-                // Actually Gamma API /markets/:id usually takes the ID string.
-                const marketRes = await fetch(`https://gamma-api.polymarket.com/markets/${tokenId}`, {
+                // Note: The ID passed might be a condition ID or a slug.
+                const gammaUrl = `https://gamma-api.polymarket.com/markets/${tokenId}`;
+                // console.log(`[PriceHistory] Fetching Gamma: ${gammaUrl}`);
+
+                const marketRes = await fetch(gammaUrl, {
                     next: { revalidate: 3600 } // Cache market details for 1 hour
                 });
 
                 if (marketRes.ok) {
                     const marketData = await marketRes.json();
+                    // console.log(`[PriceHistory] Gamma Data found for ${tokenId}`);
 
                     // Logic to find Token ID
                     // marketData.clobTokenIds is an array [token0, token1]
-                    // Standard Binary Market: 0 = NO, 1 = YES? 
-                    // Typically on Polymarket (CTF): outcome 0 -> NO, outcome 1 -> YES
-
+                    // Standard Binary Market: 0 = NO, 1 = YES
                     if (marketData.clobTokenIds && marketData.clobTokenIds.length >= 2) {
-                        // User passes 'YES' or 'NO'
                         const targetIndex = outcome.toUpperCase() === 'YES' ? 1 : 0;
-
-                        // Safety check
                         if (marketData.clobTokenIds[targetIndex]) {
                             tokenId = marketData.clobTokenIds[targetIndex];
+                            console.log(`[PriceHistory] Resolved TokenID (clobTokenIds): ${tokenId}`);
                         }
                     } else if (marketData.tokens && marketData.tokens.length >= 2) {
-                        // Fallback to tokens array if clobTokenIds missing (older markets?)
+                        // Fallback to tokens array if clobTokenIds missing
                         const targetToken = marketData.tokens.find((t: any) =>
                             (outcome.toUpperCase() === 'YES' && (t.outcome === 'YES' || t.winner === true)) ||
                             (outcome.toUpperCase() === 'NO' && (t.outcome === 'NO' || t.winner === false))
                         );
                         if (targetToken?.tokenId) {
                             tokenId = targetToken.tokenId;
+                            console.log(`[PriceHistory] Resolved TokenID (tokens fallback): ${tokenId}`);
                         }
+                    } else {
+                        console.warn(`[PriceHistory] Market data found but no tokens/clobTokenIds for ${tokenId}`);
                     }
+                } else {
+                    console.warn(`[PriceHistory] Gamma API returned ${marketRes.status} for ${tokenId}`);
                 }
             } catch (resolveError) {
-                console.warn('Failed to resolve Token ID explicitly:', resolveError);
+                console.warn('[PriceHistory] Failed to resolve Token ID explicitly:', resolveError);
             }
         }
 
         // Step 2: Fetch History from CLOB
         const clobUrl = `https://clob.polymarket.com/prices-history?market=${tokenId}&interval=${interval}&fidelity=${fidelity}`;
+        // console.log(`[PriceHistory] Fetching CLOB: ${clobUrl}`);
 
         const response = await fetch(clobUrl, {
             headers: {
@@ -72,13 +80,16 @@ export async function GET(request: NextRequest) {
         });
 
         if (!response.ok) {
+            console.error(`[PriceHistory] CLOB Error ${response.status} for ${tokenId}`);
             return NextResponse.json({
                 error: 'Price history not available',
-                tokenId
+                tokenId,
+                clobStatus: response.status
             }, { status: 404 });
         }
 
         const data = await response.json();
+        // console.log(`[PriceHistory] Success. Points: ${(data.history || []).length}`);
 
         // Format
         const history = (data.history || data || []).map((point: any) => ({

@@ -116,27 +116,27 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                         initial="hidden"
                         animate="visible"
                     >
-                        {/* KPI Stats */}
+                        {/* KPI Stats - Adjusted for readability */}
                         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                             <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/80 border border-white/5 hover:border-white/10 transition-colors group">
                                 <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Net P&L</p>
-                                <p className={`text-2xl lg:text-3xl font-bold tracking-tight truncate ${isProfit ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'text-rose-400 drop-shadow-[0_0_15px_rgba(251,113,133,0.1)]'}`}>
+                                <p className={`text-xl lg:text-3xl font-bold tracking-tight ${isProfit ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'text-rose-400 drop-shadow-[0_0_15px_rgba(251,113,133,0.1)]'}`}>
                                     {isProfit ? '+' : ''}{pnl.toFixed(2)}$
                                 </p>
                             </motion.div>
                             <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/80 border border-white/5 hover:border-white/10 transition-colors">
                                 <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Return (ROI)</p>
-                                <p className={`text-2xl lg:text-3xl font-bold tracking-tight truncate ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                <p className={`text-xl lg:text-3xl font-bold tracking-tight ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                     {roi.toFixed(2)}%
                                 </p>
                             </motion.div>
                             <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5">
                                 <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Current Value</p>
-                                <p className="text-xl lg:text-2xl font-bold text-white/90 truncate">${currentValue.toFixed(2)}</p>
+                                <p className="text-lg lg:text-2xl font-bold text-white/90">${currentValue.toFixed(2)}</p>
                             </motion.div>
                             <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5">
                                 <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Invested</p>
-                                <p className="text-xl lg:text-2xl font-bold text-white/90 truncate">${order.amount.toFixed(2)}</p>
+                                <p className="text-lg lg:text-2xl font-bold text-white/90">${order.amount.toFixed(2)}</p>
                             </motion.div>
                         </div>
 

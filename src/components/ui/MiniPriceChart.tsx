@@ -19,6 +19,7 @@ export default function MiniPriceChart({ marketId, entryPrice, outcome, classNam
     const [history, setHistory] = useState<PricePoint[]>([]);
     const [loading, setLoading] = useState(true);
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+    const [error, setError] = useState(false);
 
     useEffect(() => {
         async function fetchHistory() {
@@ -30,26 +31,35 @@ export default function MiniPriceChart({ marketId, entryPrice, outcome, classNam
                         setHistory(data.history.slice(-24)); // Last 24 points
                         setCurrentPrice(data.history[data.history.length - 1]?.price || null);
                     }
+                } else {
+                    setError(true);
                 }
             } catch (e) {
                 console.error('Failed to fetch price history:', e);
+                setError(true);
             } finally {
                 setLoading(false);
             }
         }
         fetchHistory();
-    }, [marketId]);
+    }, [marketId, outcome]); // Added outcome to dependency array for completeness
 
     if (loading) {
         return (
-            <div className={`h-12 w-24 bg-muted/30 animate-pulse rounded ${className}`} />
+            <div className={`flex items-center justify-center ${className} bg-white/5 animate-pulse rounded-xl`}>
+                <span className="text-xs text-white/30 font-medium">Loading Chart...</span>
+            </div>
         );
     }
 
-    if (history.length < 2) {
+    if (error || history.length < 2) {
         return (
-            <div className={`h-12 w-24 flex items-center justify-center text-xs text-muted-foreground ${className}`}>
-                No data
+            <div className={`flex flex-col items-center justify-center ${className} rounded-xl border border-white/5`}>
+                <span className="text-xs text-white/30 font-medium mb-1">No data</span>
+                {/* Debug Info for User/Dev */}
+                <span className="text-[9px] text-white/10 font-mono">
+                    {marketId.slice(0, 8)}... • {outcome}
+                </span>
             </div>
         );
     }
