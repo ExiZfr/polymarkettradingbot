@@ -59,6 +59,25 @@ module.exports = {
             error_file: "logs/crypto-oracle-error.log",
             out_file: "logs/crypto-oracle-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
+        },
+        {
+            name: "oracle-scraper",
+            script: "scripts/oracle_scraper.py",
+            interpreter: "./venv/bin/python",
+            cwd: process.cwd(),
+            max_restarts: 5,
+            min_uptime: "60s",
+            restart_delay: 60000,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "400M",
+            env: {
+                PYTHONUNBUFFERED: "1",
+                DATABASE_URL: process.env.DATABASE_URL || ""
+            },
+            error_file: "logs/oracle-scraper-error.log",
+            out_file: "logs/oracle-scraper-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
 };

@@ -43,18 +43,38 @@ export default function OraclePage() {
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard'>('signals');
+    const [leaderboardStats, setLeaderboardStats] = useState<any>(null);
     const [filterConfidence, setFilterConfidence] = useState<string>('all');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/oracle/signals');
-            if (res.ok) {
-                const data = await res.json();
-                setSignals(data.signals || []);
-                setLeaderboard(data.leaderboard || []);
-                setLastUpdate(new Date());
+            // Fetch signals and leaderboard in parallel
+            const [signalsRes, leaderboardRes] = await Promise.all([
+                fetch('/api/oracle/signals'),
+                fetch('/api/oracle/leaderboard?limit=100')
+            ]);
+
+            if (signalsRes.ok) {
+                const signalsData = await signalsRes.json();
+                setSignals(signalsData.signals || []);
             }
+
+            if (leaderboardRes.ok) {
+                const leaderboardData = await leaderboardRes.json();
+                setLeaderboard(leaderboardData.leaderboard?.map((t: any) => ({
+                    address: t.address,
+                    pnl: t.totalPnl,
+                    winRate: t.winRate,
+                    trades: t.totalTrades,
+                    rank: t.rank,
+                    score: t.score,
+                    cryptoTrades: t.cryptoTrades
+                })) || []);
+                setLeaderboardStats(leaderboardData.stats);
+            }
+
+            setLastUpdate(new Date());
         } catch (error) {
             console.error('Failed to fetch oracle data:', error);
         } finally {
@@ -226,8 +246,8 @@ export default function OraclePage() {
                     <button
                         onClick={() => setActiveTab('signals')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'signals'
-                                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                             }`}
                     >
                         <Zap className="w-4 h-4" />
@@ -241,8 +261,8 @@ export default function OraclePage() {
                     <button
                         onClick={() => setActiveTab('leaderboard')}
                         className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'leaderboard'
-                                ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30'
-                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                             }`}
                     >
                         <Trophy className="w-4 h-4" />
@@ -268,12 +288,12 @@ export default function OraclePage() {
                                         key={conf}
                                         onClick={() => setFilterConfidence(conf)}
                                         className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterConfidence === conf
-                                                ? conf === 'EXTREME' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
-                                                    conf === 'HIGH' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                                                        conf === 'MEDIUM' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                                                            conf === 'LOW' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
-                                                                'bg-primary/10 text-primary border border-primary/30'
-                                                : 'text-muted-foreground hover:bg-muted'
+                                            ? conf === 'EXTREME' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                conf === 'HIGH' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                                    conf === 'MEDIUM' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                                        conf === 'LOW' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                                                            'bg-primary/10 text-primary border border-primary/30'
+                                            : 'text-muted-foreground hover:bg-muted'
                                             }`}
                                     >
                                         {conf === 'all' ? 'All Signals' : conf}
@@ -346,8 +366,8 @@ export default function OraclePage() {
                                                                 onClick={() => handleCopyTrade(signal)}
                                                                 disabled={copiedId === signal.id}
                                                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${copiedId === signal.id
-                                                                        ? 'bg-emerald-500/20 text-emerald-400'
-                                                                        : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25'
+                                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                                    : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25'
                                                                     }`}
                                                             >
                                                                 {copiedId === signal.id ? (
@@ -430,9 +450,9 @@ export default function OraclePage() {
                                         >
                                             {/* Rank */}
                                             <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${trader.rank === 1 ? 'bg-amber-500/20 text-amber-400' :
-                                                    trader.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
-                                                        trader.rank === 3 ? 'bg-orange-600/20 text-orange-500' :
-                                                            'bg-muted text-muted-foreground'
+                                                trader.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
+                                                    trader.rank === 3 ? 'bg-orange-600/20 text-orange-500' :
+                                                        'bg-muted text-muted-foreground'
                                                 }`}>
                                                 {trader.rank <= 3 ? <Crown className="w-5 h-5" /> : trader.rank}
                                             </div>
