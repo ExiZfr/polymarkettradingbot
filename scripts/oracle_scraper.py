@@ -278,50 +278,106 @@ class OracleScraper:
             return markets
     
     def fetch_global_leaderboard(self, limit: int = 500) -> List[dict]:
-        """Fetch global Polymarket leaderboard"""
+        """Fetch global Polymarket leaderboard from multiple sources"""
         logger.info(f"🏆 Fetching global leaderboard (top {limit})...")
         
         traders = []
-        offset = 0
-        batch_size = 100
         
-        while len(traders) < limit:
-            try:
-                # Try different endpoints
-                response = self.session.get(
-                    f"{GAMMA_API}/leaderboard",
-                    params={"limit": batch_size, "offset": offset},
-                    timeout=30
-                )
-                
-                if response.status_code != 200:
-                    # Fallback: try CLOB API
-                    response = self.session.get(
-                        f"{CLOB_API}/leaderboard",
-                        params={"limit": batch_size, "offset": offset},
-                        timeout=30
-                    )
-                
-                if response.status_code != 200:
-                    break
-                
+        # Source 1: Gamma API users endpoint
+        try:
+            response = self.session.get(
+                f"{GAMMA_API}/users",
+                params={"limit": 100, "sortBy": "pnl", "order": "desc"},
+                timeout=30
+            )
+            if response.status_code == 200:
                 data = response.json()
-                batch = data if isinstance(data, list) else data.get("leaderboard", [])
-                
-                if not batch:
-                    break
-                
-                traders.extend(batch)
-                offset += batch_size
-                
-                logger.info(f"   Fetched {len(traders)} traders...")
-                time.sleep(0.3)  # Rate limiting
-                
-            except Exception as e:
-                logger.error(f"Error fetching leaderboard: {e}")
-                break
+                if isinstance(data, list):
+                    traders.extend(data)
+                    logger.info(f"   Source 1 (users): {len(data)} traders")
+        except Exception as e:
+            logger.warning(f"   Source 1 failed: {e}")
         
-        logger.info(f"   Total: {len(traders)} traders from global leaderboard")
+        # Source 2: Gamma API profiles
+        try:
+            response = self.session.get(
+                f"{GAMMA_API}/profiles",
+                params={"limit": 100},
+                timeout=30
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if isinstance(data, list):
+                    # Filter unique addresses
+                    existing = {t.get("address", t.get("user", "")) for t in traders}
+                    new_traders = [t for t in data if t.get("address", t.get("user", "")) not in existing]
+                    traders.extend(new_traders)
+                    logger.info(f"   Source 2 (profiles): {len(new_traders)} traders")
+        except Exception as e:
+            logger.warning(f"   Source 2 failed: {e}")
+        
+        # Source 3: CLOB API recent trades (get unique traders)
+        try:
+            response = self.session.get(
+                f"{CLOB_API}/trades",
+                params={"limit": 500},
+                timeout=30
+            )
+            if response.status_code == 200:
+                data = response.json()
+                trades = data if isinstance(data, list) else data.get("trades", [])
+                
+                # Extract unique traders
+                existing = {t.get("address", t.get("user", "")) for t in traders}
+                trader_addresses = set()
+                
+                for trade in trades:
+                    addr = trade.get("maker", trade.get("taker", ""))
+                    if addr and addr not in existing and addr not in trader_addresses:
+                        trader_addresses.add(addr)
+                        traders.append({
+                            "address": addr,
+                            "pnl": 0,
+                            "trades": 1,
+                            "from_trades": True
+                        })
+                
+                logger.info(f"   Source 3 (CLOB trades): {len(trader_addresses)} traders")
+        except Exception as e:
+            logger.warning(f"   Source 3 failed: {e}")
+        
+        # Source 4: Activity feed across all markets
+        try:
+            response = self.session.get(
+                f"{GAMMA_API}/activity",
+                params={"limit": 500},
+                timeout=30
+            )
+            if response.status_code == 200:
+                activities = response.json()
+                if isinstance(activities, list):
+                    existing = {t.get("address", t.get("user", "")) for t in traders}
+                    activity_traders = {}
+                    
+                    for act in activities:
+                        addr = act.get("proxyWallet", act.get("user", ""))
+                        if addr and addr not in existing:
+                            if addr not in activity_traders:
+                                activity_traders[addr] = {
+                                    "address": addr,
+                                    "pnl": 0,
+                                    "trades": 0,
+                                    "volume": 0
+                                }
+                            activity_traders[addr]["trades"] += 1
+                            activity_traders[addr]["volume"] += float(act.get("usdcSize", 0) or 0)
+                    
+                    traders.extend(activity_traders.values())
+                    logger.info(f"   Source 4 (activity): {len(activity_traders)} traders")
+        except Exception as e:
+            logger.warning(f"   Source 4 failed: {e}")
+        
+        logger.info(f"   Total: {len(traders)} traders from all sources")
         return traders[:limit]
     
     def fetch_market_activity(self, market_id: str, limit: int = 100) -> List[dict]:
