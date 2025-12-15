@@ -24,7 +24,7 @@ import {
 import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
 import { showTradeNotification } from "@/components/dashboard/TradeNotificationSystem";
 import ClosePositionModal from "@/components/dashboard/ClosePositionModal";
-import PolymarketLink from "@/components/ui/PolymarketLink";
+import MiniPriceChart from "@/components/ui/MiniPriceChart";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 
@@ -229,7 +229,18 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                 </div>
 
                 {/* Right Side */}
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
+                    {/* Mini Price Chart (for open orders) */}
+                    {order.status === 'OPEN' && (
+                        <div className="hidden lg:block">
+                            <MiniPriceChart
+                                marketId={order.marketId}
+                                entryPrice={order.entryPrice}
+                                outcome={order.outcome}
+                            />
+                        </div>
+                    )}
+
                     {/* Entry Price */}
                     <div className="text-right hidden sm:block">
                         <p className="text-xs text-muted-foreground">Entry</p>
@@ -335,13 +346,15 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                                 </div>
                             )}
                             <div className="md:col-span-4 flex items-end">
-                                <PolymarketLink
-                                    marketId={order.marketId}
+                                <a
+                                    href={`https://polymarket.com/markets?_q=${encodeURIComponent((order.marketTitle || '').slice(0, 50))}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="flex items-center gap-2 text-xs text-primary hover:underline"
                                 >
                                     <ExternalLink size={12} />
                                     View on Polymarket
-                                </PolymarketLink>
+                                </a>
                             </div>
                         </div>
                     </motion.div>
