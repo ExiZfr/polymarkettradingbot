@@ -491,6 +491,64 @@ export const paperStore = {
         return closedOrder;
     },
 
+    // Settle an order based on market resolution (auto-close when market resolves)
+    settleOrder: (orderId: string, winningOutcome: 'YES' | 'NO'): PaperOrder | null => {
+        const allOrders = paperStore.getAllOrders();
+        const profile = paperStore.getActiveProfile();
+
+        const orderIndex = allOrders.findIndex(o => o.id === orderId);
+        if (orderIndex === -1) return null;
+
+        const order = allOrders[orderIndex];
+        if (order.status !== 'OPEN') return null;
+
+        // Determine settlement price based on outcome match
+        // If user bet on the winning outcome, shares are worth $1 each
+        // If user bet on the losing outcome, shares are worth $0
+        const isWinner = order.outcome === winningOutcome;
+        const exitPrice = isWinner ? 1 : 0;
+
+        // Calculate final P&L
+        const returnAmount = order.shares * exitPrice;
+        const pnl = returnAmount - order.amount;
+        const roi = (pnl / order.amount) * 100;
+
+        // Update order
+        const settledOrder: PaperOrder = {
+            ...order,
+            status: 'CLOSED',
+            exitPrice,
+            exitTimestamp: Date.now(),
+            pnl,
+            roi,
+            notes: `${order.notes || ''} [Auto-settled: ${winningOutcome} won]`.trim()
+        };
+
+        allOrders[orderIndex] = settledOrder;
+        saveLocalStorage(ORDERS_KEY, allOrders);
+
+        // Update profile stats (same logic as closeOrder)
+        const profileOrders = allOrders.filter(o => o.profileId === profile.id || (!o.profileId && profile.id === DEFAULT_PROFILE_ID));
+        const closedOrders = profileOrders.filter(o => o.status === 'CLOSED');
+        const wins = closedOrders.filter(o => (o.pnl || 0) > 0);
+        const losses = closedOrders.filter(o => (o.pnl || 0) < 0);
+        const totalRealizedPnL = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+
+        paperStore.saveProfile({
+            currentBalance: profile.currentBalance + returnAmount,
+            realizedPnL: totalRealizedPnL,
+            totalPnL: totalRealizedPnL,
+            winCount: wins.length,
+            lossCount: losses.length,
+            winRate: closedOrders.length > 0 ? (wins.length / closedOrders.length) * 100 : 0,
+            bestTrade: Math.max(profile.bestTrade, pnl),
+            worstTrade: Math.min(profile.worstTrade, pnl)
+        });
+
+        console.log(`[PaperTrading] Order SETTLED: ${orderId} | Winner: ${winningOutcome} | User bet: ${order.outcome} | PnL: ${pnl.toFixed(2)}`);
+        return settledOrder;
+    },
+
     // Cancel an order (refund amount)
     cancelOrder: (orderId: string): boolean => {
         const allOrders = paperStore.getAllOrders();

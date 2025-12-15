@@ -193,6 +193,71 @@ export default function OrderBookPage() {
         return () => clearInterval(interval);
     }, [fetchLivePrices]);
 
+    // Auto-settlement: Check if any markets have resolved
+    const isCheckingSettlement = useRef(false);
+    const checkAndSettleMarkets = useCallback(async () => {
+        if (isCheckingSettlement.current) return;
+
+        const openOrders = orders.filter(o => o.status === 'OPEN');
+        if (openOrders.length === 0) return;
+
+        const marketIds = [...new Set(openOrders.map(o => o.marketId))];
+        if (marketIds.length === 0) return;
+
+        isCheckingSettlement.current = true;
+        try {
+            const res = await fetch(`/api/markets/check-resolution?ids=${marketIds.join(',')}`, {
+                signal: AbortSignal.timeout(15000)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                const resolvedMarkets = data.resolvedMarkets || [];
+
+                if (resolvedMarkets.length > 0) {
+                    console.log('[AutoSettle] Found resolved markets:', resolvedMarkets);
+
+                    // Settle each order that belongs to a resolved market
+                    for (const resolved of resolvedMarkets) {
+                        const ordersToSettle = openOrders.filter(o => o.marketId === resolved.marketId);
+                        for (const order of ordersToSettle) {
+                            const settled = paperStore.settleOrder(order.id, resolved.winningOutcome);
+                            if (settled) {
+                                console.log(`[AutoSettle] Settled order ${order.id}: ${order.outcome} vs ${resolved.winningOutcome}`);
+                            }
+                        }
+                    }
+
+                    // Reload orders to reflect changes
+                    loadOrders();
+                }
+            }
+        } catch (error) {
+            if (error instanceof Error && error.name !== 'AbortError') {
+                console.warn('[AutoSettle] Check failed:', error.message);
+            }
+        } finally {
+            isCheckingSettlement.current = false;
+        }
+    }, [orders, loadOrders]);
+
+    // Settlement polling effect - check every 30 seconds
+    useEffect(() => {
+        const openCount = orders.filter(o => o.status === 'OPEN').length;
+        if (openCount === 0) return;
+
+        // Initial check after 5 seconds (give time for page load)
+        const initialTimeout = setTimeout(checkAndSettleMarkets, 5000);
+
+        // Then check every 30 seconds
+        const interval = setInterval(checkAndSettleMarkets, 30000);
+
+        return () => {
+            clearTimeout(initialTimeout);
+            clearInterval(interval);
+        };
+    }, [checkAndSettleMarkets]);
+
     // Computed Values
     const unrealizedPnL = useMemo(() => {
         return orders
