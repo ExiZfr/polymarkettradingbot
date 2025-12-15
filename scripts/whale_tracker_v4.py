@@ -141,7 +141,7 @@ class WhaleTrackerV4:
                                 'market_question': trade.get('title', 'Unknown Market'),
                                 'market_slug': trade.get('slug', ''),
                                 'market_url': market_url,
-                                'market_image': trade.get('image', trade.get('eventImage')),  # Get market image
+                                'market_image': trade.get('icon'),  # Market image/icon URL
                                 'outcome': trade.get('outcome', '')
                             })
                         except (ValueError, KeyError) as e:
@@ -305,7 +305,7 @@ class WhaleTrackerV4:
         return {}
     
     def calculate_tag(self, profile: dict) -> str:
-        """Calculate wallet tag - SMART TAGS ONLY (no volume-based Fish/Shark/Whale)"""
+        """Calculate wallet tag - SMART TAGS ONLY (relaxed thresholds for more variety)"""
         try:
             # Extract metrics with safe defaults
             pnl = float(profile.get('profit', 0) or profile.get('pnl', 0) or 0)
@@ -323,38 +323,38 @@ class WhaleTrackerV4:
         roi = (pnl / volume * 100) if volume > 0 else 0
         avg_trade_size = volume / trade_count if trade_count > 0 else 0
         
-        # === DIRECT CLASSIFICATION (no scoring, clearer logic) ===
+        # === RELAXED CLASSIFICATION (lower thresholds for more variety) ===
         
-        # 1. INSIDER 👁️ - New account with exceptional early results
-        if trade_count <= 15 and trade_count > 0:
-            if win_rate >= 0.70 and volume > 500:
+        # 1. INSIDER 👁️ - New account with good early results (relaxed)
+        if trade_count <= 15 and trade_count >= 3:
+            if win_rate >= 0.60 and volume > 200:
                 return "👁️ Insider"
-            if roi > 30 and volume > 1000:
+            if roi > 15 and volume > 500:
                 return "👁️ Insider"
         
-        # 2. WINNER 🏆 - Clear profit dominance
-        if pnl > 5000:
+        # 2. WINNER 🏆 - Good profits (relaxed from $5k to $500)
+        if pnl > 500:
             return "🏆 Winner"
-        if pnl > 2000 and win_rate >= 0.55:
+        if pnl > 200 and win_rate >= 0.55:
             return "🏆 Winner"
         
-        # 3. SMART MONEY 🧠 - Consistent profitable trader
-        if win_rate >= 0.55 and pnl > 0 and trade_count >= 5:
+        # 3. SMART MONEY 🧠 - Consistent profitable trader (relaxed)
+        if win_rate >= 0.50 and pnl > 0 and trade_count >= 3:
             return "🧠 Smart Money"
-        if roi > 10 and trade_count >= 10:
+        if roi > 5 and trade_count >= 5:
             return "🧠 Smart Money"
         
-        # 4. DUMB MONEY 🤡 - High activity but losing
-        if volume > 3000 and pnl < 0:
-            if win_rate < 0.45 or roi < -5:
+        # 4. DUMB MONEY 🤡 - High activity but losing (relaxed)
+        if volume > 1000 and pnl < 0:
+            if win_rate < 0.45 or roi < -3:
                 return "🤡 Dumb Money"
-        if trade_count > 15 and roi < -10:
+        if trade_count > 10 and roi < -5:
             return "🤡 Dumb Money"
         
-        # 5. LOSER 💀 - Significant losses
-        if pnl < -2000:
+        # 5. LOSER 💀 - Significant losses (relaxed from -$2k to -$200)
+        if pnl < -200:
             return "💀 Loser"
-        if pnl < -500 and win_rate < 0.40:
+        if pnl < -100 and win_rate < 0.40:
             return "💀 Loser"
         
         # 6. UNKNOWN ❓ - Neutral or insufficient signal
