@@ -10,6 +10,17 @@ module.exports = {
             }
         },
         {
+            name: "cloudflared",
+            script: "/usr/local/bin/cloudflared",
+            args: "tunnel --config /root/.cloudflared/config.yml run afd5f523-4997-49e8-abe0-99bd65adf4d9",
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "200M",
+            error_file: "logs/cloudflared-error.log",
+            out_file: "logs/cloudflared-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss"
+        },
+        {
             name: "polygraal-sniper",
             script: "scripts/polymarket_sniper.py",
             interpreter: "python3",
