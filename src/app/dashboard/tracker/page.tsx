@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Activity, Trophy, Terminal } from 'lucide-react';
+import { Activity, Trophy, Terminal, Star, Maximize2, Radio } from 'lucide-react';
 import TransactionDetails from '@/components/tracker/TransactionDetails';
 import TrackerStatsBar from '@/components/dashboard/tracker/TrackerStatsBar';
 import TrackerToolbar from '@/components/dashboard/tracker/TrackerToolbar';
 import TrackerTable from '@/components/dashboard/tracker/TrackerTable';
+import WalletWatchlist from '@/components/dashboard/tracker/WalletWatchlist';
+import BubbleMap from '@/components/dashboard/tracker/BubbleMap';
 import { getTagConfig, formatAmount } from '@/lib/tracker-utils';
 import type { WhaleTransaction, TrackerStats, LogEntry, FilterState } from '@/types/tracker';
 
@@ -18,6 +20,7 @@ export default function TrackerPage() {
     const [showLogs, setShowLogs] = useState(false);
     const [filter, setFilter] = useState<FilterState>({ tag: '', minAmount: 0 });
     const [selectedTx, setSelectedTx] = useState<WhaleTransaction | null>(null);
+    const [activeTab, setActiveTab] = useState<'live' | 'watchlist' | 'network'>('live');
 
     const fetchData = useCallback(async () => {
         try {
@@ -126,16 +129,67 @@ export default function TrackerPage() {
 
             {/* Main Content Area */}
             <div className="flex-1 flex overflow-hidden">
-                {/* Center Panel: Table */}
+                {/* Center Panel */}
                 <div className="flex-1 flex flex-col min-w-0 border-r border-border">
-                    <TrackerToolbar filter={filter} onChange={setFilter} />
-                    <div className="flex-1 p-4 overflow-hidden bg-background/50">
-                        <TrackerTable
-                            transactions={filteredTransactions}
-                            loading={loading}
-                            onSelectTx={setSelectedTx}
-                        />
+                    {/* Tab Navigation */}
+                    <div className="flex items-center gap-1 px-4 py-2 border-b border-border bg-background">
+                        <button
+                            onClick={() => setActiveTab('live')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'live'
+                                    ? 'bg-primary/10 text-primary border border-primary/30'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            <Radio size={14} className={activeTab === 'live' ? 'text-emerald-500' : ''} />
+                            Live Feed
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('watchlist')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'watchlist'
+                                    ? 'bg-primary/10 text-primary border border-primary/30'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            <Star size={14} />
+                            Watchlist
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('network')}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'network'
+                                    ? 'bg-primary/10 text-primary border border-primary/30'
+                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                }`}
+                        >
+                            <Maximize2 size={14} />
+                            Network Map
+                        </button>
                     </div>
+
+                    {/* Tab Content */}
+                    {activeTab === 'live' && (
+                        <>
+                            <TrackerToolbar filter={filter} onChange={setFilter} />
+                            <div className="flex-1 p-4 overflow-hidden bg-background/50">
+                                <TrackerTable
+                                    transactions={filteredTransactions}
+                                    loading={loading}
+                                    onSelectTx={setSelectedTx}
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {activeTab === 'watchlist' && (
+                        <div className="flex-1 p-4 overflow-y-auto bg-background/50">
+                            <WalletWatchlist />
+                        </div>
+                    )}
+
+                    {activeTab === 'network' && (
+                        <div className="flex-1 p-4 overflow-hidden bg-background/50">
+                            <BubbleMap />
+                        </div>
+                    )}
                 </div>
 
                 {/* Right Panel: Sidebar (Collapsible/Fixed) */}
