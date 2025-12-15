@@ -7,6 +7,7 @@ import {
     Trophy, Target, Shield, Flame, Crown, Users,
     ChevronRight, Check, AlertTriangle, Clock, Terminal
 } from 'lucide-react';
+import TradeConfirmationModal from '@/components/dashboard/TradeConfirmationModal';
 
 interface Signal {
     id: string;
@@ -54,6 +55,10 @@ export default function OraclePage() {
     const [leaderboardPeriod, setLeaderboardPeriod] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
     const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
     const consoleRef = useRef<HTMLDivElement>(null);
+
+    // Trade confirmation modal state
+    const [showTradeModal, setShowTradeModal] = useState(false);
+    const [selectedSignal, setSelectedSignal] = useState<Signal | null>(null);
 
     const fetchLogs = useCallback(async () => {
         try {
@@ -135,22 +140,37 @@ export default function OraclePage() {
         }
     }, [activeTab, fetchLogs]);
 
-    const handleCopyTrade = async (signal: Signal) => {
-        // This would integrate with paper trading
+    // Open trade confirmation modal
+    const handleCopyTrade = (signal: Signal) => {
+        setSelectedSignal(signal);
+        setShowTradeModal(true);
+    };
+
+    // Execute trade after confirmation
+    const handleConfirmTrade = async (adjustedOrder: any) => {
         const paperStore = (window as any).paperStore;
         if (paperStore?.placeOrder) {
             await paperStore.placeOrder({
-                marketId: signal.marketId,
-                marketTitle: signal.question,
-                type: signal.side as 'BUY' | 'SELL',
-                outcome: signal.outcome as 'YES' | 'NO',
-                amount: Math.min(signal.size, 100), // Cap at $100 for paper trading
-                entryPrice: signal.entryPrice,
+                marketId: adjustedOrder.marketId,
+                marketTitle: adjustedOrder.question,
+                type: adjustedOrder.side as 'BUY' | 'SELL',
+                outcome: adjustedOrder.outcome as 'YES' | 'NO',
+                amount: adjustedOrder.orderSize,
+                entryPrice: adjustedOrder.executionPrice, // Use slippage-adjusted price
+                slippage: adjustedOrder.slippage,
+                fees: adjustedOrder.estimatedFees,
+                totalCost: adjustedOrder.totalCost,
                 source: 'ORACLE'
             });
         }
-        setCopiedId(signal.id);
-        setTimeout(() => setCopiedId(null), 2000);
+
+        if (selectedSignal) {
+            setCopiedId(selectedSignal.id);
+            setTimeout(() => setCopiedId(null), 2000);
+        }
+
+        setShowTradeModal(false);
+        setSelectedSignal(null);
     };
 
     const truncateAddress = (addr: string) =>
@@ -651,6 +671,28 @@ export default function OraclePage() {
                     ) : null}
                 </AnimatePresence>
             </div>
+
+            {/* Trade Confirmation Modal */}
+            {selectedSignal && (
+                <TradeConfirmationModal
+                    isOpen={showTradeModal}
+                    onClose={() => {
+                        setShowTradeModal(false);
+                        setSelectedSignal(null);
+                    }}
+                    onConfirm={handleConfirmTrade}
+                    signal={{
+                        marketId: selectedSignal.marketId,
+                        question: selectedSignal.question,
+                        outcome: selectedSignal.outcome,
+                        entryPrice: selectedSignal.entryPrice,
+                        size: selectedSignal.size,
+                        side: selectedSignal.side,
+                        traderAddress: selectedSignal.traderAddress,
+                        reliabilityScore: selectedSignal.reliabilityScore
+                    }}
+                />
+            )}
         </div>
     );
 }
