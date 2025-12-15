@@ -130,12 +130,12 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                     {/* Actions */}
                     <div className="space-y-3 pt-4">
                         <a
-                            href={`https://polymarket.com/${transaction.market_slug}`}
+                            href={transaction.market_url || `https://polymarket.com/search?q=${encodeURIComponent(transaction.market_question)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center gap-2 w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40"
                         >
-                            Execute on Polymarket
+                            View on Polymarket
                             <ExternalLink className="w-4 h-4" />
                         </a>
 

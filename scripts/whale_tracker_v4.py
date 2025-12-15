@@ -38,6 +38,7 @@ class WhaleTransaction:
     market_id: str
     market_question: str
     market_slug: str
+    market_url: Optional[str]  # NEW: Full Polymarket URL
     outcome: str
     amount: float
     price: float
@@ -123,6 +124,9 @@ class WhaleTrackerV4:
                     for trade in trades_data:
                         try:
                             # Data-API structure - market data is at TOP LEVEL, not nested!
+                            event_slug = trade.get('eventSlug', trade.get('slug', ''))
+                            market_url = f"https://polymarket.com/{event_slug}" if event_slug else None
+                            
                             trades.append({
                                 'id': trade.get('transactionHash', ''),
                                 'maker': trade.get('proxyWallet', ''),
@@ -135,6 +139,7 @@ class WhaleTrackerV4:
                                 'timestamp': trade.get('timestamp', ''),
                                 'market_question': trade.get('title', 'Unknown Market'),
                                 'market_slug': trade.get('slug', ''),
+                                'market_url': market_url,
                                 'outcome': trade.get('outcome', '')
                             })
                         except (ValueError, KeyError) as e:
@@ -173,6 +178,7 @@ class WhaleTrackerV4:
             # Use market data DIRECTLY from trade (already extracted from Data-API)
             market_question = trade.get('market_question', 'Unknown Market')
             market_slug = trade.get('market_slug', '')
+            market_url = trade.get('market_url')
             
             # Get wallet profile
             profile = await self.get_wallet_profile(wallet)
@@ -194,6 +200,7 @@ class WhaleTrackerV4:
                 market_id=market_id,
                 market_question=market_question,
                 market_slug=market_slug,
+                market_url=market_url,
                 outcome='YES' if side.upper() == 'BUY' else 'NO',
                 amount=size * price,
                 price=price,

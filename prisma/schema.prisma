@@ -282,6 +282,7 @@ model WhaleTransaction {
   marketId        String
   marketQuestion  String
   marketSlug      String   // For constructing Polymarket URLs
+  marketUrl       String?  // Actual Polymarket URL (extracted from API)
   outcome         String   // YES, NO, or other
   amount          Float    // Amount in USD
   price           Float    // Exact price at order time
