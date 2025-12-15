@@ -29,6 +29,8 @@ interface ClosePositionModalProps {
 }
 
 export default function ClosePositionModal({ order, livePrice, onClose, onConfirm }: ClosePositionModalProps) {
+    const [showCardPreview, setShowCardPreview] = useState(false);
+
     // Determine current price: Live > Stored > Entry (prioritize live price)
     const currentPrice = livePrice
         ? (order.outcome === 'YES' ? livePrice.yes : livePrice.no)
@@ -203,24 +205,121 @@ export default function ClosePositionModal({ order, livePrice, onClose, onConfir
                         </div>
                     </div>
 
-                    {/* Action Button */}
-                    <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={onConfirm}
-                        className={`w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden group mt-6
-                            ${isProfit ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500'}
-                        `}
-                    >
-                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                        <span>Confirm Close</span>
-                        <ArrowRight size={18} />
-                    </motion.button>
-                    <p className="text-[10px] text-center text-white/30 mt-2">
-                        Proceeding will execute a market sell order immediately.
-                    </p>
+                    {/* Preview & Action Buttons */}
+                    <div className="mt-6 space-y-3">
+                        {/* Preview Card Button */}
+                        <button
+                            onClick={() => setShowCardPreview(true)}
+                            className="w-full py-3 rounded-xl font-bold text-white/70 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                        >
+                            <Share2 size={16} />
+                            <span>Preview P&L Card</span>
+                        </button>
+
+                        {/* Confirm Close Button */}
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={onConfirm}
+                            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden group
+                                ${isProfit ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500'}
+                            `}
+                        >
+                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                            <span>Confirm Close</span>
+                            <ArrowRight size={18} />
+                        </motion.button>
+                        <p className="text-[10px] text-center text-white/30">
+                            Proceeding will execute a market sell order immediately.
+                        </p>
+                    </div>
                 </div>
             </motion.div>
+
+            {/* Fullscreen Card Preview Overlay */}
+            <AnimatePresence>
+                {showCardPreview && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl flex items-center justify-center p-8"
+                        onClick={() => setShowCardPreview(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, y: 50 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.8, y: 50 }}
+                            transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                            className={`relative w-full max-w-md aspect-[3/4] rounded-[3rem] overflow-hidden p-10 flex flex-col justify-between shadow-2xl
+                                ${isProfit
+                                    ? 'bg-gradient-to-br from-emerald-600 via-emerald-700 to-[#0c2e26] shadow-[0_30px_80px_-10px_rgba(16,185,129,0.4)]'
+                                    : 'bg-gradient-to-br from-rose-600 via-rose-700 to-[#2e0c0c] shadow-[0_30px_80px_-10px_rgba(244,63,94,0.4)]'
+                                }
+                            `}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Noise Texture */}
+                            <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
+
+                            {/* Dynamic Glow */}
+                            <div className="absolute top-0 right-0 w-72 h-72 bg-white/25 rounded-full blur-[100px] -translate-y-1/2 translate-x-1/2 mix-blend-soft-light" />
+
+                            <div className="relative z-10 flex justify-between items-start">
+                                <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/25 shadow-xl">
+                                    <Wallet size={26} className="text-white drop-shadow-lg" />
+                                </div>
+                                <div className={`px-4 py-2 rounded-full backdrop-blur-md border shadow-lg ${isProfit ? 'bg-emerald-400/20 border-emerald-400/30' : 'bg-rose-400/20 border-rose-400/30'}`}>
+                                    <span className="text-sm font-black text-white tracking-widest flex items-center gap-2 uppercase">
+                                        {isProfit ? <TrendingUp size={14} strokeWidth={3} /> : <TrendingDown size={14} strokeWidth={3} />}
+                                        {isProfit ? 'Profit' : 'Loss'}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 mt-6">
+                                <h3 className="text-white font-bold text-xl leading-snug line-clamp-3 drop-shadow-lg">
+                                    {order.marketTitle}
+                                </h3>
+                            </div>
+
+                            <div className="relative z-10 my-auto py-8">
+                                <p className="text-white/60 text-xs uppercase tracking-[0.3em] font-extrabold mb-2">Total Return</p>
+                                <p className="text-6xl leading-none font-black text-white tracking-tighter drop-shadow-2xl">
+                                    {isProfit ? '+' : ''}{netRoi.toFixed(1)}%
+                                </p>
+                                <div className="inline-flex items-center gap-3 mt-5 px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 shadow-xl">
+                                    <span className="text-white font-mono font-bold text-lg">${netPnL.toFixed(2)}</span>
+                                    <span className="text-white/60 text-xs uppercase font-bold tracking-wider">NET P&L</span>
+                                </div>
+                            </div>
+
+                            <div className="relative z-10 pt-6 border-t border-white/15">
+                                <div className="flex justify-between items-end">
+                                    <div>
+                                        <p className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1.5">Entry</p>
+                                        <p className="text-white font-mono text-lg font-bold bg-white/15 px-3 py-1 rounded-lg backdrop-blur-sm">${order.entryPrice.toFixed(3)}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1.5">Current</p>
+                                        <p className="text-white font-mono text-lg font-bold bg-white/15 px-3 py-1 rounded-lg backdrop-blur-sm">${currentPrice.toFixed(3)}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setShowCardPreview(false)}
+                                className="absolute top-4 right-4 p-3 rounded-full bg-white/10 hover:bg-white/20 text-white/70 hover:text-white transition-all z-20"
+                            >
+                                <X size={24} />
+                            </button>
+                        </motion.div>
+
+                        <p className="absolute bottom-8 text-white/40 text-sm">Click anywhere to close</p>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
