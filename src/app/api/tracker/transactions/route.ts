@@ -17,6 +17,7 @@ interface WhaleTransactionInput {
     market_id: string;
     market_question: string;
     market_slug: string;
+    market_url: string | null;
     outcome: string;
     amount: number;
     price: number;
@@ -46,11 +47,12 @@ export async function POST(request: NextRequest) {
                 marketId: tx.market_id,
                 marketQuestion: tx.market_question,
                 marketSlug: tx.market_slug,
+                marketUrl: tx.market_url,
                 outcome: tx.outcome,
                 amount: tx.amount,
                 price: tx.price,
-                shares: tx.amount / tx.price
-                // clusterName: tx.cluster_name || null // TODO: Uncomment after running migration
+                shares: tx.amount / tx.price,
+                clusterName: tx.cluster_name || null
             }
         });
 
