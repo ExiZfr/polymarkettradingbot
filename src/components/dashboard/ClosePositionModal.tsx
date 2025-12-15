@@ -126,65 +126,99 @@ export default function ClosePositionModal({ order, livePrice, onClose, onConfir
                     </div>
                 </div>
 
-                {/* Right Panel: Action & Outcome */}
-                <div className="w-full md:w-[320px] bg-black/20 p-8 flex flex-col relative z-20">
+                {/* Right Panel: Shareable Profit Card & Actions */}
+                <div className="w-full md:w-[380px] bg-[#0c0c0e] border-t md:border-t-0 md:border-l border-white/5 p-6 flex flex-col relative z-20">
                     <button
                         onClick={onClose}
-                        className="absolute top-4 right-4 p-2 rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all"
+                        className="absolute top-4 right-4 p-2 rounded-full text-white/30 hover:text-white hover:bg-white/10 transition-all z-10"
                     >
                         <X size={18} />
                     </button>
 
-                    <div className="mb-auto mt-6">
-                        <p className="text-xs text-center text-white/40 uppercase tracking-widest font-bold mb-4">Projected Return</p>
+                    {/* The Visual Profit Card */}
+                    <div className={`relative aspect-[3.5/4] rounded-[2rem] overflow-hidden p-6 flex flex-col justify-between shadow-2xl transition-all duration-500 group
+                        ${isProfit
+                            ? 'bg-gradient-to-br from-emerald-600 to-[#0c2e26] shadow-[0_20px_50px_-12px_rgba(16,185,129,0.3)]'
+                            : 'bg-gradient-to-br from-rose-600 to-[#2e0c0c] shadow-[0_20px_50px_-12px_rgba(244,63,94,0.3)]'
+                        }
+                    `}>
+                        {/* Noise Texture */}
+                        <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay pointer-events-none" />
 
-                        <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10 relative overflow-hidden">
-                            <div className={`absolute top-0 w-full h-1 ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                            <div className={`absolute inset-0 opacity-10 blur-xl ${isProfit ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        {/* Dynamic Glow */}
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-[60px] -translate-y-1/2 translate-x-1/2 mix-blend-soft-light" />
 
-                            <h2 className={`text-4xl font-bold tracking-tight mb-1 ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                {isProfit ? '+' : ''}{netPnL.toFixed(2)} <span className="text-lg opacity-60">$</span>
-                            </h2>
-                            <div className={`flex items-center gap-1.5 text-sm font-bold px-2 py-0.5 rounded-full ${isProfit ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}`}>
-                                {isProfit ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                                {netRoi.toFixed(2)}% ROI
+                        <div className="relative z-10 flex justify-between items-start">
+                            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20">
+                                <Wallet size={18} className="text-white" />
+                            </div>
+                            <div className={`px-2.5 py-1 rounded-full backdrop-blur-md border ${isProfit ? 'bg-emerald-400/20 border-emerald-400/30' : 'bg-rose-400/20 border-rose-400/30'}`}>
+                                <span className="text-[9px] font-black text-white tracking-widest flex items-center gap-1 uppercase">
+                                    {isProfit ? <TrendingUp size={10} strokeWidth={3} /> : <TrendingDown size={10} strokeWidth={3} />}
+                                    {isProfit ? 'Profit' : 'Loss'}
+                                </span>
                             </div>
                         </div>
 
-                        <div className="mt-6 text-sm space-y-3">
-                            <div className="flex justify-between text-white/60">
-                                <span>Gross Value</span>
-                                <span className="text-white">${grossValue.toFixed(2)}</span>
+                        <div className="relative z-10 mt-4">
+                            <h3 className="text-white font-bold text-sm leading-snug line-clamp-2 drop-shadow-md">
+                                {order.marketTitle}
+                            </h3>
+                        </div>
+
+                        <div className="relative z-10 my-auto py-4">
+                            <p className="text-white/60 text-[9px] uppercase tracking-[0.25em] font-extrabold mb-1">Projected Return</p>
+                            <p className="text-[2.5rem] leading-none font-black text-white tracking-tighter drop-shadow-xl">
+                                {isProfit ? '+' : ''}{netRoi.toFixed(1)}%
+                            </p>
+                            <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20">
+                                <span className="text-white font-mono font-bold text-sm">${netPnL.toFixed(2)}</span>
+                                <span className="text-white/60 text-[8px] uppercase font-bold tracking-wider">NET P&L</span>
                             </div>
-                            <div className="flex justify-between text-white/60">
-                                <span className="flex items-center gap-1"><Info size={12} /> Est. Fees (2%)</span>
-                                <span className="text-rose-400">-${estimatedFees.toFixed(2)}</span>
-                            </div>
-                            <div className="h-px bg-white/10 my-2" />
-                            <div className="flex justify-between font-bold text-white">
-                                <span>Net Return</span>
-                                <span>${netValue.toFixed(2)}</span>
+                        </div>
+
+                        <div className="relative z-10 pt-4 border-t border-white/10">
+                            <div className="flex justify-between items-end text-sm">
+                                <div>
+                                    <p className="text-white/50 text-[8px] uppercase font-bold mb-0.5">Entry</p>
+                                    <p className="text-white font-mono font-bold bg-white/10 px-1.5 py-0.5 rounded text-xs">${order.entryPrice.toFixed(3)}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-white/50 text-[8px] uppercase font-bold mb-0.5">Current</p>
+                                    <p className="text-white font-mono font-bold bg-white/10 px-1.5 py-0.5 rounded text-xs">${currentPrice.toFixed(3)}</p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="mt-8">
-                        <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={onConfirm}
-                            className={`w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden group
-                                ${isProfit ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500'}
-                            `}
-                        >
-                            <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                            <span>Confirm Close</span>
-                            <ArrowRight size={18} />
-                        </motion.button>
-                        <p className="text-[10px] text-center text-white/30 mt-3">
-                            Proceeding will execute a market sell order immediately.
-                        </p>
+                    {/* Fees Breakdown */}
+                    <div className="mt-4 text-xs space-y-2 px-2">
+                        <div className="flex justify-between text-white/50">
+                            <span>Gross Value</span>
+                            <span className="text-white/80">${grossValue.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-white/50">
+                            <span className="flex items-center gap-1"><Info size={10} /> Est. Fees (2%)</span>
+                            <span className="text-rose-400">-${estimatedFees.toFixed(2)}</span>
+                        </div>
                     </div>
+
+                    {/* Action Button */}
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={onConfirm}
+                        className={`w-full py-4 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 relative overflow-hidden group mt-6
+                            ${isProfit ? 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500' : 'bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500'}
+                        `}
+                    >
+                        <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                        <span>Confirm Close</span>
+                        <ArrowRight size={18} />
+                    </motion.button>
+                    <p className="text-[10px] text-center text-white/30 mt-2">
+                        Proceeding will execute a market sell order immediately.
+                    </p>
                 </div>
             </motion.div>
         </div>
