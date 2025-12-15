@@ -12,6 +12,7 @@ import {
     BookOpen,
     Radar,
     Brain,
+    Zap,
 } from "lucide-react";
 
 
@@ -25,6 +26,7 @@ type NavItem = {
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Whale Tracker", href: "/dashboard/tracker", icon: Radar, badge: "LIVE" },
+    { label: "CryptoOracle", href: "/dashboard/oracle", icon: Zap, badge: "NEW" },
     { label: "Carnet d'Ordres", href: "/dashboard/orders", icon: BookOpen },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
