@@ -125,8 +125,18 @@ class WhaleTrackerV4:
                     for trade in trades_data:
                         try:
                             # Data-API structure - market data is at TOP LEVEL, not nested!
-                            event_slug = trade.get('eventSlug', trade.get('slug', ''))
-                            market_url = f"https://polymarket.com/{event_slug}" if event_slug else None
+                            event_slug = trade.get('eventSlug', '')
+                            market_slug = trade.get('slug', '')
+                            
+                            # Build market URL - try eventSlug first, then slug
+                            if event_slug:
+                                market_url = f"https://polymarket.com/event/{event_slug}"
+                            elif market_slug:
+                                market_url = f"https://polymarket.com/event/{market_slug}"
+                            else:
+                                # Fallback to search
+                                title = trade.get('title', '')
+                                market_url = f"https://polymarket.com/markets?_q={title[:50]}" if title else None
                             
                             trades.append({
                                 'id': trade.get('transactionHash', ''),
