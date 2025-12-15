@@ -48,17 +48,34 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                     <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 opacity-50" />
 
                     <div className="flex flex-col gap-4 relative z-10">
-                        <div className="flex items-start justify-between">
-                            <div className="space-y-1">
-                                <div className="flex items-center gap-2 text-blue-400 text-xs font-bold tracking-wider uppercase">
-                                    <Target className="w-4 h-4" />
-                                    Market Detection
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-4">
+                                {/* Market Icon */}
+                                <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center">
+                                    {transaction.market_image ? (
+                                        <img
+                                            src={transaction.market_image}
+                                            alt=""
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                            }}
+                                        />
+                                    ) : (
+                                        <span className="text-2xl">📊</span>
+                                    )}
                                 </div>
-                                <h2 className="text-2xl font-bold text-white leading-tight max-w-lg">
-                                    {transaction.market_question}
-                                </h2>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2 text-blue-400 text-xs font-bold tracking-wider uppercase">
+                                        <Target className="w-4 h-4" />
+                                        Market Detection
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-white leading-tight max-w-lg">
+                                        {transaction.market_question}
+                                    </h2>
+                                </div>
                             </div>
-                            <div className="text-right">
+                            <div className="text-right shrink-0">
                                 <div className="text-3xl font-mono font-bold text-white tracking-tight">
                                     {(transaction.price * 100).toFixed(1)}¢
                                 </div>
