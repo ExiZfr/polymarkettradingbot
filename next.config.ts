@@ -1,6 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Exclude Python venv and scripts from build
+  webpack: (config) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/venv/**', '**/scripts/**', '**/node_modules/**'],
+    };
+    return config;
+  },
+
+  // Exclude directories from Turbopack
+  experimental: {
+    turbo: {
+      rules: {
+        // Ignore Python virtual environment
+        '*.py': {
+          loaders: [],
+        },
+      },
+    },
+  },
+
   // Allow both domains
   async redirects() {
     return [
