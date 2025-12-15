@@ -23,13 +23,16 @@ import { PaperOrder } from "@/lib/paper-trading";
 
 interface ClosePositionModalProps {
     order: PaperOrder;
+    livePrice?: { yes: number; no: number };
     onClose: () => void;
     onConfirm: () => void;
 }
 
-export default function ClosePositionModal({ order, onClose, onConfirm }: ClosePositionModalProps) {
-    // Determine current prices and status
-    const currentPrice = order.currentPrice || order.entryPrice;
+export default function ClosePositionModal({ order, livePrice, onClose, onConfirm }: ClosePositionModalProps) {
+    // Determine current price: Live > Stored > Entry (prioritize live price)
+    const currentPrice = livePrice
+        ? (order.outcome === 'YES' ? livePrice.yes : livePrice.no)
+        : (order.currentPrice || order.entryPrice);
     const isYes = order.outcome === 'YES';
 
     // Calculate simulated exit values

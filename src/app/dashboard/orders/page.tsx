@@ -519,6 +519,10 @@ export default function OrderBookPage() {
                 {selectedOrderToClose && (
                     <ClosePositionModal
                         order={selectedOrderToClose}
+                        livePrice={livePrices[selectedOrderToClose.marketId] ? {
+                            yes: livePrices[selectedOrderToClose.marketId].yes,
+                            no: livePrices[selectedOrderToClose.marketId].no
+                        } : undefined}
                         onClose={() => setSelectedOrderToClose(null)}
                         onConfirm={handleConfirmClose}
                     />
