@@ -25,6 +25,7 @@ import {
 import { paperStore, PaperOrder, PaperProfile } from "@/lib/paper-trading";
 import { showTradeNotification } from "@/components/dashboard/TradeNotificationSystem";
 import ClosePositionModal from "@/components/dashboard/ClosePositionModal";
+import OrderDetailsModal from "@/components/dashboard/OrderDetailsModal";
 import MiniPriceChart from "@/components/ui/MiniPriceChart";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
@@ -55,13 +56,13 @@ function PortfolioHeader({ profile, unrealizedPnL }: { profile: PaperProfile; un
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Main Balance Card */}
-            <div className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-[#09090b] to-[#121214] border border-white/5 relative overflow-hidden group">
+            <div className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-card to-muted border border-border relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3" />
 
                 <div className="flex justify-between items-start mb-4 relative z-10">
                     <div>
-                        <p className="text-xs text-white/40 uppercase tracking-widest font-bold">Total Portfolio Value</p>
-                        <h2 className="text-3xl font-bold text-white mt-1">
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Portfolio Value</p>
+                        <h2 className="text-3xl font-bold text-foreground mt-1">
                             ${(profile.currentBalance + unrealizedPnL).toFixed(2)}
                         </h2>
                     </div>
@@ -72,45 +73,45 @@ function PortfolioHeader({ profile, unrealizedPnL }: { profile: PaperProfile; un
 
                 <div className="grid grid-cols-2 gap-4 relative z-10">
                     <div>
-                        <p className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Available Cash</p>
-                        <p className="text-base font-mono text-white/80">${profile.currentBalance.toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Available Cash</p>
+                        <p className="text-base font-mono text-foreground/80">${profile.currentBalance.toFixed(2)}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] text-white/30 uppercase tracking-wider mb-0.5">Invested</p>
-                        <p className="text-base font-mono text-white/80">${(profile.initialBalance + profile.totalPnL - profile.currentBalance).toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Invested</p>
+                        <p className="text-base font-mono text-foreground/80">${(profile.initialBalance + profile.totalPnL - profile.currentBalance).toFixed(2)}</p>
                     </div>
                 </div>
             </div>
 
             {/* PnL Stats */}
-            <div className="p-6 rounded-2xl bg-[#09090b] border border-white/5 flex flex-col justify-center relative group">
+            <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-center relative group">
                 <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity ${profile.totalPnL >= 0 ? 'from-emerald-500/20' : 'from-rose-500/20'}`} />
                 <div className="flex items-center gap-2 mb-2">
-                    <div className={`p-1.5 rounded bg-white/5 ${profile.totalPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    <div className={`p-1.5 rounded bg-muted ${profile.totalPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                         {profile.totalPnL >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                     </div>
-                    <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Total P&L</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total P&L</span>
                 </div>
-                <p className={`text-2xl font-bold ${profile.totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                <p className={`text-2xl font-bold ${profile.totalPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
                     {profile.totalPnL >= 0 ? '+' : ''}${profile.totalPnL.toFixed(2)}
                 </p>
-                <p className="text-xs text-white/30 mt-1">Realized Profit/Loss</p>
+                <p className="text-xs text-muted-foreground mt-1">Realized Profit/Loss</p>
             </div>
 
             {/* Win Value */}
-            <div className="p-6 rounded-2xl bg-[#09090b] border border-white/5 flex flex-col justify-center">
+            <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded bg-blue-500/10 text-blue-500">
                         <Target size={14} />
                     </div>
-                    <span className="text-xs text-white/40 uppercase tracking-widest font-bold">Win Rate</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Win Rate</span>
                 </div>
-                <p className="text-2xl font-bold text-white">
+                <p className="text-2xl font-bold text-foreground">
                     {realWinRate.toFixed(1)}%
                 </p>
                 <div className="flex gap-2 text-xs mt-1">
                     <span className="text-emerald-500">{totalStats.wins} W</span>
-                    <span className="text-white/20">|</span>
+                    <span className="text-muted-foreground/20">|</span>
                     <span className="text-rose-500">{totalStats.losses} L</span>
                 </div>
             </div>
@@ -122,6 +123,8 @@ export default function OrderBookPage() {
     const [orders, setOrders] = useState<PaperOrder[]>([]);
     const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [selectedOrderToClose, setSelectedOrderToClose] = useState<PaperOrder | null>(null);
+    const [selectedOrderDetails, setSelectedOrderDetails] = useState<PaperOrder | null>(null);
+
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
     const [sortField, setSortField] = useState<SortField>("timestamp");
@@ -214,6 +217,7 @@ export default function OrderBookPage() {
         if (closedOrder) showTradeNotification(closedOrder, 'CLOSED');
 
         setSelectedOrderToClose(null);
+        setSelectedOrderDetails(null); // Also close details if open
         loadOrders();
     };
 
@@ -222,13 +226,13 @@ export default function OrderBookPage() {
             {/* Header Area */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
                             <BookOpen size={20} />
                         </div>
-                        Order Book <span className="text-white/20 font-light">|</span> <span className="text-white/60 font-medium text-lg">Terminal</span>
+                        Order Book <span className="text-muted-foreground/20 font-light">|</span> <span className="text-muted-foreground font-medium text-lg">Terminal</span>
                     </h1>
-                    <p className="text-sm text-white/40 mt-1 ml-1">
+                    <p className="text-sm text-muted-foreground mt-1 ml-1">
                         Professional execution & historical analysis
                     </p>
                 </div>
@@ -242,7 +246,7 @@ export default function OrderBookPage() {
                     )}
                     <button
                         onClick={loadOrders}
-                        className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors"
+                        className="p-2 rounded-lg bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-colors border border-border"
                     >
                         <RefreshCw size={18} />
                     </button>
@@ -254,24 +258,24 @@ export default function OrderBookPage() {
             {/* Controls Bar */}
             <div className="flex flex-col lg:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60" />
                     <input
                         type="text"
                         placeholder="Search markets or positions..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#09090b] border border-white/10 text-white placeholder:text-white/30 focus:outline-none focus:border-blue-500/50 transition-colors"
+                        className="w-full pl-10 pr-4 py-3 rounded-xl bg-card border border-border text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-blue-500/50 transition-colors"
                     />
                 </div>
 
-                <div className="flex items-center gap-2 p-1 rounded-xl bg-[#09090b] border border-white/10 overflow-x-auto">
+                <div className="flex items-center gap-2 p-1 rounded-xl bg-card border border-border overflow-x-auto">
                     {(["ALL", "OPEN", "CLOSED", "CANCELLED"] as FilterStatus[]).map((status) => (
                         <button
                             key={status}
                             onClick={() => setFilterStatus(status)}
                             className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${filterStatus === status
-                                ? "bg-white/10 text-white shadow-sm"
-                                : "text-white/40 hover:text-white/80 hover:bg-white/5"}`}
+                                ? "bg-primary/10 text-primary shadow-sm"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted"}`}
                         >
                             {status === "ALL" ? "ALL TRADES" : status}
                             <span className="ml-2 opacity-50 text-[10px]">
@@ -283,20 +287,20 @@ export default function OrderBookPage() {
             </div>
 
             {/* Trading Table */}
-            <div className="rounded-2xl border border-white/10 bg-[#09090b] overflow-hidden shadow-2xl">
+            <div className="rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-white/5 bg-white/[0.02]">
-                                <th className="text-left py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider">Market</th>
-                                <th className="text-left py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider">Side</th>
-                                <th className="text-right py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider">Price / Value</th>
-                                <th className="text-right py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider">P&L</th>
-                                <th className="hidden lg:table-cell py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider w-48">24h History</th>
-                                <th className="text-right py-4 px-6 text-xs font-bold text-white/40 uppercase tracking-wider">Action</th>
+                            <tr className="border-b border-border bg-muted/30">
+                                <th className="text-left py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Market</th>
+                                <th className="text-left py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Side</th>
+                                <th className="text-right py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Price / Value</th>
+                                <th className="text-right py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">P&L</th>
+                                <th className="hidden lg:table-cell py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider w-48">24h History</th>
+                                <th className="text-right py-4 px-6 text-xs font-bold text-muted-foreground uppercase tracking-wider">Action</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-white/5">
+                        <tbody className="divide-y divide-border">
                             {filteredOrders.map((order) => {
                                 const livePrice = livePrices[order.marketId]
                                     ? (order.outcome === 'YES' ? livePrices[order.marketId].yes : livePrices[order.marketId].no)
@@ -310,11 +314,15 @@ export default function OrderBookPage() {
                                 const isPos = rowPnl >= 0;
 
                                 return (
-                                    <tr key={order.id} className="hover:bg-white/[0.02] transition-colors group">
+                                    <tr
+                                        key={order.id}
+                                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                                        onClick={() => setSelectedOrderDetails(order)}
+                                    >
                                         {/* Market */}
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-lg bg-white/5 p-0.5 flex-shrink-0 relative overflow-hidden">
+                                                <div className="w-10 h-10 rounded-lg bg-muted p-0.5 flex-shrink-0 relative overflow-hidden">
                                                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
                                                     <img
                                                         src={order.marketImage || '/placeholder.png'}
@@ -323,14 +331,15 @@ export default function OrderBookPage() {
                                                     />
                                                 </div>
                                                 <div className="max-w-[240px]">
-                                                    <p className="text-sm font-medium text-white truncate">{order.marketTitle}</p>
+                                                    <p className="text-sm font-medium text-foreground truncate">{order.marketTitle}</p>
                                                     <div className="flex items-center gap-2 mt-1">
-                                                        <span className="text-[10px] text-white/40 bg-white/5 px-1.5 py-0.5 rounded font-mono">
+                                                        <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
                                                             {new Date(order.timestamp).toLocaleDateString()}
                                                         </span>
                                                         <a
                                                             href={`https://polymarket.com/markets?_q=${encodeURIComponent((order.marketTitle || '').slice(0, 50))}`}
                                                             target="_blank"
+                                                            onClick={(e) => e.stopPropagation()}
                                                             className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             Open <ExternalLink size={8} />
@@ -342,7 +351,7 @@ export default function OrderBookPage() {
 
                                         {/* Side */}
                                         <td className="py-4 px-6">
-                                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold border tracking-wider ${order.outcome === 'YES' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/5 border-rose-500/20 text-rose-500'}`}>
+                                            <span className={`px-2.5 py-1 rounded text-[10px] font-bold border tracking-wider ${order.outcome === 'YES' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'}`}>
                                                 {order.outcome}
                                             </span>
                                         </td>
@@ -351,17 +360,17 @@ export default function OrderBookPage() {
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex flex-col items-end">
                                                 <div className="flex items-baseline gap-1.5">
-                                                    <span className="text-xs text-white/30">$</span>
-                                                    <span className="text-sm font-bold text-white font-mono">{livePrice.toFixed(3)}</span>
+                                                    <span className="text-xs text-muted-foreground">$</span>
+                                                    <span className="text-sm font-bold text-foreground font-mono">{livePrice.toFixed(3)}</span>
                                                 </div>
-                                                <p className="text-[10px] text-white/40 font-mono mt-0.5">Entry: ${order.entryPrice.toFixed(3)}</p>
+                                                <p className="text-[10px] text-muted-foreground font-mono mt-0.5">Entry: ${order.entryPrice.toFixed(3)}</p>
                                             </div>
                                         </td>
 
                                         {/* P&L */}
                                         <td className="py-4 px-6 text-right">
                                             <div className="flex flex-col items-end">
-                                                <span className={`text-sm font-bold font-mono ${isPos ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                <span className={`text-sm font-bold font-mono ${isPos ? 'text-emerald-500' : 'text-rose-500'}`}>
                                                     {isPos ? '+' : ''}{rowPnl.toFixed(2)}
                                                 </span>
                                                 <span className={`text-[10px] px-1.5 rounded mt-0.5 font-bold ${isPos ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
@@ -377,7 +386,7 @@ export default function OrderBookPage() {
                                                     marketId={order.marketId}
                                                     entryPrice={order.entryPrice}
                                                     outcome={order.outcome}
-                                                    className="opacity-60 group-hover:opacity-100 transition-opacity"
+                                                    className="opacity-50 group-hover:opacity-100 transition-opacity"
                                                 />
                                             )}
                                         </td>
@@ -386,13 +395,16 @@ export default function OrderBookPage() {
                                         <td className="py-4 px-6 text-right">
                                             {order.status === 'OPEN' ? (
                                                 <button
-                                                    onClick={() => setSelectedOrderToClose(order)}
-                                                    className="px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-white text-xs font-bold border border-white/10 hover:border-white/20 transition-all shadow-sm active:scale-95"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedOrderToClose(order);
+                                                    }}
+                                                    className="px-4 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 text-xs font-bold transition-all shadow-sm active:scale-95 border border-red-500/20"
                                                 >
                                                     Close Trade
                                                 </button>
                                             ) : (
-                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border ${order.status === 'CLOSED' ? 'border-white/10 text-white/30' : 'border-white/5 text-white/20'}`}>
+                                                <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border ${order.status === 'CLOSED' ? 'border-border text-muted-foreground' : 'border-border/50 text-muted-foreground/50'}`}>
                                                     {order.status}
                                                 </span>
                                             )}
@@ -404,12 +416,12 @@ export default function OrderBookPage() {
                             {filteredOrders.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="py-24 text-center">
-                                        <div className="flex flex-col items-center justify-center opacity-20">
-                                            <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center mb-4">
-                                                <BookOpen size={24} />
+                                        <div className="flex flex-col items-center justify-center opacity-40">
+                                            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+                                                <BookOpen size={24} className="text-muted-foreground" />
                                             </div>
-                                            <p className="text-lg font-medium text-white">No active orders found</p>
-                                            <p className="text-sm text-white/60 mt-1">Trades will appear here once executed</p>
+                                            <p className="text-lg font-medium text-foreground">No active orders found</p>
+                                            <p className="text-sm text-muted-foreground mt-1">Trades will appear here once executed</p>
                                         </div>
                                     </td>
                                 </tr>
@@ -426,6 +438,20 @@ export default function OrderBookPage() {
                         order={selectedOrderToClose}
                         onClose={() => setSelectedOrderToClose(null)}
                         onConfirm={handleConfirmClose}
+                    />
+                )}
+                {selectedOrderDetails && (
+                    <OrderDetailsModal
+                        order={selectedOrderDetails}
+                        livePrice={livePrices[selectedOrderDetails.marketId] ? {
+                            yes: livePrices[selectedOrderDetails.marketId].yes,
+                            no: livePrices[selectedOrderDetails.marketId].no
+                        } : undefined}
+                        onClose={() => setSelectedOrderDetails(null)}
+                        onClosePosition={() => {
+                            setSelectedOrderToClose(selectedOrderDetails);
+                            setSelectedOrderDetails(null);
+                        }}
                     />
                 )}
             </AnimatePresence>
