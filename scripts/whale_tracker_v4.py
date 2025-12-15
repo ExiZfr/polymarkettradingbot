@@ -355,12 +355,8 @@ class WhaleTrackerV4:
     
     def calculate_tag(self, profile: dict) -> str:
         """
-        Classify wallet based on trading behavior:
-        - Smart Money: Buys low, sells high consistently
-        - Dumb Money: Buys high, sells low consistently  
-        - Winner/Loser: Based on smart/dumb trade ratio
-        - Insider: New wallet with exceptional results
-        - Unknown: Not enough data
+        Classify wallet based on trading behavior.
+        RELAXED thresholds to ensure most wallets get a tag.
         """
         trade_count = profile.get('trade_count', 0)
         volume = profile.get('volume', 0)
@@ -369,38 +365,38 @@ class WhaleTrackerV4:
         smart_trades = profile.get('smart_trades', 0)
         dumb_trades = profile.get('dumb_trades', 0)
         
-        # Not enough data
-        if trade_count < 5:
+        # Minimum data: 3 trades
+        if trade_count < 3:
             return "❓ Unknown"
         
-        # === CLASSIFICATION BASED ON TRADING PATTERNS ===
+        # === SIMPLIFIED CLASSIFICATION ===
         
-        # 1. SMART MONEY 🧠 - Consistently buys low, sells high
-        #    >40% smart trades, <15% dumb trades, volume >$10k
-        if smart_ratio >= 0.40 and dumb_ratio < 0.15 and volume > 10000:
-            return "🧠 Smart Money"
+        # High volume traders (>$5k) get priority tags
+        if volume > 5000:
+            if smart_ratio >= 0.35:
+                return "🧠 Smart Money"
+            if dumb_ratio >= 0.35:
+                return "🤡 Dumb Money"
         
-        # 2. DUMB MONEY 🤡 - Consistently buys high, sells low
-        #    >40% dumb trades, <15% smart trades, volume >$5k
-        if dumb_ratio >= 0.40 and smart_ratio < 0.15 and volume > 5000:
-            return "🤡 Dumb Money"
+        # Compare smart vs dumb trades directly
+        if smart_trades > 0 or dumb_trades > 0:
+            if smart_trades >= dumb_trades * 1.2:
+                # More smart than dumb trades
+                if trade_count <= 10 and volume > 1000:
+                    return "👁️ Insider"
+                return "🏆 Winner"
+            elif dumb_trades >= smart_trades * 1.2:
+                # More dumb than smart trades
+                return "💀 Loser"
         
-        # 3. INSIDER 👁️ - New wallet, few trades but good ratios
-        #    <15 trades, volume >$5k, smart ratio >50%
-        if trade_count <= 15 and volume > 5000 and smart_ratio > 0.50:
-            return "👁️ Insider"
+        # Volume-based fallback for active traders
+        if volume > 2000:
+            if smart_ratio > dumb_ratio:
+                return "🏆 Winner"
+            elif dumb_ratio > smart_ratio:
+                return "💀 Loser"
         
-        # 4. WINNER 🏆 - More smart trades than dumb
-        #    Smart trades > dumb trades * 1.5, volume >$3k
-        if smart_trades > dumb_trades * 1.5 and volume > 3000:
-            return "🏆 Winner"
-        
-        # 5. LOSER 💀 - More dumb trades than smart
-        #    Dumb trades > smart trades * 1.5, volume >$3k
-        if dumb_trades > smart_trades * 1.5 and volume > 3000:
-            return "💀 Loser"
-        
-        # 6. UNKNOWN ❓ - Mixed or neutral signals
+        # Default for mixed signals
         return "❓ Unknown"
     
     async def send_transaction(self, tx: WhaleTransaction):
