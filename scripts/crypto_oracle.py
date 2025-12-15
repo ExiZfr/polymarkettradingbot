@@ -813,6 +813,151 @@ class CryptoOracle:
             return Bias.NEUTRAL
 
 
+    def scan_crypto_markets(self, keywords: List[str] = None) -> List[Dict]:
+        """
+        Scan Polymarket for all crypto price markets.
+        Returns list of markets with their details.
+        """
+        keywords = keywords or ["bitcoin", "btc", "ethereum", "eth", "solana", "sol"]
+        
+        found_markets = []
+        seen_ids = set()
+        
+        print(f"\n🔍 Scanning for crypto markets...")
+        
+        for keyword in keywords:
+            try:
+                response = requests.get(
+                    f"{self.config.gamma_api}/markets",
+                    params={
+                        "closed": False,
+                        "limit": 50,
+                        "active": True
+                    },
+                    timeout=15
+                )
+                
+                if response.status_code != 200:
+                    continue
+                
+                markets = response.json()
+                
+                for market in markets:
+                    question = market.get("question", "").lower()
+                    description = market.get("description", "").lower()
+                    slug = market.get("slug", "")
+                    market_id = market.get("conditionId") or market.get("condition_id", "")
+                    
+                    # Check if it's a crypto price market
+                    is_crypto = any(k in question or k in description for k in keywords)
+                    is_price_market = any(word in question for word in ["price", "$", "above", "below", "hit", "reach"])
+                    
+                    if is_crypto and is_price_market and market_id not in seen_ids:
+                        seen_ids.add(market_id)
+                        
+                        # Determine which crypto
+                        if "bitcoin" in question or "btc" in question:
+                            symbol = "BTC/USDT"
+                        elif "ethereum" in question or "eth" in question:
+                            symbol = "ETH/USDT"
+                        elif "solana" in question or "sol" in question:
+                            symbol = "SOL/USDT"
+                        else:
+                            symbol = "BTC/USDT"
+                        
+                        # Try to extract strike price from question
+                        import re
+                        price_match = re.search(r'\$?([\d,]+)k?', question.replace(",", ""))
+                        strike_price = 0
+                        if price_match:
+                            strike_str = price_match.group(1).replace(",", "")
+                            strike_price = float(strike_str)
+                            if "k" in question.lower():
+                                strike_price *= 1000
+                        
+                        # Get current prices
+                        yes_price = float(market.get("outcomePrices", ["0.5"])[0]) if market.get("outcomePrices") else 0.5
+                        
+                        found_markets.append({
+                            "market_id": market_id,
+                            "slug": slug,
+                            "question": market.get("question", ""),
+                            "symbol": symbol,
+                            "strike_price": strike_price,
+                            "yes_price": yes_price,
+                            "volume": market.get("volume", 0),
+                            "liquidity": market.get("liquidity", 0)
+                        })
+                        
+            except Exception as e:
+                self.logger.error(f"Error scanning for {keyword}: {e}")
+                continue
+        
+        # Sort by volume
+        found_markets.sort(key=lambda x: float(x.get("volume", 0) or 0), reverse=True)
+        
+        return found_markets
+    
+    def analyze_all_crypto_markets(self) -> None:
+        """Scan and analyze all crypto markets."""
+        markets = self.scan_crypto_markets()
+        
+        if not markets:
+            print("❌ No crypto markets found")
+            return
+        
+        print(f"\n📊 Found {len(markets)} crypto price markets\n")
+        print("=" * 100)
+        
+        # Get spot prices once
+        btc_price = self.get_spot_price("BTC/USDT")
+        eth_price = self.get_spot_price("ETH/USDT")
+        sol_price = self.get_spot_price("SOL/USDT")
+        
+        spot_prices = {
+            "BTC/USDT": btc_price,
+            "ETH/USDT": eth_price,
+            "SOL/USDT": sol_price
+        }
+        
+        print(f"💰 Spot Prices: BTC ${btc_price:,.0f} | ETH ${eth_price:,.0f} | SOL ${sol_price:,.0f}\n")
+        
+        for i, market in enumerate(markets[:20], 1):  # Top 20 by volume
+            question = market["question"][:60] + "..." if len(market["question"]) > 60 else market["question"]
+            slug = market["slug"]
+            yes_price = market["yes_price"]
+            volume = float(market.get("volume", 0) or 0)
+            symbol = market["symbol"]
+            strike = market["strike_price"]
+            spot = spot_prices.get(symbol, 0)
+            
+            # Calculate fair value if we have strike price
+            if strike > 0 and spot > 0:
+                # Simple estimate: if spot > strike, should be > 50%
+                distance_pct = (spot - strike) / strike * 100
+                if distance_pct > 0:
+                    fair_estimate = min(0.95, 0.5 + distance_pct / 100)
+                else:
+                    fair_estimate = max(0.05, 0.5 + distance_pct / 200)
+                alpha = fair_estimate - yes_price
+            else:
+                fair_estimate = 0.5
+                alpha = 0
+            
+            # Analyze sentiment (quick version - just print, don't fetch for each)
+            alpha_str = f"{alpha*100:+.1f}%" if alpha != 0 else "N/A"
+            alpha_color = "🟢" if alpha > 0.05 else "🔴" if alpha < -0.05 else "⚪"
+            
+            print(f"{i:2}. {question}")
+            print(f"    📈 YES: ${yes_price:.2f} | Vol: ${volume:,.0f} | {symbol} Strike: ${strike:,.0f}")
+            print(f"    {alpha_color} Alpha: {alpha_str} (Fair: ${fair_estimate:.2f})")
+            print(f"    🔗 Slug: {slug}")
+            print()
+        
+        print("=" * 100)
+        print("\n💡 Use --analyze <slug> to get detailed sentiment analysis for a specific market")
+
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # CLI / MAIN
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -823,12 +968,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CryptoOracle - Smart Money + Mean Reversion Bot")
     parser.add_argument("--dry-run", action="store_true", help="Run without executing trades")
     parser.add_argument("--analyze", type=str, help="Analyze a specific market slug")
-    parser.add_argument("--spot", type=str, default="BTC/USDT", help="Check spot price for symbol")
+    parser.add_argument("--spot", type=str, help="Check spot price for symbol (BTC/USDT, ETH/USDT)")
+    parser.add_argument("--scan", action="store_true", help="Scan all BTC/ETH markets")
     args = parser.parse_args()
     
     oracle = CryptoOracle()
     
-    if args.analyze:
+    if args.scan:
+        oracle.analyze_all_crypto_markets()
+    
+    elif args.analyze:
         print(f"\n🔍 Analyzing market: {args.analyze}")
         sentiment = oracle.analyze_smart_sentiment(args.analyze)
         print(f"   Bias: {sentiment.bias.value}")
@@ -843,22 +992,14 @@ if __name__ == "__main__":
         print(f"\n💰 {args.spot}: ${price:,.2f}" if price else f"❌ Failed to get {args.spot}")
         
     else:
-        # Example markets to monitor
-        example_markets = [
-            {
-                "market_id": "0x...",  # Replace with actual market IDs
-                "token_id": "...",
-                "slug": "will-bitcoin-hit-100k-2025",
-                "symbol": "BTC/USDT",
-                "strike_price": 100000,
-                "expiry": datetime(2025, 12, 31)
-            }
-        ]
-        
         print("\n🔮 CryptoOracle v1.0")
         print("=" * 40)
         print("Usage:")
+        print("  --scan            Scan all BTC/ETH markets")
         print("  --analyze <slug>  Analyze market sentiment")
-        print("  --spot <symbol>   Check spot price")
+        print("  --spot <symbol>   Check spot price (BTC/USDT, ETH/USDT)")
         print("  --dry-run         Run bot without execution")
-        print("\nTo run the main loop, configure markets in the script.")
+        print("\nExamples:")
+        print("  python crypto_oracle.py --scan")
+        print("  python crypto_oracle.py --analyze will-bitcoin-hit-100k-2025")
+        print("  python crypto_oracle.py --spot BTC/USDT")
