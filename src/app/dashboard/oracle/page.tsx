@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Zap, TrendingUp, RefreshCw, ExternalLink, Copy,
     Trophy, Target, Shield, Flame, Crown, Users,
-    ChevronRight, Check, AlertTriangle, Clock
+    ChevronRight, Check, AlertTriangle, Clock, Terminal
 } from 'lucide-react';
 
 interface Signal {
@@ -36,16 +36,40 @@ interface Trader {
     score: number;
 }
 
+interface LogEntry {
+    line: string;
+    source: string;
+    isError?: boolean;
+}
+
 export default function OraclePage() {
     const [signals, setSignals] = useState<Signal[]>([]);
     const [leaderboard, setLeaderboard] = useState<Trader[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard'>('signals');
+    const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard' | 'console'>('signals');
     const [leaderboardStats, setLeaderboardStats] = useState<any>(null);
     const [filterConfidence, setFilterConfidence] = useState<string>('all');
     const [leaderboardPeriod, setLeaderboardPeriod] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
+    const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
+    const consoleRef = useRef<HTMLDivElement>(null);
+
+    const fetchLogs = useCallback(async () => {
+        try {
+            const res = await fetch('/api/oracle/logs?lines=100');
+            if (res.ok) {
+                const data = await res.json();
+                setConsoleLogs(data.logs || []);
+                // Auto-scroll to bottom
+                if (consoleRef.current) {
+                    consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to fetch logs:', e);
+        }
+    }, []);
 
     const fetchLeaderboard = useCallback(async (period: string) => {
         try {
@@ -101,6 +125,15 @@ export default function OraclePage() {
         const interval = setInterval(fetchData, 30000); // Refresh every 30s
         return () => clearInterval(interval);
     }, [fetchData]);
+
+    // Fetch logs when console tab is active
+    useEffect(() => {
+        if (activeTab === 'console') {
+            fetchLogs();
+            const logsInterval = setInterval(fetchLogs, 3000); // Refresh logs every 3s
+            return () => clearInterval(logsInterval);
+        }
+    }, [activeTab, fetchLogs]);
 
     const handleCopyTrade = async (signal: Signal) => {
         // This would integrate with paper trading
@@ -282,6 +315,16 @@ export default function OraclePage() {
                         <Trophy className="w-4 h-4" />
                         Leaderboard
                     </button>
+                    <button
+                        onClick={() => setActiveTab('console')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'console'
+                            ? 'bg-gradient-to-r from-green-500/20 to-emerald-500/20 text-green-400 border border-green-500/30'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                    >
+                        <Terminal className="w-4 h-4" />
+                        Console
+                    </button>
                 </div>
             </div>
 
@@ -438,7 +481,7 @@ export default function OraclePage() {
                                 )}
                             </div>
                         </motion.div>
-                    ) : (
+                    ) : activeTab === 'leaderboard' ? (
                         <motion.div
                             key="leaderboard"
                             initial={{ opacity: 0, y: 10 }}
@@ -465,8 +508,8 @@ export default function OraclePage() {
                                                     key={period.value}
                                                     onClick={() => setLeaderboardPeriod(period.value as any)}
                                                     className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${leaderboardPeriod === period.value
-                                                            ? 'bg-amber-500/20 text-amber-400 shadow-sm'
-                                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                                        ? 'bg-amber-500/20 text-amber-400 shadow-sm'
+                                                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                                         }`}
                                                 >
                                                     {period.label}
@@ -536,7 +579,76 @@ export default function OraclePage() {
                                 </div>
                             </div>
                         </motion.div>
-                    )}
+                    ) : activeTab === 'console' ? (
+                        <motion.div
+                            key="console"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            <div className="rounded-xl border border-green-500/30 overflow-hidden">
+                                <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 px-4 py-3 border-b border-green-500/20 flex items-center justify-between">
+                                    <h2 className="font-semibold text-green-400 flex items-center gap-2">
+                                        <Terminal className="w-5 h-5" />
+                                        Oracle Scraper Console
+                                    </h2>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                                        <span className="text-xs text-green-400">Live • {consoleLogs.length} logs</span>
+                                        <button
+                                            onClick={fetchLogs}
+                                            className="p-1.5 rounded-md hover:bg-green-500/20 text-green-400 transition-colors"
+                                        >
+                                            <RefreshCw className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div
+                                    ref={consoleRef}
+                                    className="bg-black/80 p-4 h-96 overflow-y-auto font-mono text-sm"
+                                >
+                                    {consoleLogs.length === 0 ? (
+                                        <div className="text-gray-500 text-center py-8">
+                                            <Terminal className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                                            <p>No logs yet. Start the oracle-scraper process.</p>
+                                            <code className="text-xs text-green-400 mt-2 block">
+                                                pm2 start ecosystem.config.js --only oracle-scraper
+                                            </code>
+                                        </div>
+                                    ) : (
+                                        consoleLogs.map((log, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={`py-0.5 flex items-start gap-2 ${log.isError ? 'text-red-400' :
+                                                    log.line.includes('✅') ? 'text-emerald-400' :
+                                                        log.line.includes('⚠️') || log.line.includes('WARN') ? 'text-amber-400' :
+                                                            log.line.includes('🚀') || log.line.includes('INFO') ? 'text-blue-400' :
+                                                                log.line.includes('🏆') || log.line.includes('📊') ? 'text-purple-400' :
+                                                                    'text-gray-300'
+                                                    }`}
+                                            >
+                                                <span className="text-gray-600 select-none">&gt;</span>
+                                                <span className="text-gray-500 shrink-0">[{log.source}]</span>
+                                                <span className="break-all">{log.line}</span>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Quick Commands */}
+                            <div className="mt-4 p-4 rounded-xl bg-muted/30 border border-border">
+                                <h3 className="text-sm font-medium text-muted-foreground mb-2">Quick Commands (SSH)</h3>
+                                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                                    <code className="p-2 bg-black/50 rounded text-green-400">pm2 start ecosystem.config.js --only oracle-scraper</code>
+                                    <code className="p-2 bg-black/50 rounded text-green-400">pm2 logs oracle-scraper --lines 50</code>
+                                    <code className="p-2 bg-black/50 rounded text-green-400">pm2 restart oracle-scraper</code>
+                                    <code className="p-2 bg-black/50 rounded text-green-400">pm2 stop oracle-scraper</code>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : null}
                 </AnimatePresence>
             </div>
         </div>
