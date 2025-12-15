@@ -13,32 +13,32 @@ export default function TrackerStatsBar({ stats }: Props) {
     };
 
     return (
-        <div className="flex items-center gap-6 px-4 py-2 bg-white/5 border-y border-white/10 overflow-x-auto no-scrollbar">
+        <div className="flex items-center gap-6 px-4 py-2 bg-muted/20 border-y border-border overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-2 shrink-0">
-                <Activity className="w-4 h-4 text-purple-400" />
-                <span className="text-xs text-gray-500 uppercase">Tx</span>
-                <span className="text-sm font-bold text-white font-mono">{stats?.totalTransactions.toLocaleString() || 0}</span>
+                <Activity className="w-4 h-4 text-primary" />
+                <span className="text-xs text-muted-foreground uppercase">Tx</span>
+                <span className="text-sm font-bold text-foreground font-mono">{stats?.totalTransactions.toLocaleString() || 0}</span>
             </div>
-            <div className="w-px h-4 bg-white/10 shrink-0" />
+            <div className="w-px h-4 bg-border shrink-0" />
 
             <div className="flex items-center gap-2 shrink-0">
-                <DollarSign className="w-4 h-4 text-blue-400" />
-                <span className="text-xs text-gray-500 uppercase">Vol</span>
-                <span className="text-sm font-bold text-white font-mono">{formatAmount(stats?.totalVolume || 0)}</span>
+                <DollarSign className="w-4 h-4 text-blue-500" />
+                <span className="text-xs text-muted-foreground uppercase">Vol</span>
+                <span className="text-sm font-bold text-foreground font-mono">{formatAmount(stats?.totalVolume || 0)}</span>
             </div>
-            <div className="w-px h-4 bg-white/10 shrink-0" />
+            <div className="w-px h-4 bg-border shrink-0" />
 
             <div className="flex items-center gap-2 shrink-0">
-                <Users className="w-4 h-4 text-emerald-400" />
-                <span className="text-xs text-gray-500 uppercase">Whales</span>
-                <span className="text-sm font-bold text-white font-mono">{stats?.uniqueWhales || 0}</span>
+                <Users className="w-4 h-4 text-emerald-500" />
+                <span className="text-xs text-muted-foreground uppercase">Whales</span>
+                <span className="text-sm font-bold text-foreground font-mono">{stats?.uniqueWhales || 0}</span>
             </div>
-            <div className="w-px h-4 bg-white/10 shrink-0" />
+            <div className="w-px h-4 bg-border shrink-0" />
 
             <div className="flex items-center gap-2 shrink-0">
-                <TrendingUp className="w-4 h-4 text-orange-400" />
-                <span className="text-xs text-gray-500 uppercase">Avg</span>
-                <span className="text-sm font-bold text-white font-mono">{formatAmount(stats?.avgTradeSize || 0)}</span>
+                <TrendingUp className="w-4 h-4 text-orange-500" />
+                <span className="text-xs text-muted-foreground uppercase">Avg</span>
+                <span className="text-sm font-bold text-foreground font-mono">{formatAmount(stats?.avgTradeSize || 0)}</span>
             </div>
         </div>
     );

@@ -23,16 +23,16 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
 
     if (transactions.length === 0 && !loading) {
         return (
-            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
                 <p>No transactions found</p>
             </div>
         );
     }
 
     return (
-        <div className="w-full overflow-hidden flex flex-col h-full bg-[#0d121d] rounded-xl border border-white/5">
+        <div className="w-full overflow-hidden flex flex-col h-full bg-card/50 rounded-xl border border-border mix-blend-normal">
             {/* Table Header */}
-            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-white/5 border-b border-white/10 text-xs font-bold text-gray-400 uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-4 px-4 py-3 bg-muted/40 border-b border-border text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 <div className="col-span-2">Time</div>
                 <div className="col-span-3">Whale</div>
                 <div className="col-span-4">Market</div>
@@ -42,7 +42,7 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
             </div>
 
             {/* Table Body */}
-            <div className="overflow-y-auto custom-scrollbar flex-1 relative">
+            <div className="overflow-y-auto custom-scrollbar flex-1 relative bg-card/30">
                 <AnimatePresence initial={false}>
                     {transactions.map((tx) => {
                         const tagConfig = getTagConfig(tx.wallet_tag);
@@ -55,10 +55,10 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0 }}
                                 onClick={() => onSelectTx(tx)}
-                                className="grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-white/5 hover:bg-white/5 cursor-pointer items-center transition-colors text-sm group"
+                                className="grid grid-cols-12 gap-4 px-4 py-2.5 border-b border-border hover:bg-muted/50 cursor-pointer items-center transition-colors text-sm group"
                             >
                                 {/* Time */}
-                                <div className="col-span-2 text-gray-500 font-mono text-xs">
+                                <div className="col-span-2 text-muted-foreground font-mono text-xs">
                                     {formatTimeAgo(tx.timestamp)}
                                 </div>
 
@@ -71,7 +71,7 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
                                         </div>
                                         <button
                                             onClick={(e) => copyAddress(e, tx.wallet_address)}
-                                            className="text-[10px] text-gray-600 font-mono hover:text-gray-400 flex items-center gap-1"
+                                            className="text-[10px] text-muted-foreground font-mono hover:text-foreground flex items-center gap-1"
                                         >
                                             {tx.wallet_address.slice(0, 4)}...{tx.wallet_address.slice(-4)}
                                             {copied === tx.wallet_address ? <Check className="w-2 h-2 text-green-500" /> : <Copy className="w-2 h-2 opacity-0 group-hover:opacity-100 transition-opacity" />}
@@ -81,27 +81,27 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
 
                                 {/* Market */}
                                 <div className="col-span-4 min-w-0">
-                                    <p className="truncate text-gray-300 group-hover:text-blue-300 transition-colors" title={tx.market_question}>
+                                    <p className="truncate text-muted-foreground group-hover:text-primary transition-colors" title={tx.market_question}>
                                         {tx.market_question}
                                     </p>
                                 </div>
 
                                 {/* Side */}
                                 <div className="col-span-1 text-center">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tx.outcome === 'YES' ? 'bg-green-500/10 text-green-400' :
-                                            tx.outcome === 'NO' ? 'bg-red-500/10 text-red-400' : 'bg-blue-500/10 text-blue-400'
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tx.outcome === 'YES' ? 'bg-green-500/10 text-green-500' :
+                                            tx.outcome === 'NO' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
                                         }`}>
                                         {tx.outcome}
                                     </span>
                                 </div>
 
                                 {/* Size */}
-                                <div className="col-span-1 text-right font-mono font-medium text-blue-400">
+                                <div className="col-span-1 text-right font-mono font-medium text-primary">
                                     {formatAmount(tx.amount)}
                                 </div>
 
                                 {/* Price */}
-                                <div className="col-span-1 text-right font-mono text-gray-400">
+                                <div className="col-span-1 text-right font-mono text-muted-foreground">
                                     {(tx.price * 100).toFixed(1)}¢
                                 </div>
                             </motion.div>
