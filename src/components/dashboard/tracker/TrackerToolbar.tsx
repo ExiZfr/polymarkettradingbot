@@ -20,9 +20,12 @@ export default function TrackerToolbar({ filter, onChange }: Props) {
                     <option value="insider">👁️ Insider</option>
                     <option value="smart">🧠 Smart Money</option>
                     <option value="winner">🏆 Winner</option>
+                    <option value="dumb">🤡 Dumb Money</option>
+                    <option value="loser">💀 Loser</option>
                     <option value="whale">🐋 Whale</option>
                     <option value="shark">🦈 Shark</option>
                     <option value="dolphin">🐬 Dolphin</option>
+                    <option value="fish">🐟 Fish</option>
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                     <Filter className="w-3 h-3" />
