@@ -170,8 +170,9 @@ class WhaleTrackerV4:
             price = float(trade.get('price', 0))
             side = trade.get('side', 'UNKNOWN')
             
-            # Get full market details
-            market = await self.get_full_market_details(market_id)
+            # Use market data DIRECTLY from trade (already extracted from Data-API)
+            market_question = trade.get('market_question', 'Unknown Market')
+            market_slug = trade.get('market_slug', '')
             
             # Get wallet profile
             profile = await self.get_wallet_profile(wallet)
@@ -191,8 +192,8 @@ class WhaleTrackerV4:
                 wallet_win_rate=profile.get('win_rate'),
                 wallet_pnl=profile.get('pnl'),
                 market_id=market_id,
-                market_question=market.get('question', 'Unknown Market'),
-                market_slug=market.get('slug', ''),
+                market_question=market_question,
+                market_slug=market_slug,
                 outcome='YES' if side.upper() == 'BUY' else 'NO',
                 amount=size * price,
                 price=price,
