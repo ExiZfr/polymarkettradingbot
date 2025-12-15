@@ -1,7 +1,9 @@
 import { motion } from 'framer-motion';
-import { X, ExternalLink, Activity, DollarSign, TrendingUp, Wallet, Clock, Trophy, Share2, Target } from 'lucide-react';
+import { useState } from 'react';
+import { X, ExternalLink, Activity, DollarSign, TrendingUp, Wallet, Clock, Trophy, Target, Copy, RefreshCcw, Check } from 'lucide-react';
 import type { WhaleTransaction } from '@/types/tracker';
 import { getTagConfig, formatAmount, formatTimeAgo } from '@/lib/tracker-utils';
+import { paperStore } from '@/lib/paper-trading';
 
 interface TransactionDetailsProps {
     transaction: WhaleTransaction;
@@ -9,12 +11,62 @@ interface TransactionDetailsProps {
 }
 
 export default function TransactionDetails({ transaction, onClose }: TransactionDetailsProps) {
+    const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [inverseStatus, setInverseStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
     if (!transaction) return null;
 
     const isBuy = transaction.outcome?.toUpperCase() === 'YES';
     const outcomeColor = isBuy ? 'text-green-400' : 'text-red-400';
     const outcomeBg = isBuy ? 'bg-green-500/10' : 'bg-red-500/10';
     const tagConfig = getTagConfig(transaction.wallet_tag);
+
+    // Copy the whale's trade (same direction)
+    const handleCopyTrade = () => {
+        const order = paperStore.placeOrder({
+            marketId: transaction.market_id,
+            marketTitle: transaction.market_question,
+            marketImage: transaction.market_image || undefined,
+            type: 'BUY',
+            outcome: transaction.outcome as 'YES' | 'NO',
+            entryPrice: transaction.price,
+            amount: Math.min(transaction.amount, paperStore.getActiveProfile().currentBalance * 0.1), // Max 10% of balance
+            source: 'COPY_TRADING',
+            notes: `Copied from whale ${transaction.wallet_address.slice(0, 8)}...`
+        });
+
+        if (order) {
+            setCopyStatus('success');
+            setTimeout(() => setCopyStatus('idle'), 2000);
+        } else {
+            setCopyStatus('error');
+            setTimeout(() => setCopyStatus('idle'), 2000);
+        }
+    };
+
+    // Inverse the whale's trade (opposite direction)
+    const handleInverseTrade = () => {
+        const inverseOutcome = transaction.outcome === 'YES' ? 'NO' : 'YES';
+        const order = paperStore.placeOrder({
+            marketId: transaction.market_id,
+            marketTitle: transaction.market_question,
+            marketImage: transaction.market_image || undefined,
+            type: 'BUY',
+            outcome: inverseOutcome,
+            entryPrice: 1 - transaction.price, // Inverse price
+            amount: Math.min(transaction.amount, paperStore.getActiveProfile().currentBalance * 0.1),
+            source: 'COPY_TRADING',
+            notes: `Inversed trade from whale ${transaction.wallet_address.slice(0, 8)}...`
+        });
+
+        if (order) {
+            setInverseStatus('success');
+            setTimeout(() => setInverseStatus('idle'), 2000);
+        } else {
+            setInverseStatus('error');
+            setTimeout(() => setInverseStatus('idle'), 2000);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
@@ -193,6 +245,30 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                             Polymarket Profile
                             <ExternalLink className="w-3 h-3 opacity-50" />
                         </a>
+
+                        {/* Copy/Inverse Trade Buttons */}
+                        <button
+                            onClick={handleCopyTrade}
+                            disabled={copyStatus !== 'idle'}
+                            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${copyStatus === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                                    copyStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                        'bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20 hover:border-green-500/40'
+                                }`}
+                        >
+                            {copyStatus === 'success' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                            {copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy Trade'}
+                        </button>
+                        <button
+                            onClick={handleInverseTrade}
+                            disabled={inverseStatus !== 'idle'}
+                            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${inverseStatus === 'success' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
+                                    inverseStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+                                        'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20 hover:border-orange-500/40'
+                                }`}
+                        >
+                            {inverseStatus === 'success' ? <Check className="w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
+                            {inverseStatus === 'success' ? 'Inversed!' : inverseStatus === 'error' ? 'Failed' : 'Inverse Trade'}
+                        </button>
                     </div>
 
                 </div>
