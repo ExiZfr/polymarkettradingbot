@@ -385,6 +385,19 @@ export const paperStore = {
             return null;
         }
 
+        // REALISTIC TRADING GUARD: Reject unrealistic entry prices
+        // Prices below $0.05 typically have no liquidity in real markets
+        const MIN_REALISTIC_PRICE = 0.05;
+        const MAX_REALISTIC_PRICE = 0.98;
+        if (orderData.entryPrice < MIN_REALISTIC_PRICE) {
+            console.warn(`[PaperTrading] Entry price $${orderData.entryPrice} too low (min: $${MIN_REALISTIC_PRICE}) - would have no liquidity in real trading`);
+            return null;
+        }
+        if (orderData.entryPrice > MAX_REALISTIC_PRICE) {
+            console.warn(`[PaperTrading] Entry price $${orderData.entryPrice} too high (max: $${MAX_REALISTIC_PRICE}) - minimal profit potential`);
+            return null;
+        }
+
         // Calculate shares (simplified: shares = amount / price)
         const shares = amount / orderData.entryPrice;
 
