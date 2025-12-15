@@ -80,7 +80,22 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
                                 </div>
 
                                 {/* Market */}
-                                <div className="col-span-4 min-w-0">
+                                <div className="col-span-4 flex items-center gap-2 min-w-0">
+                                    {/* Market Image */}
+                                    <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center">
+                                        {tx.market_image ? (
+                                            <img
+                                                src={tx.market_image}
+                                                alt=""
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).style.display = 'none';
+                                                }}
+                                            />
+                                        ) : (
+                                            <span className="text-xs font-bold text-primary/50">📊</span>
+                                        )}
+                                    </div>
                                     <p className="truncate text-muted-foreground group-hover:text-primary transition-colors" title={tx.market_question}>
                                         {tx.market_question}
                                     </p>
@@ -89,7 +104,7 @@ export default function TrackerTable({ transactions, loading, onSelectTx }: Prop
                                 {/* Side */}
                                 <div className="col-span-1 text-center">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tx.outcome === 'YES' ? 'bg-green-500/10 text-green-500' :
-                                            tx.outcome === 'NO' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
+                                        tx.outcome === 'NO' ? 'bg-red-500/10 text-red-500' : 'bg-blue-500/10 text-blue-500'
                                         }`}>
                                         {tx.outcome}
                                     </span>

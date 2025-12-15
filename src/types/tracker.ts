@@ -7,6 +7,7 @@ export interface WhaleTransaction {
     market_question: string;
     market_slug: string;
     market_url: string | null;
+    market_image: string | null;
     outcome: string;
     amount: number;
     price: number;

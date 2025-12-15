@@ -18,6 +18,7 @@ interface WhaleTransactionInput {
     market_question: string;
     market_slug: string;
     market_url: string | null;
+    market_image: string | null;
     outcome: string;
     amount: number;
     price: number;
@@ -48,6 +49,7 @@ export async function POST(request: NextRequest) {
                 marketQuestion: tx.market_question,
                 marketSlug: tx.market_slug,
                 marketUrl: tx.market_url,
+                marketImage: tx.market_image || null,
                 outcome: tx.outcome,
                 amount: tx.amount,
                 price: tx.price,

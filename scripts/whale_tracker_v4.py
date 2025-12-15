@@ -38,13 +38,14 @@ class WhaleTransaction:
     market_id: str
     market_question: str
     market_slug: str
-    market_url: Optional[str]  # NEW: Full Polymarket URL
+    market_url: Optional[str]
+    market_image: Optional[str]  # Polymarket event image/logo
     outcome: str
     amount: float
     price: float
     timestamp: str
     tx_hash: str
-    cluster_name: Optional[str] = None  # NEW: cluster detection
+    cluster_name: Optional[str] = None
 
 
 class WhaleTrackerV4:
@@ -140,6 +141,7 @@ class WhaleTrackerV4:
                                 'market_question': trade.get('title', 'Unknown Market'),
                                 'market_slug': trade.get('slug', ''),
                                 'market_url': market_url,
+                                'market_image': trade.get('image', trade.get('eventImage')),  # Get market image
                                 'outcome': trade.get('outcome', '')
                             })
                         except (ValueError, KeyError) as e:
@@ -179,6 +181,7 @@ class WhaleTrackerV4:
             market_question = trade.get('market_question', 'Unknown Market')
             market_slug = trade.get('market_slug', '')
             market_url = trade.get('market_url')
+            market_image = trade.get('market_image')  # Event image
             
             # Get wallet profile
             profile = await self.get_wallet_profile(wallet)
@@ -201,6 +204,7 @@ class WhaleTrackerV4:
                 market_question=market_question,
                 market_slug=market_slug,
                 market_url=market_url,
+                market_image=market_image,
                 outcome='YES' if side.upper() == 'BUY' else 'NO',
                 amount=size * price,
                 price=price,
