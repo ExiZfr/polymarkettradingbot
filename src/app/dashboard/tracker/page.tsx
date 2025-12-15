@@ -49,6 +49,35 @@ export default function TrackerPage() {
         if (filter.minAmount && tx.amount < filter.minAmount) return false;
         return true;
     });
+    const [trackerRunning, setTrackerRunning] = useState(true);
+    const [controlLoading, setControlLoading] = useState(false);
+
+    // Fetch tracker status on mount
+    useEffect(() => {
+        fetch('/api/tracker/control')
+            .then(res => res.json())
+            .then(data => setTrackerRunning(data.running))
+            .catch(() => setTrackerRunning(false));
+    }, []);
+
+    const toggleTracker = async () => {
+        setControlLoading(true);
+        try {
+            const action = trackerRunning ? 'stop' : 'start';
+            const res = await fetch('/api/tracker/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action })
+            });
+            if (res.ok) {
+                setTrackerRunning(!trackerRunning);
+            }
+        } catch (e) {
+            console.error('Failed to control tracker:', e);
+        } finally {
+            setControlLoading(false);
+        }
+    };
 
     return (
         <div className="h-screen bg-background text-foreground font-sans flex flex-col overflow-hidden">
@@ -62,13 +91,24 @@ export default function TrackerPage() {
                         </h1>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2 text-xs font-mono text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        {/* Tracker Control Button */}
+                        <button
+                            onClick={toggleTracker}
+                            disabled={controlLoading}
+                            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${trackerRunning
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
+                                    : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
+                                } ${controlLoading ? 'opacity-50 cursor-wait' : ''}`}
+                        >
+                            <span className={`relative flex h-2 w-2 ${trackerRunning ? '' : 'opacity-50'}`}>
+                                {trackerRunning && (
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+                                )}
+                                <span className={`relative inline-flex rounded-full h-2 w-2 ${trackerRunning ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
                             </span>
-                            LIVE
-                        </div>
+                            {controlLoading ? 'Processing...' : trackerRunning ? 'LIVE' : 'STOPPED'}
+                        </button>
+
                         <button
                             onClick={() => setShowLogs(!showLogs)}
                             className={`p-1.5 rounded-lg border transition-all ${showLogs

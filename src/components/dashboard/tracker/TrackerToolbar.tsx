@@ -9,7 +9,7 @@ interface Props {
 export default function TrackerToolbar({ filter, onChange }: Props) {
     return (
         <div className="flex items-center gap-4 p-4 border-b border-border bg-background">
-            {/* Tag Filter */}
+            {/* Tag Filter - SMART TAGS ONLY */}
             <div className="relative min-w-[180px]">
                 <select
                     value={filter.tag}
@@ -22,10 +22,7 @@ export default function TrackerToolbar({ filter, onChange }: Props) {
                     <option value="winner">🏆 Winner</option>
                     <option value="dumb">🤡 Dumb Money</option>
                     <option value="loser">💀 Loser</option>
-                    <option value="whale">🐋 Whale</option>
-                    <option value="shark">🦈 Shark</option>
-                    <option value="dolphin">🐬 Dolphin</option>
-                    <option value="fish">🐟 Fish</option>
+                    <option value="unknown">❓ Unknown</option>
                 </select>
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
                     <Filter className="w-3 h-3" />
@@ -34,7 +31,7 @@ export default function TrackerToolbar({ filter, onChange }: Props) {
 
             {/* Min Amount Pills */}
             <div className="flex items-center gap-1">
-                {[0, 1000, 50000, 100000].map((amt) => (
+                {[0, 1000, 5000, 10000].map((amt) => (
                     <button
                         key={amt}
                         onClick={() => onChange({ ...filter, minAmount: amt })}
@@ -43,7 +40,7 @@ export default function TrackerToolbar({ filter, onChange }: Props) {
                                 : 'bg-muted text-muted-foreground hover:text-foreground border border-transparent hover:border-border'
                             }`}
                     >
-                        {amt === 0 ? 'All Size' : `>${amt / 1000}k`}
+                        {amt === 0 ? 'All Size' : `>$${(amt / 1000).toFixed(0)}k`}
                     </button>
                 ))}
             </div>
