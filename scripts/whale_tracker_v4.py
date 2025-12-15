@@ -294,7 +294,7 @@ class WhaleTrackerV4:
         
         try:
             # Fetch wallet's trade history from Polymarket Data-API
-            url = f"{DATA_API}/trades?maker={address}&limit=100"
+            url = f"https://data-api.polymarket.com/trades?maker={address}&limit=100"
             async with self.session.get(url, timeout=10) as resp:
                 if resp.status != 200:
                     return {}
