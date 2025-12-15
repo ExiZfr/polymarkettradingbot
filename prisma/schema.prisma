@@ -360,3 +360,70 @@ model WalletCluster {
   @@map("wallet_clusters")
 }
 
+// CryptoOracle Trading Signals
+model OracleSignal {
+  id              String   @id @default(cuid())
+  
+  // Market Info
+  marketId        String
+  marketSlug      String
+  question        String
+  outcome         String   // "YES" or "NO"
+  
+  // Trader Info
+  traderAddress   String
+  traderPnl       Float    @default(0)
+  traderWinRate   Float    @default(0)
+  traderRank      Int      @default(0)
+  
+  // Signal Details
+  entryPrice      Float
+  size            Float
+  side            String   // "BUY" or "SELL"
+  
+  // Analysis
+  reliabilityScore Int     @default(0)  // 0-100
+  confidence       String  @default("LOW")  // "LOW", "MEDIUM", "HIGH", "EXTREME"
+  reason           String?
+  
+  // Timing
+  timestamp       DateTime @default(now())
+  expiresAt       DateTime?
+  
+  // Status
+  status          String   @default("ACTIVE")  // "ACTIVE", "COPIED", "EXPIRED", "INVALID"
+  copiedCount     Int      @default(0)
+  
+  @@index([marketId, timestamp])
+  @@index([traderAddress])
+  @@index([reliabilityScore])
+  @@map("oracle_signals")
+}
+
+// CryptoOracle Leaderboard Cache
+model OracleLeaderboard {
+  id              String   @id @default(cuid())
+  
+  traderAddress   String   @unique
+  
+  // Performance
+  totalPnl        Float    @default(0)
+  winRate         Float    @default(0)
+  totalTrades     Int      @default(0)
+  avgTradeSize    Float    @default(0)
+  
+  // Crypto-specific stats
+  cryptoTrades    Int      @default(0)
+  cryptoPnl       Float    @default(0)
+  cryptoWinRate   Float    @default(0)
+  
+  // Ranking
+  rank            Int      @default(0)
+  score           Int      @default(0)  // Composite score
+  
+  // Activity
+  lastTradeAt     DateTime?
+  updatedAt       DateTime @updatedAt
+  
+  @@map("oracle_leaderboard")
+}

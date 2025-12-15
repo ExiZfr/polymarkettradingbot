@@ -1,46 +1,58 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Zap, TrendingUp, TrendingDown, RefreshCw, ExternalLink,
-    Eye, DollarSign, Activity, Target, AlertTriangle
+    Zap, TrendingUp, RefreshCw, ExternalLink, Copy,
+    Trophy, Target, Shield, Flame, Crown, Users,
+    ChevronRight, Check, AlertTriangle, Clock
 } from 'lucide-react';
 
-interface CryptoMarket {
-    market_id: string;
-    slug: string;
+interface Signal {
+    id: string;
+    marketId: string;
+    marketSlug: string;
     question: string;
-    symbol: string;
-    strike_price: number;
-    yes_price: number;
-    volume: number;
-    alpha: number;
-    fair_value: number;
-    spot_price: number;
+    outcome: string;
+    traderAddress: string;
+    traderPnl: number;
+    traderWinRate: number;
+    traderRank: number;
+    entryPrice: number;
+    size: number;
+    side: string;
+    reliabilityScore: number;
+    confidence: 'LOW' | 'MEDIUM' | 'HIGH' | 'EXTREME';
+    reason: string;
+    timestamp: string;
 }
 
-interface SpotPrices {
-    BTC: number;
-    ETH: number;
-    SOL: number;
+interface Trader {
+    address: string;
+    pnl: number;
+    winRate: number;
+    trades: number;
+    rank: number;
+    score: number;
 }
 
 export default function OraclePage() {
-    const [markets, setMarkets] = useState<CryptoMarket[]>([]);
-    const [spotPrices, setSpotPrices] = useState<SpotPrices>({ BTC: 0, ETH: 0, SOL: 0 });
+    const [signals, setSignals] = useState<Signal[]>([]);
+    const [leaderboard, setLeaderboard] = useState<Trader[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
-    const [filter, setFilter] = useState<'all' | 'btc' | 'eth' | 'sol'>('all');
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard'>('signals');
+    const [filterConfidence, setFilterConfidence] = useState<string>('all');
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch('/api/oracle/scan');
+            const res = await fetch('/api/oracle/signals');
             if (res.ok) {
                 const data = await res.json();
-                setMarkets(data.markets || []);
-                setSpotPrices(data.spotPrices || { BTC: 0, ETH: 0, SOL: 0 });
+                setSignals(data.signals || []);
+                setLeaderboard(data.leaderboard || []);
                 setLastUpdate(new Date());
             }
         } catch (error) {
@@ -48,225 +60,416 @@ export default function OraclePage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 60000); // Refresh every minute
+        const interval = setInterval(fetchData, 30000); // Refresh every 30s
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchData]);
 
-    const filteredMarkets = markets.filter(m => {
-        if (filter === 'all') return true;
-        if (filter === 'btc') return m.symbol === 'BTC/USDT';
-        if (filter === 'eth') return m.symbol === 'ETH/USDT';
-        if (filter === 'sol') return m.symbol === 'SOL/USDT';
-        return true;
-    });
-
-    const getAlphaColor = (alpha: number) => {
-        if (alpha > 0.1) return 'text-emerald-400';
-        if (alpha > 0.05) return 'text-emerald-500';
-        if (alpha < -0.05) return 'text-red-400';
-        return 'text-muted-foreground';
+    const handleCopyTrade = async (signal: Signal) => {
+        // This would integrate with paper trading
+        const paperStore = (window as any).paperStore;
+        if (paperStore?.placeOrder) {
+            await paperStore.placeOrder({
+                marketId: signal.marketId,
+                marketTitle: signal.question,
+                type: signal.side as 'BUY' | 'SELL',
+                outcome: signal.outcome as 'YES' | 'NO',
+                amount: Math.min(signal.size, 100), // Cap at $100 for paper trading
+                entryPrice: signal.entryPrice,
+                source: 'ORACLE'
+            });
+        }
+        setCopiedId(signal.id);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const getAlphaBg = (alpha: number) => {
-        if (alpha > 0.1) return 'bg-emerald-500/10 border-emerald-500/30';
-        if (alpha > 0.05) return 'bg-emerald-500/5 border-emerald-500/20';
-        if (alpha < -0.05) return 'bg-red-500/10 border-red-500/30';
-        return 'bg-secondary/50 border-border';
+    const truncateAddress = (addr: string) =>
+        `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+
+    const getConfidenceConfig = (confidence: string) => {
+        switch (confidence) {
+            case 'EXTREME':
+                return {
+                    bg: 'bg-gradient-to-r from-amber-500/20 to-orange-500/20',
+                    border: 'border-amber-500/50',
+                    text: 'text-amber-400',
+                    icon: Flame,
+                    label: 'EXTREME'
+                };
+            case 'HIGH':
+                return {
+                    bg: 'bg-gradient-to-r from-emerald-500/20 to-green-500/20',
+                    border: 'border-emerald-500/50',
+                    text: 'text-emerald-400',
+                    icon: Shield,
+                    label: 'HIGH'
+                };
+            case 'MEDIUM':
+                return {
+                    bg: 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20',
+                    border: 'border-blue-500/50',
+                    text: 'text-blue-400',
+                    icon: Target,
+                    label: 'MEDIUM'
+                };
+            default:
+                return {
+                    bg: 'bg-muted/50',
+                    border: 'border-border',
+                    text: 'text-muted-foreground',
+                    icon: AlertTriangle,
+                    label: 'LOW'
+                };
+        }
     };
+
+    const getScoreColor = (score: number) => {
+        if (score >= 80) return 'from-amber-400 to-orange-500';
+        if (score >= 60) return 'from-emerald-400 to-green-500';
+        if (score >= 40) return 'from-blue-400 to-cyan-500';
+        return 'from-gray-400 to-gray-500';
+    };
+
+    const filteredSignals = signals.filter(s =>
+        filterConfidence === 'all' || s.confidence === filterConfidence
+    );
 
     return (
-        <div className="min-h-screen bg-background text-foreground p-6">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                        <Zap className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400">
-                            CryptoOracle
-                        </h1>
-                        <p className="text-xs text-muted-foreground">
-                            Smart Money + Mean Reversion Scanner
-                        </p>
-                    </div>
-                </div>
+        <div className="min-h-screen bg-background text-foreground">
+            {/* Hero Header */}
+            <div className="relative overflow-hidden border-b border-border">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-orange-500/5" />
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
 
-                <div className="flex items-center gap-3">
-                    {lastUpdate && (
-                        <span className="text-xs text-muted-foreground">
-                            Updated {lastUpdate.toLocaleTimeString()}
-                        </span>
-                    )}
-                    <button
-                        onClick={fetchData}
-                        disabled={loading}
-                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20 transition-all disabled:opacity-50"
-                    >
-                        <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </button>
+                <div className="relative p-6">
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-4">
+                            <div className="relative">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 via-pink-500 to-orange-500 flex items-center justify-center shadow-lg shadow-purple-500/25">
+                                    <Zap className="w-7 h-7 text-white" />
+                                </div>
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-pulse" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-orange-400">
+                                    CryptoOracle
+                                </h1>
+                                <p className="text-sm text-muted-foreground">
+                                    AI-Powered Trading Signals • Copy the Best Traders
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            {lastUpdate && (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 px-3 py-1.5 rounded-full">
+                                    <Clock className="w-3 h-3" />
+                                    {lastUpdate.toLocaleTimeString()}
+                                </div>
+                            )}
+                            <button
+                                onClick={fetchData}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 text-purple-400 hover:from-purple-500/20 hover:to-pink-500/20 transition-all disabled:opacity-50"
+                            >
+                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                Refresh
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-4 gap-4">
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-purple-400/80 uppercase tracking-wide">Active Signals</span>
+                                <Zap className="w-4 h-4 text-purple-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-purple-400">{signals.length}</div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border border-emerald-500/20">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-emerald-400/80 uppercase tracking-wide">High Confidence</span>
+                                <Shield className="w-4 h-4 text-emerald-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-emerald-400">
+                                {signals.filter(s => s.confidence === 'HIGH' || s.confidence === 'EXTREME').length}
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-amber-400/80 uppercase tracking-wide">Top Traders</span>
+                                <Trophy className="w-4 h-4 text-amber-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-amber-400">{leaderboard.length}</div>
+                        </div>
+                        <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs text-blue-400/80 uppercase tracking-wide">Avg Score</span>
+                                <Target className="w-4 h-4 text-blue-400" />
+                            </div>
+                            <div className="text-2xl font-bold text-blue-400">
+                                {signals.length > 0 ? Math.round(signals.reduce((a, b) => a + b.reliabilityScore, 0) / signals.length) : 0}%
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Spot Prices Banner */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-                <div className="p-4 rounded-xl bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border border-orange-500/20">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Bitcoin</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-400">BTC</span>
-                    </div>
-                    <div className="text-2xl font-bold text-orange-400 mt-1">
-                        ${spotPrices.BTC?.toLocaleString() || '---'}
-                    </div>
-                </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-indigo-500/10 border border-blue-500/20">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Ethereum</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">ETH</span>
-                    </div>
-                    <div className="text-2xl font-bold text-blue-400 mt-1">
-                        ${spotPrices.ETH?.toLocaleString() || '---'}
-                    </div>
-                </div>
-                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
-                    <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Solana</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-purple-500/20 text-purple-400">SOL</span>
-                    </div>
-                    <div className="text-2xl font-bold text-purple-400 mt-1">
-                        ${spotPrices.SOL?.toLocaleString() || '---'}
-                    </div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center gap-2 mb-4">
-                {(['all', 'btc', 'eth', 'sol'] as const).map((f) => (
+            {/* Tab Navigation */}
+            <div className="border-b border-border bg-muted/20">
+                <div className="flex items-center gap-1 p-2 max-w-2xl">
                     <button
-                        key={f}
-                        onClick={() => setFilter(f)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === f
-                                ? 'bg-primary/10 text-primary border border-primary/30'
-                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        onClick={() => setActiveTab('signals')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'signals'
+                                ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-400 border border-purple-500/30'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                             }`}
                     >
-                        {f === 'all' ? 'All Markets' : f.toUpperCase()}
+                        <Zap className="w-4 h-4" />
+                        Trading Signals
+                        {signals.length > 0 && (
+                            <span className="px-2 py-0.5 text-xs rounded-full bg-purple-500/20 text-purple-400">
+                                {signals.length}
+                            </span>
+                        )}
                     </button>
-                ))}
-                <div className="ml-auto text-sm text-muted-foreground">
-                    {filteredMarkets.length} markets found
+                    <button
+                        onClick={() => setActiveTab('leaderboard')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'leaderboard'
+                                ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                    >
+                        <Trophy className="w-4 h-4" />
+                        Leaderboard
+                    </button>
                 </div>
             </div>
 
-            {/* Markets Table */}
-            <div className="rounded-xl border border-border overflow-hidden">
-                <div className="bg-muted/30 px-4 py-3 border-b border-border grid grid-cols-12 gap-4 text-xs font-medium text-muted-foreground uppercase">
-                    <div className="col-span-5">Market</div>
-                    <div className="col-span-1 text-center">YES Price</div>
-                    <div className="col-span-2 text-center">Strike</div>
-                    <div className="col-span-1 text-center">Fair Value</div>
-                    <div className="col-span-2 text-center">Alpha</div>
-                    <div className="col-span-1 text-center">Actions</div>
-                </div>
-
-                <AnimatePresence>
-                    {loading && markets.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-2" />
-                            Scanning crypto markets...
-                        </div>
-                    ) : filteredMarkets.length === 0 ? (
-                        <div className="p-8 text-center text-muted-foreground">
-                            No markets found
-                        </div>
-                    ) : (
-                        filteredMarkets.map((market, idx) => (
-                            <motion.div
-                                key={market.market_id}
-                                initial={{ opacity: 0, y: 10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: idx * 0.02 }}
-                                className={`px-4 py-3 border-b border-border grid grid-cols-12 gap-4 items-center hover:bg-muted/20 transition-colors ${getAlphaBg(market.alpha)}`}
-                            >
-                                <div className="col-span-5">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${market.symbol === 'BTC/USDT' ? 'bg-orange-500/20 text-orange-400' :
-                                                market.symbol === 'ETH/USDT' ? 'bg-blue-500/20 text-blue-400' :
-                                                    'bg-purple-500/20 text-purple-400'
-                                            }`}>
-                                            {market.symbol.split('/')[0]}
-                                        </span>
-                                        <span className="text-sm font-medium truncate">
-                                            {market.question.length > 50 ? market.question.slice(0, 50) + '...' : market.question}
-                                        </span>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground mt-0.5">
-                                        Vol: ${(market.volume / 1000000).toFixed(1)}M
-                                    </div>
-                                </div>
-
-                                <div className="col-span-1 text-center">
-                                    <span className="text-sm font-mono font-bold">
-                                        ${market.yes_price.toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="col-span-2 text-center">
-                                    <span className="text-sm font-mono">
-                                        ${market.strike_price.toLocaleString()}
-                                    </span>
-                                </div>
-
-                                <div className="col-span-1 text-center">
-                                    <span className="text-sm font-mono text-muted-foreground">
-                                        ${market.fair_value.toFixed(2)}
-                                    </span>
-                                </div>
-
-                                <div className="col-span-2 text-center">
-                                    <span className={`text-sm font-bold ${getAlphaColor(market.alpha)}`}>
-                                        {market.alpha > 0 ? '+' : ''}{(market.alpha * 100).toFixed(1)}%
-                                    </span>
-                                    {market.alpha > 0.1 && (
-                                        <span className="ml-1 text-xs">🔥</span>
-                                    )}
-                                </div>
-
-                                <div className="col-span-1 flex justify-center gap-1">
-                                    <a
-                                        href={`https://polymarket.com/event/${market.slug}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
-                                        title="View on Polymarket"
+            {/* Content */}
+            <div className="p-6">
+                <AnimatePresence mode="wait">
+                    {activeTab === 'signals' ? (
+                        <motion.div
+                            key="signals"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            {/* Confidence Filters */}
+                            <div className="flex items-center gap-2 mb-4">
+                                {['all', 'EXTREME', 'HIGH', 'MEDIUM', 'LOW'].map((conf) => (
+                                    <button
+                                        key={conf}
+                                        onClick={() => setFilterConfidence(conf)}
+                                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterConfidence === conf
+                                                ? conf === 'EXTREME' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                                                    conf === 'HIGH' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                                                        conf === 'MEDIUM' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                                                            conf === 'LOW' ? 'bg-gray-500/20 text-gray-400 border border-gray-500/30' :
+                                                                'bg-primary/10 text-primary border border-primary/30'
+                                                : 'text-muted-foreground hover:bg-muted'
+                                            }`}
                                     >
-                                        <ExternalLink className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                    </a>
+                                        {conf === 'all' ? 'All Signals' : conf}
+                                    </button>
+                                ))}
+                                <div className="ml-auto text-sm text-muted-foreground">
+                                    {filteredSignals.length} signals
                                 </div>
-                            </motion.div>
-                        ))
+                            </div>
+
+                            {/* Signals List */}
+                            <div className="space-y-3">
+                                {loading && signals.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-3 text-purple-400" />
+                                        <p className="text-muted-foreground">Scanning for trading signals...</p>
+                                    </div>
+                                ) : filteredSignals.length === 0 ? (
+                                    <div className="text-center py-12 bg-muted/20 rounded-xl border border-border">
+                                        <AlertTriangle className="w-8 h-8 mx-auto mb-3 text-muted-foreground" />
+                                        <p className="text-muted-foreground">No signals match your filter</p>
+                                    </div>
+                                ) : (
+                                    filteredSignals.map((signal, idx) => {
+                                        const config = getConfidenceConfig(signal.confidence);
+                                        const Icon = config.icon;
+
+                                        return (
+                                            <motion.div
+                                                key={signal.id}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: idx * 0.03 }}
+                                                className={`relative overflow-hidden rounded-xl border ${config.border} ${config.bg} p-4 hover:scale-[1.01] transition-transform`}
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    {/* Score Circle */}
+                                                    <div className="relative flex-shrink-0">
+                                                        <div className={`w-16 h-16 rounded-full bg-gradient-to-br ${getScoreColor(signal.reliabilityScore)} flex items-center justify-center shadow-lg`}>
+                                                            <span className="text-xl font-bold text-white">{signal.reliabilityScore}</span>
+                                                        </div>
+                                                        <div className={`absolute -bottom-1 -right-1 p-1 rounded-full ${config.bg} border ${config.border}`}>
+                                                            <Icon className={`w-3 h-3 ${config.text}`} />
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Content */}
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-start justify-between gap-4 mb-2">
+                                                            <div>
+                                                                <h3 className="font-medium text-foreground line-clamp-1">
+                                                                    {signal.question}
+                                                                </h3>
+                                                                <div className="flex items-center gap-2 mt-1">
+                                                                    <span className={`px-2 py-0.5 text-xs font-bold rounded ${signal.outcome === 'YES' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                                                                        }`}>
+                                                                        {signal.outcome}
+                                                                    </span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        @ ${signal.entryPrice.toFixed(2)}
+                                                                    </span>
+                                                                    <span className="text-xs text-muted-foreground">•</span>
+                                                                    <span className="text-xs text-muted-foreground">
+                                                                        ${signal.size.toLocaleString()}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+
+                                                            <button
+                                                                onClick={() => handleCopyTrade(signal)}
+                                                                disabled={copiedId === signal.id}
+                                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${copiedId === signal.id
+                                                                        ? 'bg-emerald-500/20 text-emerald-400'
+                                                                        : 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg shadow-purple-500/25'
+                                                                    }`}
+                                                            >
+                                                                {copiedId === signal.id ? (
+                                                                    <>
+                                                                        <Check className="w-4 h-4" />
+                                                                        Copied!
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <Copy className="w-4 h-4" />
+                                                                        Copy Trade
+                                                                    </>
+                                                                )}
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Trader Info */}
+                                                        <div className="flex items-center gap-4 text-sm">
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Users className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                <span className="font-mono text-muted-foreground">
+                                                                    {truncateAddress(signal.traderAddress)}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                                                                <span className={signal.traderPnl >= 0 ? 'text-emerald-400' : 'text-red-400'}>
+                                                                    ${Math.abs(signal.traderPnl).toLocaleString()}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5">
+                                                                <Target className="w-3.5 h-3.5 text-blue-400" />
+                                                                <span className="text-blue-400">
+                                                                    {(signal.traderWinRate * 100).toFixed(0)}% WR
+                                                                </span>
+                                                            </div>
+                                                            {signal.traderRank <= 100 && (
+                                                                <div className="flex items-center gap-1.5">
+                                                                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                                                                    <span className="text-amber-400">#{signal.traderRank}</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Reason */}
+                                                        <div className={`mt-2 text-xs ${config.text}`}>
+                                                            {signal.reason}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </motion.div>
+                                        );
+                                    })
+                                )}
+                            </div>
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="leaderboard"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                        >
+                            <div className="rounded-xl border border-border overflow-hidden">
+                                <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 px-4 py-3 border-b border-border">
+                                    <h2 className="font-semibold text-amber-400 flex items-center gap-2">
+                                        <Trophy className="w-5 h-5" />
+                                        Top Crypto Traders
+                                    </h2>
+                                </div>
+
+                                <div className="divide-y divide-border">
+                                    {leaderboard.map((trader, idx) => (
+                                        <motion.div
+                                            key={trader.address}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: idx * 0.05 }}
+                                            className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
+                                        >
+                                            {/* Rank */}
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${trader.rank === 1 ? 'bg-amber-500/20 text-amber-400' :
+                                                    trader.rank === 2 ? 'bg-gray-400/20 text-gray-400' :
+                                                        trader.rank === 3 ? 'bg-orange-600/20 text-orange-500' :
+                                                            'bg-muted text-muted-foreground'
+                                                }`}>
+                                                {trader.rank <= 3 ? <Crown className="w-5 h-5" /> : trader.rank}
+                                            </div>
+
+                                            {/* Trader */}
+                                            <div className="flex-1">
+                                                <div className="font-mono font-medium">
+                                                    {truncateAddress(trader.address)}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {trader.trades} trades
+                                                </div>
+                                            </div>
+
+                                            {/* Stats */}
+                                            <div className="text-right">
+                                                <div className={`font-bold ${trader.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                    {trader.pnl >= 0 ? '+' : ''}${trader.pnl.toLocaleString()}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">
+                                                    {(trader.winRate * 100).toFixed(0)}% win rate
+                                                </div>
+                                            </div>
+
+                                            {/* Score */}
+                                            <div className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${getScoreColor(trader.score)} text-white`}>
+                                                {trader.score}
+                                            </div>
+
+                                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            </div>
+                        </motion.div>
                     )}
                 </AnimatePresence>
-            </div>
-
-            {/* Legend */}
-            <div className="mt-4 flex items-center gap-6 text-xs text-muted-foreground">
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-emerald-500/30 border border-emerald-500/50"></div>
-                    <span>Alpha &gt; 5% (Undervalued)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded bg-red-500/30 border border-red-500/50"></div>
-                    <span>Alpha &lt; -5% (Overvalued)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span>Alpha = Fair Value - Current Price</span>
-                </div>
             </div>
         </div>
     );
