@@ -21,7 +21,7 @@ import random
 API_BASE_URL = os.getenv('API_BASE_URL', 'http://localhost:3000')
 POLYMARKET_API = "https://clob.polymarket.com"
 GAMMA_API = "https://gamma-api.polymarket.com"
-WHALE_THRESHOLD = float(os.getenv('WHALE_THRESHOLD', '10'))  # Min $ for whale trade (TESTING: lowered to $10)
+WHALE_THRESHOLD = float(os.getenv('WHALE_THRESHOLD', '1000'))  # Min $ for whale trade
 POLL_INTERVAL = int(os.getenv('POLL_INTERVAL', '10'))  # Seconds between polls
 
 # Tracking
@@ -288,12 +288,11 @@ class WhaleTrackerV4:
         return None
     
     async def get_wallet_profile(self, address: str) -> dict:
-        """Calculate wallet metrics from trade history (Gamma API is dead - 404)"""
+        """Analyze wallet trading behavior from history"""
         if address in self.wallet_cache:
             return self.wallet_cache[address]
         
         try:
-            # Fetch wallet's trade history from Polymarket Data-API
             url = f"https://data-api.polymarket.com/trades?maker={address}&limit=100"
             async with self.session.get(url, timeout=10) as resp:
                 if resp.status != 200:
@@ -301,13 +300,13 @@ class WhaleTrackerV4:
                 
                 trades = await resp.json()
                 
-                if not trades or len(trades) == 0:
-                    return {}
+                if not trades or len(trades) < 3:
+                    return {'trade_count': len(trades) if trades else 0}
                 
-                # Calculate metrics
+                # Metrics
                 total_volume = 0
-                total_pnl = 0
-                wins = 0
+                smart_trades = 0  # Good timing: buy <0.35 or sell >0.65
+                dumb_trades = 0   # Bad timing: buy >0.65 or sell <0.35
                 trade_count = len(trades)
                 
                 for trade in trades:
@@ -319,95 +318,89 @@ class WhaleTrackerV4:
                         trade_value = size * price
                         total_volume += trade_value
                         
-                        # Simplified PnL estimation
-                        # BUY at low price = potential profit, SELL at high price = profit taken
+                        # Evaluate trade quality
                         if side == 'BUY':
-                            # Buying low is good (closer to 0)
-                            total_pnl += size * (1 - price) * 0.5  # Rough estimate
+                            if price < 0.35:
+                                smart_trades += 1  # Buying low = smart
+                            elif price > 0.65:
+                                dumb_trades += 1   # Buying high = dumb
                         else:  # SELL
-                            # Selling high is good (closer to 1)
-                            total_pnl += size * price * 0.5
-                        
-                        # Count as "win" if trade looks profitable
-                        if (side == 'BUY' and price < 0.5) or (side == 'SELL' and price > 0.5):
-                            wins += 1
-                            
+                            if price > 0.65:
+                                smart_trades += 1  # Selling high = smart
+                            elif price < 0.35:
+                                dumb_trades += 1   # Selling low = dumb
+                                
                     except (ValueError, KeyError, TypeError):
                         continue
                 
-                win_rate = wins / trade_count if trade_count > 0 else 0
+                smart_ratio = smart_trades / trade_count if trade_count > 0 else 0
+                dumb_ratio = dumb_trades / trade_count if trade_count > 0 else 0
                 
                 profile = {
                     'volume': total_volume,
-                    'pnl': total_pnl,
-                    'profit': total_pnl,
-                    'win_rate': win_rate,
-                    'winSplit': win_rate,
-                    'tradeCount': trade_count
+                    'trade_count': trade_count,
+                    'smart_trades': smart_trades,
+                    'dumb_trades': dumb_trades,
+                    'smart_ratio': smart_ratio,
+                    'dumb_ratio': dumb_ratio,
                 }
                 
                 self.wallet_cache[address] = profile
                 return profile
                 
         except Exception as e:
-            await self.log(f"Profile calc error: {e}", "warning")
+            await self.log(f"Profile error: {e}", "warning")
             return {}
 
     
     def calculate_tag(self, profile: dict) -> str:
-        """Calculate wallet tag - SMART TAGS ONLY (relaxed thresholds for more variety)"""
-        try:
-            # Extract metrics with safe defaults
-            pnl = float(profile.get('profit', 0) or profile.get('pnl', 0) or 0)
-            volume = float(profile.get('volume', 0) or 0)
-            win_rate = float(profile.get('winSplit', 0) or profile.get('win_rate', 0) or 0)
-            trade_count = int(profile.get('tradeCount', 0) or 0)
-        except (ValueError, TypeError):
+        """
+        Classify wallet based on trading behavior:
+        - Smart Money: Buys low, sells high consistently
+        - Dumb Money: Buys high, sells low consistently  
+        - Winner/Loser: Based on smart/dumb trade ratio
+        - Insider: New wallet with exceptional results
+        - Unknown: Not enough data
+        """
+        trade_count = profile.get('trade_count', 0)
+        volume = profile.get('volume', 0)
+        smart_ratio = profile.get('smart_ratio', 0)
+        dumb_ratio = profile.get('dumb_ratio', 0)
+        smart_trades = profile.get('smart_trades', 0)
+        dumb_trades = profile.get('dumb_trades', 0)
+        
+        # Not enough data
+        if trade_count < 5:
             return "❓ Unknown"
         
-        # Insufficient data
-        if trade_count == 0 or volume == 0:
-            return "❓ Unknown"
+        # === CLASSIFICATION BASED ON TRADING PATTERNS ===
         
-        # Calculate derived metrics
-        roi = (pnl / volume * 100) if volume > 0 else 0
-        avg_trade_size = volume / trade_count if trade_count > 0 else 0
-        
-        # === RELAXED CLASSIFICATION (lower thresholds for more variety) ===
-        
-        # 1. INSIDER 👁️ - New account with good early results (relaxed)
-        if trade_count <= 15 and trade_count >= 3:
-            if win_rate >= 0.60 and volume > 200:
-                return "👁️ Insider"
-            if roi > 15 and volume > 500:
-                return "👁️ Insider"
-        
-        # 2. WINNER 🏆 - Good profits (relaxed from $5k to $500)
-        if pnl > 500:
-            return "🏆 Winner"
-        if pnl > 200 and win_rate >= 0.55:
-            return "🏆 Winner"
-        
-        # 3. SMART MONEY 🧠 - Consistent profitable trader (relaxed)
-        if win_rate >= 0.50 and pnl > 0 and trade_count >= 3:
-            return "🧠 Smart Money"
-        if roi > 5 and trade_count >= 5:
+        # 1. SMART MONEY 🧠 - Consistently buys low, sells high
+        #    >40% smart trades, <15% dumb trades, volume >$10k
+        if smart_ratio >= 0.40 and dumb_ratio < 0.15 and volume > 10000:
             return "🧠 Smart Money"
         
-        # 4. DUMB MONEY 🤡 - High activity but losing (relaxed)
-        if volume > 1000 and pnl < 0:
-            if win_rate < 0.45 or roi < -3:
-                return "🤡 Dumb Money"
-        if trade_count > 10 and roi < -5:
+        # 2. DUMB MONEY 🤡 - Consistently buys high, sells low
+        #    >40% dumb trades, <15% smart trades, volume >$5k
+        if dumb_ratio >= 0.40 and smart_ratio < 0.15 and volume > 5000:
             return "🤡 Dumb Money"
         
-        # 5. LOSER 💀 - Significant losses (relaxed from -$2k to -$200)
-        if pnl < -200:
-            return "💀 Loser"
-        if pnl < -100 and win_rate < 0.40:
+        # 3. INSIDER 👁️ - New wallet, few trades but good ratios
+        #    <15 trades, volume >$5k, smart ratio >50%
+        if trade_count <= 15 and volume > 5000 and smart_ratio > 0.50:
+            return "👁️ Insider"
+        
+        # 4. WINNER 🏆 - More smart trades than dumb
+        #    Smart trades > dumb trades * 1.5, volume >$3k
+        if smart_trades > dumb_trades * 1.5 and volume > 3000:
+            return "🏆 Winner"
+        
+        # 5. LOSER 💀 - More dumb trades than smart
+        #    Dumb trades > smart trades * 1.5, volume >$3k
+        if dumb_trades > smart_trades * 1.5 and volume > 3000:
             return "💀 Loser"
         
-        # 6. UNKNOWN ❓ - Neutral or insufficient signal
+        # 6. UNKNOWN ❓ - Mixed or neutral signals
         return "❓ Unknown"
     
     async def send_transaction(self, tx: WhaleTransaction):
