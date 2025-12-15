@@ -11,15 +11,8 @@ const nextConfig: NextConfig = {
   },
 
   // Exclude directories from Turbopack
-  experimental: {
-    turbo: {
-      rules: {
-        // Ignore Python virtual environment
-        '*.py': {
-          loaders: [],
-        },
-      },
-    },
+  outputFileTracingExcludes: {
+    '*': ['./venv/**', './scripts/**'],
   },
 
   // Allow both domains
