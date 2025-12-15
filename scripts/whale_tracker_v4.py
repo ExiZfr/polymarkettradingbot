@@ -122,19 +122,21 @@ class WhaleTrackerV4:
                     trades = []
                     for trade in trades_data:
                         try:
-                            # Data-API structure
+                            # Extract market data from nested object (Data-API structure)
+                            market = trade.get('market', {})
+                            
                             trades.append({
                                 'id': trade.get('transactionHash', ''),
                                 'maker': trade.get('proxyWallet', ''),
                                 'taker': trade.get('proxyWallet', ''),  # proxyWallet is the trader
                                 'asset_id': trade.get('conditionId', ''),
-                                'market': trade.get('slug', ''),
+                                'market': market.get('slug', ''),
                                 'size': float(trade.get('size', 0)),
                                 'price': float(trade.get('price', 0)),
                                 'side': trade.get('side', 'BUY').upper(),
                                 'timestamp': trade.get('timestamp', ''),
-                                'market_question': trade.get('title', 'Unknown'),
-                                'market_slug': trade.get('slug', ''),
+                                'market_question': market.get('question', 'Unknown Market'),
+                                'market_slug': market.get('slug', ''),
                                 'outcome': trade.get('outcome', '')
                             })
                         except (ValueError, KeyError) as e:
