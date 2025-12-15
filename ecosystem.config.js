@@ -45,7 +45,7 @@ module.exports = {
             env: {
                 PYTHONUNBUFFERED: "1",
                 API_BASE_URL: "http://127.0.0.1:3001",  // Fixed: Use 3001 (production port)
-                WHALE_THRESHOLD: "10",  // Testing: lowered to $10
+                WHALE_THRESHOLD: "1000",  // Only track trades > $1000
                 POLL_INTERVAL: "10"
             },
             error_file: "logs/whale-tracker-v4-error.log",
