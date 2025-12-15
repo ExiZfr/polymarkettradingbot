@@ -96,8 +96,8 @@ export default function TrackerPage() {
                             onClick={toggleTracker}
                             disabled={controlLoading}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border ${trackerRunning
-                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
-                                    : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
+                                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500 hover:bg-emerald-500/20'
+                                : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20'
                                 } ${controlLoading ? 'opacity-50 cursor-wait' : ''}`}
                         >
                             <span className={`relative flex h-2 w-2 ${trackerRunning ? '' : 'opacity-50'}`}>
