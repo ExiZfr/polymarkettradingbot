@@ -1,3 +1,7 @@
+// Load environment variables from .env files
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config({ path: '.env' });
+
 module.exports = {
     apps: [
         {
