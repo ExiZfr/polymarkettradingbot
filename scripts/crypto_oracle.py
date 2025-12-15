@@ -875,8 +875,17 @@ class CryptoOracle:
                             if "k" in question.lower():
                                 strike_price *= 1000
                         
-                        # Get current prices
-                        yes_price = float(market.get("outcomePrices", ["0.5"])[0]) if market.get("outcomePrices") else 0.5
+                        # Get current prices - handle string or list format
+                        outcome_prices = market.get("outcomePrices", [])
+                        yes_price = 0.5
+                        try:
+                            if isinstance(outcome_prices, str):
+                                import json
+                                outcome_prices = json.loads(outcome_prices)
+                            if outcome_prices and len(outcome_prices) > 0:
+                                yes_price = float(outcome_prices[0])
+                        except:
+                            yes_price = 0.5
                         
                         found_markets.append({
                             "market_id": market_id,
