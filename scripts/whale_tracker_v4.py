@@ -288,21 +288,71 @@ class WhaleTrackerV4:
         return None
     
     async def get_wallet_profile(self, address: str) -> dict:
-        """Get wallet trading profile"""
+        """Calculate wallet metrics from trade history (Gamma API is dead - 404)"""
         if address in self.wallet_cache:
             return self.wallet_cache[address]
         
         try:
-            url = f"{GAMMA_API}/users/{address}"
-            async with self.session.get(url, timeout=5) as resp:
-                if resp.status == 200:
-                    profile = await resp.json()
-                    self.wallet_cache[address] = profile
-                    return profile
-        except Exception:
-            pass
-        
-        return {}
+            # Fetch wallet's trade history from Polymarket Data-API
+            url = f"{DATA_API}/trades?maker={address}&limit=100"
+            async with self.session.get(url, timeout=10) as resp:
+                if resp.status != 200:
+                    return {}
+                
+                trades = await resp.json()
+                
+                if not trades or len(trades) == 0:
+                    return {}
+                
+                # Calculate metrics
+                total_volume = 0
+                total_pnl = 0
+                wins = 0
+                trade_count = len(trades)
+                
+                for trade in trades:
+                    try:
+                        size = float(trade.get('size', 0))
+                        price = float(trade.get('price', 0))
+                        side = trade.get('side', 'BUY').upper()
+                        
+                        trade_value = size * price
+                        total_volume += trade_value
+                        
+                        # Simplified PnL estimation
+                        # BUY at low price = potential profit, SELL at high price = profit taken
+                        if side == 'BUY':
+                            # Buying low is good (closer to 0)
+                            total_pnl += size * (1 - price) * 0.5  # Rough estimate
+                        else:  # SELL
+                            # Selling high is good (closer to 1)
+                            total_pnl += size * price * 0.5
+                        
+                        # Count as "win" if trade looks profitable
+                        if (side == 'BUY' and price < 0.5) or (side == 'SELL' and price > 0.5):
+                            wins += 1
+                            
+                    except (ValueError, KeyError, TypeError):
+                        continue
+                
+                win_rate = wins / trade_count if trade_count > 0 else 0
+                
+                profile = {
+                    'volume': total_volume,
+                    'pnl': total_pnl,
+                    'profit': total_pnl,
+                    'win_rate': win_rate,
+                    'winSplit': win_rate,
+                    'tradeCount': trade_count
+                }
+                
+                self.wallet_cache[address] = profile
+                return profile
+                
+        except Exception as e:
+            await self.log(f"Profile calc error: {e}", "warning")
+            return {}
+
     
     def calculate_tag(self, profile: dict) -> str:
         """Calculate wallet tag - SMART TAGS ONLY (relaxed thresholds for more variety)"""
