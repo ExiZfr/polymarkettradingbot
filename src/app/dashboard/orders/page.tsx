@@ -179,9 +179,20 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                 onClick={() => setIsExpanded(!isExpanded)}
             >
                 <div className="flex items-center gap-4 flex-1 min-w-0">
-                    {/* Status Icon */}
-                    <div className={`p-2.5 rounded-xl ${config.color}`}>
-                        <StatusIcon size={18} />
+                    {/* Market Icon */}
+                    <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-white/10 flex items-center justify-center">
+                        {order.marketImage ? (
+                            <img
+                                src={order.marketImage}
+                                alt=""
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                            />
+                        ) : (
+                            <Target size={16} className="text-muted-foreground" />
+                        )}
                     </div>
 
                     {/* Market Info */}
@@ -190,12 +201,15 @@ function OrderRow({ order, index, onClose }: { order: PaperOrder; index: number;
                             <p className="text-sm font-medium text-foreground truncate">
                                 {order.marketTitle || "Unknown Market"}
                             </p>
-                            <PolymarketLink
-                                marketId={order.marketId}
+                            <a
+                                href={`https://polymarket.com/markets?_q=${encodeURIComponent((order.marketTitle || '').slice(0, 50))}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-muted-foreground hover:text-blue-400 transition-colors opacity-0 group-hover:opacity-100"
                             >
                                 <ExternalLink size={12} />
-                            </PolymarketLink>
+                            </a>
                         </div>
                         <div className="flex items-center gap-3 mt-1">
                             <span className={`text-xs font-medium px-2 py-0.5 rounded ${order.outcome === "YES"
