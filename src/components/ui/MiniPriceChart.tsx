@@ -23,7 +23,7 @@ export default function MiniPriceChart({ marketId, entryPrice, outcome, classNam
     useEffect(() => {
         async function fetchHistory() {
             try {
-                const res = await fetch(`/api/prices/history?id=${marketId}&interval=day&fidelity=60`);
+                const res = await fetch(`/api/prices/history?id=${marketId}&outcome=${outcome}&interval=day&fidelity=60`);
                 if (res.ok) {
                     const data = await res.json();
                     if (data.history && data.history.length > 0) {
