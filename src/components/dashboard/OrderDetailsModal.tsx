@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     X,
@@ -26,6 +26,7 @@ interface OrderDetailsModalProps {
 
 export default function OrderDetailsModal({ order, livePrice, onClose, onClosePosition }: OrderDetailsModalProps) {
     const [copied, setCopied] = useState(false);
+    const [marketSlug, setMarketSlug] = useState<string | null>(null);
 
     // Resolve current price: Live > Stored > Entry
     const currentPrice = livePrice
@@ -39,6 +40,23 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
 
     const durationMs = Date.now() - order.timestamp;
     const durationHours = durationMs / (1000 * 60 * 60);
+
+    // Fetch Slug for proper redirect
+    useEffect(() => {
+        async function fetchSlug() {
+            try {
+                const res = await fetch(`https://gamma-api.polymarket.com/markets/${order.marketId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.slug) setMarketSlug(data.slug);
+                    else if (data.events && data.events[0]?.slug) setMarketSlug(data.events[0].slug);
+                }
+            } catch (e) {
+                console.warn("Failed to fetch market slug", e);
+            }
+        }
+        fetchSlug();
+    }, [order.marketId]);
 
     const handleCopyStats = () => {
         const text = `Polygraal Trade 🛸\n\nMarket: ${order.marketTitle}\nSide: ${order.outcome}\nROI: ${isProfit ? '+' : ''}${roi.toFixed(2)}%\nPnL: $${pnl.toFixed(2)}\nEntry: $${order.entryPrice.toFixed(3)}\nExit: $${currentPrice.toFixed(3)}\n\n#Polymarket #Crypto`;
@@ -65,7 +83,7 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-black/80 backdrop-blur-md">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -74,14 +92,14 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                 className="w-full max-w-5xl bg-[#09090b] border border-white/5 rounded-[2rem] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row max-h-[90vh] ring-1 ring-white/5"
             >
                 {/* Left Panel: Deep Dive Stats */}
-                <div className="flex-1 flex flex-col h-full overflow-hidden relative">
+                <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-[#09090b]">
                     {/* Background decorations */}
                     <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                         <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[100px] -translate-y-1/2" />
                     </div>
 
                     {/* Header */}
-                    <div className="p-6 md:p-8 flex items-start justify-between z-10">
+                    <div className="p-6 md:p-8 flex items-start justify-between z-10 border-b border-white/5">
                         <div className="flex items-center gap-5">
                             <div className="w-16 h-16 rounded-2xl bg-[#131316] p-1 flex-shrink-0 relative overflow-hidden ring-1 ring-white/5 shadow-xl">
                                 {order.marketImage && (
@@ -93,7 +111,7 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                                 )}
                             </div>
                             <div className="space-y-1.5 min-w-0">
-                                <h2 className="text-xl font-bold text-white leading-tight line-clamp-2 md:line-clamp-1 pr-4 tracking-tight">
+                                <h2 className="text-lg md:text-xl font-bold text-white leading-tight line-clamp-2 pr-4 tracking-tight">
                                     {order.marketTitle}
                                 </h2>
                                 <div className="flex items-center gap-3">
@@ -111,37 +129,49 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
 
                     {/* Scrollable Content */}
                     <motion.div
-                        className="flex-1 overflow-y-auto px-6 md:px-8 pb-8 space-y-8 custom-scrollbar z-10"
+                        className="flex-1 overflow-y-auto px-6 md:px-8 pb-8 space-y-6 custom-scrollbar z-10 py-6"
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
                     >
                         {/* KPI Stats - Adjusted for readability */}
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/80 border border-white/5 hover:border-white/10 transition-colors group">
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Net P&L</p>
-                                <p className={`text-xl lg:text-3xl font-bold tracking-tight ${isProfit ? 'text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.1)]' : 'text-rose-400 drop-shadow-[0_0_15px_rgba(251,113,133,0.1)]'}`}>
+                        <div className="grid grid-cols-2 gap-4">
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5 hover:border-white/10 transition-colors group">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Net P&L</p>
+                                <p className={`text-xl lg:text-2xl font-bold tracking-tight ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                     {isProfit ? '+' : ''}{pnl.toFixed(2)}$
                                 </p>
                             </motion.div>
-                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/80 border border-white/5 hover:border-white/10 transition-colors">
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Return (ROI)</p>
-                                <p className={`text-xl lg:text-3xl font-bold tracking-tight ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5 hover:border-white/10 transition-colors">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Return (ROI)</p>
+                                <p className={`text-xl lg:text-2xl font-bold tracking-tight ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
                                     {roi.toFixed(2)}%
                                 </p>
                             </motion.div>
-                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5">
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Current Value</p>
-                                <p className="text-lg lg:text-2xl font-bold text-white/90">${currentValue.toFixed(2)}</p>
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/30 border border-white/5 hidden md:block">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Current Value</p>
+                                <p className="text-lg lg:text-xl font-bold text-white/90">${currentValue.toFixed(2)}</p>
                             </motion.div>
-                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/50 border border-white/5">
-                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-2">Invested</p>
-                                <p className="text-lg lg:text-2xl font-bold text-white/90">${order.amount.toFixed(2)}</p>
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/30 border border-white/5 hidden md:block">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Invested</p>
+                                <p className="text-lg lg:text-xl font-bold text-white/90">${order.amount.toFixed(2)}</p>
+                            </motion.div>
+                        </div>
+
+                        {/* Mobile only row for Value/Invested */}
+                        <div className="grid grid-cols-2 gap-4 md:hidden">
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/30 border border-white/5">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Value</p>
+                                <p className="text-lg font-bold text-white/90">${currentValue.toFixed(2)}</p>
+                            </motion.div>
+                            <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-[#131316]/30 border border-white/5">
+                                <p className="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">Invested</p>
+                                <p className="text-lg font-bold text-white/90">${order.amount.toFixed(2)}</p>
                             </motion.div>
                         </div>
 
                         {/* Chart Area */}
-                        <motion.div variants={itemVariants} className="relative aspect-[3/1] lg:aspect-[4/1] w-full rounded-3xl bg-[#131316] border border-white/5 overflow-hidden shadow-inner group">
+                        <motion.div variants={itemVariants} className="relative w-full rounded-3xl bg-[#131316] border border-white/5 overflow-hidden shadow-inner group min-h-[250px] flex flex-col">
                             <div className="absolute top-4 left-5 z-20 flex items-center justify-between w-[calc(100%-40px)]">
                                 <h3 className="flex items-center gap-2 text-xs font-bold text-white/50 group-hover:text-white/80 transition-colors">
                                     <Activity size={14} className="text-blue-500" /> PRICE ACTION
@@ -151,12 +181,12 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                             {/* Gradient Overlay for Depth */}
                             <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#131316] to-transparent z-10 pointer-events-none" />
 
-                            <div className="absolute inset-0 pt-8 pb-4 pl-0 pr-0">
+                            <div className="flex-1 w-full pt-12 pb-4 px-0">
                                 <MiniPriceChart
                                     marketId={order.marketId}
                                     entryPrice={order.entryPrice}
                                     outcome={order.outcome}
-                                    className="w-full h-full opacity-80 group-hover:opacity-100 transition-opacity"
+                                    className="w-full h-full opacity-90 transition-opacity"
                                 />
                             </div>
                         </motion.div>
@@ -191,7 +221,7 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                 </div>
 
                 {/* Right Panel: Premium Card */}
-                <div className="w-full md:w-[400px] bg-[#0c0c0e] border-t md:border-t-0 md:border-l border-white/5 p-8 flex flex-col gap-8 relative z-20 shadow-[-20px_0_40px_-10px_rgba(0,0,0,0.3)]">
+                <div className="w-full md:w-[400px] bg-[#0c0c0e] border-t md:border-t-0 md:border-l border-white/5 p-8 flex flex-col gap-6 relative z-20 shadow-[-20px_0_40px_-10px_rgba(0,0,0,0.3)]">
                     <div className="flex items-center justify-between">
                         <h3 className="text-[11px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
                             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
@@ -207,7 +237,7 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                     </div>
 
                     {/* The Visual Card */}
-                    <div className={`relative aspect-[3.5/5] rounded-[2.5rem] overflow-hidden p-7 flex flex-col justify-between shadow-2xl transition-all duration-500 group
+                    <div className={`relative aspect-[3.5/5] rounded-[2.5rem] overflow-hidden p-8 flex flex-col justify-between shadow-2xl transition-all duration-500 group
                         ${isProfit
                             ? 'bg-gradient-to-br from-emerald-600 to-[#0c2e26] shadow-[0_20px_50px_-12px_rgba(16,185,129,0.3)]'
                             : 'bg-gradient-to-br from-rose-600 to-[#2e0c0c] shadow-[0_20px_50px_-12px_rgba(244,63,94,0.3)]'
@@ -232,14 +262,14 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                         </div>
 
                         <div className="relative z-10 mt-6">
-                            <h3 className="text-white font-bold text-xl leading-snug line-clamp-3 drop-shadow-lg tracking-tight">
+                            <h3 className="text-white font-bold text-lg leading-snug line-clamp-3 drop-shadow-md tracking-tight">
                                 {order.marketTitle}
                             </h3>
                         </div>
 
-                        <div className="relative z-10 my-auto py-8">
+                        <div className="relative z-10 my-auto py-6">
                             <p className="text-white/60 text-[10px] uppercase tracking-[0.25em] font-extrabold mb-1">Total Return</p>
-                            <p className="text-[3.5rem] leading-none font-black text-white tracking-tighter drop-shadow-xl">
+                            <p className="text-[3rem] leading-none font-black text-white tracking-tighter drop-shadow-xl">
                                 {isProfit ? '+' : ''}{roi.toFixed(1)}%
                             </p>
                             <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 shadow-xl group-hover:bg-white/20 transition-colors">
@@ -267,19 +297,19 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                         {order.status === 'OPEN' && (
                             <button
                                 onClick={onClosePosition}
-                                className="w-full py-4 rounded-2xl font-bold text-white shadow-[0_10px_40px_-10px_rgba(225,29,72,0.5)] bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 transition-all flex items-center justify-center gap-2 active:scale-[0.98] group"
+                                className="w-full py-3.5 rounded-xl font-bold text-white shadow-lg shadow-rose-900/20 bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 transition-all flex items-center justify-center gap-2 active:scale-[0.98] group border border-rose-500/20"
                             >
                                 <span>Close Position</span>
                                 <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
                             </button>
                         )}
                         <a
-                            href={`https://polymarket.com/event/${order.marketId}`}
+                            href={marketSlug ? `https://polymarket.com/event/${marketSlug}` : `https://polymarket.com/market/${order.marketId}`}
                             target="_blank"
-                            className="w-full py-4 rounded-2xl font-bold text-white/60 bg-[#131316] hover:bg-white/5 hover:text-white transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white/10"
+                            className="w-full py-3.5 rounded-xl font-bold text-white/50 bg-white/5 hover:bg-white/10 hover:text-white transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white/10"
                         >
-                            <span>Open on Polymarket</span>
-                            <ExternalLink size={18} />
+                            <span>{marketSlug ? 'Open on Polymarket' : 'Loading Link...'}</span>
+                            <ExternalLink size={16} />
                         </a>
                     </div>
                 </div>
