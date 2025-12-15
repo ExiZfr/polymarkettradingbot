@@ -9,7 +9,6 @@ import {
     Settings,
     LogOut,
     Wallet,
-    Crosshair,
     BookOpen,
     Radar,
     Brain,
@@ -26,7 +25,6 @@ type NavItem = {
 const navItems: NavItem[] = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { label: "Whale Tracker", href: "/dashboard/tracker", icon: Radar, badge: "LIVE" },
-    { label: "Sniper", href: "/dashboard/sniper", icon: Crosshair, badge: "New" },
     { label: "Carnet d'Ordres", href: "/dashboard/orders", icon: BookOpen },
     { label: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
