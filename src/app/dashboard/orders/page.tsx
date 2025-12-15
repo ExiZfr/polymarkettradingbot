@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     BookOpen,
@@ -139,41 +139,59 @@ export default function OrderBookPage() {
         setProfile(activeProfile);
     }, []);
 
-    // Fetch live prices logic
+    // Fetch live prices logic with guard against concurrent fetches
+    const isFetching = useRef(false);
     const fetchLivePrices = useCallback(async () => {
+        // Prevent concurrent fetches
+        if (isFetching.current) return;
+
         const openOrders = orders.filter(o => o.status === 'OPEN');
         if (openOrders.length === 0) return;
 
         const marketIds = [...new Set(openOrders.map(o => o.marketId))];
         if (marketIds.length === 0) return;
 
+        isFetching.current = true;
         try {
-            const response = await fetch(`/api/prices?ids=${marketIds.join(',')}`);
+            const response = await fetch(`/api/prices?ids=${marketIds.join(',')}`, {
+                signal: AbortSignal.timeout(10000) // 10s timeout
+            });
             if (response.ok) {
                 const data = await response.json();
                 setLivePrices(data.prices || {});
                 setLastPriceUpdate(new Date());
             }
         } catch (error) {
-            console.error('Failed to fetch live prices:', error);
+            // Only log non-abort errors
+            if (error instanceof Error && error.name !== 'AbortError') {
+                console.warn('Price fetch skipped:', error.message);
+            }
+        } finally {
+            isFetching.current = false;
         }
     }, [orders]);
 
+    // Initial load effect
     useEffect(() => {
         loadOrders();
         const handleUpdate = () => loadOrders();
         window.addEventListener('paper-update', handleUpdate);
+        return () => window.removeEventListener('paper-update', handleUpdate);
+    }, [loadOrders]);
+
+    // Polling effect - separated to avoid dependency loops
+    useEffect(() => {
+        // Only start polling if there are open orders
+        const openCount = orders.filter(o => o.status === 'OPEN').length;
+        if (openCount === 0) return;
 
         // Initial fetch
-        if (orders.length > 0) fetchLivePrices();
+        fetchLivePrices();
 
-        const interval = setInterval(fetchLivePrices, 5000); // 5s Polling
-
-        return () => {
-            window.removeEventListener('paper-update', handleUpdate);
-            clearInterval(interval);
-        };
-    }, [loadOrders, fetchLivePrices, orders.length]);
+        // Poll every 15 seconds (reasonable rate)
+        const interval = setInterval(fetchLivePrices, 15000);
+        return () => clearInterval(interval);
+    }, [fetchLivePrices]);
 
     // Computed Values
     const unrealizedPnL = useMemo(() => {
