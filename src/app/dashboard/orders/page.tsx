@@ -216,8 +216,8 @@ export default function OrderBookPage() {
         // Initial fetch
         fetchLivePrices();
 
-        // Poll every 5 seconds for near real-time PnL updates
-        const interval = setInterval(fetchLivePrices, 5000);
+        // Poll every 100ms (0.1 second) for real-time PnL
+        const interval = setInterval(fetchLivePrices, 100);
         return () => clearInterval(interval);
     }, [fetchLivePrices]);
 
