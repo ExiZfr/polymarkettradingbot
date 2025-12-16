@@ -195,6 +195,10 @@ export default function OrderBookPage() {
                         lossCount: data.profile.losingTrades,
                         bestTrade: 0,
                         worstTrade: 0,
+                        avgTradeSize: 0,
+                        active: true,
+                        autoFollow: false,
+                        createdAt: Date.now(),
                         settings: {
                             enabled: true,
                             initialBalance: 10000,
