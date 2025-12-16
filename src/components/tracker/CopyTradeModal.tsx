@@ -51,6 +51,11 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
         setIsSubmitting(true);
 
         try {
+            // SL/TP info stored in notes for now (will be implemented in order book engine)
+            const slTpInfo = useAutoRisk
+                ? ` | SL: ${stopLoss}% @ $${slPrice.toFixed(3)} | TP: ${takeProfit}% @ $${tpPrice.toFixed(3)}`
+                : '';
+
             const order = paperStore.placeOrder({
                 marketId: transaction.market_id,
                 marketTitle: transaction.market_question,
@@ -62,9 +67,7 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
                 entryPrice: entryPrice,
                 amount: amount,
                 source: 'COPY_TRADING',
-                notes: `${mode === 'inverse' ? 'Inversed' : 'Copied'} from whale ${transaction.wallet_address.slice(0, 8)}... | SL: ${stopLoss}% | TP: ${takeProfit}%`,
-                stopLoss: useAutoRisk ? slPrice : undefined,
-                takeProfit: useAutoRisk ? tpPrice : undefined,
+                notes: `${mode === 'inverse' ? 'Inversed' : 'Copied'} from whale ${transaction.wallet_address.slice(0, 8)}...${slTpInfo}`,
             });
 
             if (order) {
@@ -173,8 +176,8 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
                                     key={qa}
                                     onClick={() => setAmount(Math.min(qa, profile.currentBalance))}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${amount === qa
-                                            ? 'bg-cyan-500 text-white'
-                                            : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                                        ? 'bg-cyan-500 text-white'
+                                        : 'bg-muted hover:bg-muted/80 text-muted-foreground'
                                         }`}
                                 >
                                     ${qa}
@@ -210,8 +213,8 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
                             <button
                                 onClick={() => setUseAutoRisk(!useAutoRisk)}
                                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${useAutoRisk
-                                        ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
-                                        : 'bg-muted text-muted-foreground'
+                                    ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
+                                    : 'bg-muted text-muted-foreground'
                                     }`}
                             >
                                 <Zap className="w-3 h-3" />
@@ -298,8 +301,8 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
                             onClick={handleSubmit}
                             disabled={isSubmitting || amount <= 0 || amount > profile.currentBalance}
                             className={`w-full py-3 rounded-xl font-bold text-white transition-all flex items-center justify-center gap-2 ${mode === 'inverse'
-                                    ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600'
-                                    : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
+                                ? 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600'
+                                : 'bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                             {isSubmitting ? (
