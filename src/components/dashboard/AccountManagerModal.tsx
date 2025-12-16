@@ -61,17 +61,64 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
     }, []);
 
     // Refresh data when modal opens or view changes
-    const reloadData = () => {
-        const allProfiles = paperStore.getProfiles();
-        setProfiles(allProfiles);
+    const reloadData = async () => {
+        try {
+            const response = await fetch('/api/paper-orders/profiles');
+            if (!response.ok) throw new Error('Failed to load profiles');
+            const data = await response.json();
 
-        const activeId = paperStore.getActiveProfileId();
-        setActiveProfileId(activeId);
+            // Map server profiles to component format
+            const serverProfiles: PaperProfile[] = (data.profiles || []).map((p: any) => ({
+                id: p.id,
+                username: p.name,
+                initialBalance: p.initialBalance,
+                currentBalance: p.balance,
+                totalPnL: p.totalPnL,
+                realizedPnL: p.totalPnL,
+                unrealizedPnL: 0,
+                winRate: p.totalTrades > 0 ? (p.winningTrades / p.totalTrades) * 100 : 0,
+                tradesCount: p.totalTrades,
+                winCount: p.winningTrades,
+                lossCount: p.losingTrades,
+                bestTrade: 0,
+                worstTrade: 0,
+                avgTradeSize: 0,
+                active: p.isActive,
+                autoFollow: false,
+                createdAt: new Date(p.createdAt).getTime(),
+                settings: {
+                    enabled: true,
+                    initialBalance: p.initialBalance,
+                    riskPerTrade: p.settings?.riskPerTrade || 5,
+                    defaultPositionSize: 100,
+                    useRiskBasedSizing: false,
+                    autoStopLoss: p.settings?.autoStopLoss || 20,
+                    autoTakeProfit: p.settings?.autoTakeProfit || 50,
+                    maxOpenPositions: p.settings?.maxOpenPositions || 10,
+                    allowShorts: p.settings?.allowShorts ?? true
+                }
+            }));
 
-        // Load settings for current active profile
-        setSettings(paperStore.getSettings());
-        const currentProfile = paperStore.getActiveProfile();
-        setWalletName(currentProfile.username || "Paper Trader");
+            setProfiles(serverProfiles);
+            setActiveProfileId(data.activeProfileId || serverProfiles.find(p => p.active)?.id || '');
+
+            // Set current settings from active profile
+            const activeProfile = serverProfiles.find(p => p.active) || serverProfiles[0];
+            if (activeProfile) {
+                setSettings(activeProfile.settings as PaperTradingSettings || DEFAULT_SETTINGS);
+                setWalletName(activeProfile.username || 'Paper Trader');
+            }
+        } catch (error) {
+            console.error('[AccountManager] Error loading profiles:', error);
+            // Fallback to localStorage
+            const allProfiles = paperStore.getProfiles();
+            setProfiles(allProfiles);
+            const activeId = paperStore.getActiveProfileId();
+            setActiveProfileId(activeId);
+            setSettings(paperStore.getSettings());
+            const currentProfile = paperStore.getActiveProfile();
+            setWalletName(currentProfile.username || "Paper Trader");
+        }
     };
 
     useEffect(() => {
@@ -83,40 +130,110 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
         }
     }, [isOpen]);
 
-    const handleSwitchProfile = (id: string) => {
-        paperStore.switchProfile(id);
-        reloadData();
-        onUpdate(); // Update parent widget
+    const handleSwitchProfile = async (id: string) => {
+        try {
+            await fetch('/api/paper-orders/profiles', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ profileId: id, action: 'SWITCH' })
+            });
+            await reloadData();
+            onUpdate();
+        } catch (error) {
+            console.error('[AccountManager] Switch profile error:', error);
+            // Fallback
+            paperStore.switchProfile(id);
+            await reloadData();
+            onUpdate();
+        }
     };
 
-    const handleCreateProfile = () => {
+    const handleCreateProfile = async () => {
         if (!newProfileName.trim()) return;
-        // Merge base balance into settings
-        const finalSettings = {
-            ...newProfileSettings,
-            initialBalance: newProfileBalance
-        };
 
-        const newProfile = paperStore.createProfile(newProfileName, newProfileBalance, finalSettings);
-        paperStore.switchProfile(newProfile.id); // Auto-switch to new
-        reloadData();
-        onUpdate();
-        setView('list');
-        // Reset form
-        setNewProfileName("");
-        setNewProfileBalance(1000);
-        setNewProfileSettings(DEFAULT_SETTINGS);
+        try {
+            const response = await fetch('/api/paper-orders/profiles', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: newProfileName,
+                    initialBalance: newProfileBalance,
+                    settings: {
+                        riskPerTrade: newProfileSettings.riskPerTrade,
+                        autoStopLoss: newProfileSettings.autoStopLoss,
+                        autoTakeProfit: newProfileSettings.autoTakeProfit,
+                        maxOpenPositions: newProfileSettings.maxOpenPositions,
+                        allowShorts: newProfileSettings.allowShorts
+                    }
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to create profile');
+
+            await reloadData();
+            onUpdate();
+            setView('list');
+            setNewProfileName("");
+            setNewProfileBalance(1000);
+            setNewProfileSettings(DEFAULT_SETTINGS);
+        } catch (error) {
+            console.error('[AccountManager] Create profile error:', error);
+            // Fallback to localStorage
+            const finalSettings = { ...newProfileSettings, initialBalance: newProfileBalance };
+            const newProfile = paperStore.createProfile(newProfileName, newProfileBalance, finalSettings);
+            paperStore.switchProfile(newProfile.id);
+            await reloadData();
+            onUpdate();
+            setView('list');
+            setNewProfileName("");
+            setNewProfileBalance(1000);
+            setNewProfileSettings(DEFAULT_SETTINGS);
+        }
     };
 
-    const handleSaveSettings = () => {
+    const handleSaveSettings = async () => {
         if (!settings) return;
-        paperStore.saveSettings(settings);
-        paperStore.resetProfile(settings.initialBalance);
-        paperStore.saveProfile({ username: walletName });
 
-        reloadData();
-        onUpdate();
-        setView('list');
+        try {
+            await fetch('/api/paper-orders/profiles', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    profileId: activeProfileId,
+                    action: 'UPDATE_SETTINGS',
+                    name: walletName,
+                    settings: {
+                        riskPerTrade: settings.riskPerTrade,
+                        autoStopLoss: settings.autoStopLoss,
+                        autoTakeProfit: settings.autoTakeProfit,
+                        maxOpenPositions: settings.maxOpenPositions,
+                        allowShorts: settings.allowShorts
+                    }
+                })
+            });
+
+            // If balance changed, reset
+            if (settings.initialBalance) {
+                await fetch('/api/paper-orders/profiles', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ profileId: activeProfileId, action: 'RESET' })
+                });
+            }
+
+            await reloadData();
+            onUpdate();
+            setView('list');
+        } catch (error) {
+            console.error('[AccountManager] Save settings error:', error);
+            // Fallback
+            paperStore.saveSettings(settings);
+            paperStore.resetProfile(settings.initialBalance);
+            paperStore.saveProfile({ username: walletName });
+            await reloadData();
+            onUpdate();
+            setView('list');
+        }
     };
 
     if (!mounted) return null;
@@ -553,15 +670,32 @@ export default function AccountManagerModal({ isOpen, onClose, onUpdate }: Accou
                                             Cancel
                                         </button>
                                         <button
-                                            onClick={() => {
-                                                const success = paperStore.deleteProfile(activeProfileId);
-                                                if (success) {
-                                                    reloadData();
-                                                    onUpdate();
-                                                    setView('list');
-                                                } else {
-                                                    alert("Cannot delete the last remaining profile."); // Fallback for edge case
-                                                    setView('settings');
+                                            onClick={async () => {
+                                                try {
+                                                    const response = await fetch(`/api/paper-orders/profiles?profileId=${activeProfileId}`, {
+                                                        method: 'DELETE'
+                                                    });
+                                                    const data = await response.json();
+                                                    if (response.ok && data.success) {
+                                                        await reloadData();
+                                                        onUpdate();
+                                                        setView('list');
+                                                    } else {
+                                                        alert(data.error || "Cannot delete profile.");
+                                                        setView('settings');
+                                                    }
+                                                } catch (error) {
+                                                    console.error('[AccountManager] Delete error:', error);
+                                                    // Fallback
+                                                    const success = paperStore.deleteProfile(activeProfileId);
+                                                    if (success) {
+                                                        await reloadData();
+                                                        onUpdate();
+                                                        setView('list');
+                                                    } else {
+                                                        alert("Cannot delete the last remaining profile.");
+                                                        setView('settings');
+                                                    }
                                                 }
                                             }}
                                             className="flex-1 px-4 py-3 rounded-lg font-bold text-sm bg-[#ef4444] text-white hover:bg-[#dc2626] transition-all shadow-[0_0_20px_-5px_rgba(239,68,68,0.5)] hover:shadow-[0_0_25px_-5px_rgba(239,68,68,0.6)]"
