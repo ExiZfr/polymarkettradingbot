@@ -14,19 +14,68 @@ export default function FloatingWalletWidget() {
     const [previousBalance, setPreviousBalance] = useState<number>(0);
     const [balanceFlash, setBalanceFlash] = useState<'up' | 'down' | null>(null);
 
-    const loadData = () => {
-        const activeProfile = paperStore.getActiveProfile();
-        const orders = paperStore.getOpenOrders();
+    const loadData = async () => {
+        try {
+            const response = await fetch('/api/paper-orders/server?status=ALL&limit=100');
+            if (!response.ok) throw new Error('Failed to load');
+            const data = await response.json();
 
-        // Detect balance change for flash animation
-        if (profile && activeProfile.currentBalance !== profile.currentBalance) {
-            setBalanceFlash(activeProfile.currentBalance > profile.currentBalance ? 'up' : 'down');
-            setTimeout(() => setBalanceFlash(null), 1500);
+            // Create profile from server data
+            const serverProfile: PaperProfile = {
+                id: 'server',
+                username: 'Paper Trading',
+                initialBalance: 10000,
+                currentBalance: data.profile?.balance || 10000,
+                totalPnL: data.profile?.totalPnL || 0,
+                realizedPnL: data.profile?.totalPnL || 0,
+                unrealizedPnL: 0,
+                winRate: parseFloat(data.stats?.winRate || '0'),
+                tradesCount: data.profile?.totalTrades || 0,
+                winCount: data.profile?.winningTrades || 0,
+                lossCount: data.profile?.losingTrades || 0,
+                bestTrade: 0,
+                worstTrade: 0,
+                avgTradeSize: 0,
+                active: true,
+                autoFollow: false,
+                createdAt: Date.now()
+            };
+
+            // Detect balance change for flash animation
+            if (profile && serverProfile.currentBalance !== profile.currentBalance) {
+                setBalanceFlash(serverProfile.currentBalance > profile.currentBalance ? 'up' : 'down');
+                setTimeout(() => setBalanceFlash(null), 1500);
+            }
+
+            setPreviousBalance(profile?.currentBalance || serverProfile.currentBalance);
+            setProfile(serverProfile);
+
+            // Map server orders to PaperOrder format
+            const serverOrders: PaperOrder[] = (data.orders || []).filter((o: any) => o.status === 'OPEN').map((o: any) => ({
+                id: o.id,
+                marketId: o.marketId,
+                profileId: 'server',
+                marketTitle: o.marketTitle,
+                marketImage: o.marketImage,
+                type: o.type || 'BUY',
+                outcome: o.outcome,
+                amount: o.amount,
+                entryPrice: o.entryPrice,
+                currentPrice: o.currentPrice,
+                shares: o.shares,
+                timestamp: new Date(o.createdAt).getTime(),
+                status: o.status,
+                source: o.source || 'MANUAL'
+            }));
+            setOpenOrders(serverOrders);
+        } catch (error) {
+            console.error('[Wallet Widget] Error loading data:', error);
+            // Fallback to localStorage
+            const activeProfile = paperStore.getActiveProfile();
+            const orders = paperStore.getOpenOrders();
+            setProfile(activeProfile);
+            setOpenOrders(orders);
         }
-
-        setPreviousBalance(profile?.currentBalance || activeProfile.currentBalance);
-        setProfile(activeProfile);
-        setOpenOrders(orders);
     };
 
     // Calculate unrealized PnL for open orders
