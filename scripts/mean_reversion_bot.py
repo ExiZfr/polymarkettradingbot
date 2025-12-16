@@ -568,12 +568,13 @@ class MarketSelector:
 
 
 # ============================================================================
-# EXECUTION ENGINE (Polymarket CLOB)
+# EXECUTION ENGINE (Polymarket CLOB + API Integration)
 # ============================================================================
 
 class ExecutionEngine:
     """
     Handles order execution on Polymarket CLOB.
+    Also sends executions to the frontend API.
     Simulation mode if py_clob_client not available.
     """
     
@@ -582,6 +583,11 @@ class ExecutionEngine:
         self.simulation_mode = True
         self.simulated_positions: List[Position] = []
         self.total_pnl = 0.0
+        self.signals_file = os.path.join(os.path.dirname(__file__), '..', 'data', 'mean_reversion_signals.json')
+        self.api_base = os.getenv('API_BASE_URL', 'http://127.0.0.1:3001')
+        
+        # Ensure data directory exists
+        os.makedirs(os.path.dirname(self.signals_file), exist_ok=True)
         
         if CLOB_AVAILABLE and config.POLY_API_KEY:
             try:
@@ -598,7 +604,88 @@ class ExecutionEngine:
         if self.simulation_mode:
             logger.info("📊 Running in SIMULATION mode")
     
-    def execute_signal(self, signal: Signal, bankroll: float) -> Optional[Position]:
+    def save_signal(self, signal: Signal, status: str = 'PENDING', pnl: float = None):
+        """Save signal to JSON file for frontend to read"""
+        try:
+            signals = []
+            if os.path.exists(self.signals_file):
+                with open(self.signals_file, 'r') as f:
+                    signals = json.load(f)
+            
+            # Create signal record
+            signal_data = {
+                'id': f"sig_{signal.timestamp.timestamp()}_{signal.symbol.replace('/', '_')}",
+                'timestamp': signal.timestamp.isoformat(),
+                'symbol': signal.symbol,
+                'direction': signal.direction,
+                'zScore': round(signal.z_score, 2),
+                'confidence': round(signal.confidence, 2),
+                'entryPrice': round(signal.entry_price, 4),
+                'expectedValue': round(signal.expected_value, 4),
+                'kellySize': round(signal.kelly_size, 4),
+                'marketQuestion': f"{signal.symbol} 15-min Price Market",
+                'outcome': signal.outcome,
+                'status': status,
+                'pnl': round(pnl, 2) if pnl is not None else None
+            }
+            
+            # Check if signal already exists
+            existing_idx = next((i for i, s in enumerate(signals) if s['id'] == signal_data['id']), None)
+            if existing_idx is not None:
+                signals[existing_idx] = signal_data
+            else:
+                signals.insert(0, signal_data)
+            
+            # Keep only last 50 signals
+            signals = signals[:50]
+            
+            with open(self.signals_file, 'w') as f:
+                json.dump(signals, f, indent=2)
+                
+            logger.debug(f"Signal saved: {signal_data['id']}")
+            
+        except Exception as e:
+            logger.error(f"Failed to save signal: {e}")
+    
+    def send_to_api(self, signal: Signal, size_usd: float, market_question: str = None):
+        """Send execution to frontend API"""
+        try:
+            payload = {
+                'action': 'BUY',
+                'signal': {
+                    'symbol': signal.symbol,
+                    'direction': signal.direction,
+                    'zScore': signal.z_score,
+                    'confidence': signal.confidence,
+                    'entryPrice': signal.entry_price,
+                    'expectedValue': signal.expected_value,
+                    'kellySize': signal.kelly_size,
+                    'marketQuestion': market_question or f"{signal.symbol} 15-min Price"
+                },
+                'size_usd': size_usd,
+                'market_id': signal.market_id,
+                'outcome': signal.outcome
+            }
+            
+            response = requests.post(
+                f"{self.api_base}/api/oracle/execute",
+                json=payload,
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                logger.info(f"📡 API: {result.get('message', 'Execution sent')}")
+                return True
+            else:
+                logger.warning(f"API error: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            logger.warning(f"Failed to send to API (non-critical): {e}")
+            return False
+    
+    def execute_signal(self, signal: Signal, bankroll: float, market_question: str = None) -> Optional[Position]:
         """Execute a trading signal"""
         
         # Calculate position size
@@ -609,10 +696,21 @@ class ExecutionEngine:
             logger.warning(f"Position too small: ${size_usd:.2f}")
             return None
         
+        # Save signal as PENDING first
+        self.save_signal(signal, status='PENDING')
+        
         if self.simulation_mode:
-            return self._simulate_order(signal, size_usd)
+            position = self._simulate_order(signal, size_usd)
         else:
-            return self._execute_real_order(signal, size_usd)
+            position = self._execute_real_order(signal, size_usd)
+        
+        if position:
+            # Update signal status to EXECUTED
+            self.save_signal(signal, status='EXECUTED')
+            # Send to frontend API
+            self.send_to_api(signal, size_usd, market_question)
+        
+        return position
     
     def _simulate_order(self, signal: Signal, size_usd: float) -> Position:
         """Simulate order execution"""
@@ -676,6 +774,9 @@ class ExecutionEngine:
             position.pnl = ((1 - current_price) - position.entry_price) * (position.size_usd / position.entry_price)
         
         self.total_pnl += position.pnl
+        
+        # Update signal file with closed status and PnL
+        self.save_signal(position.signal, status='CLOSED', pnl=position.pnl)
         
         status = "✅" if position.pnl > 0 else "❌"
         logger.info(f"{status} CLOSED: P&L ${position.pnl:+.2f} | Total: ${self.total_pnl:+.2f}")
@@ -819,10 +920,12 @@ class MeanReversionBot:
                 signal = self.signal_generator.generate_signal(symbol, market)
                 
                 if signal:
-                    # Execute trade
+                    # Execute trade with market question for display
+                    market_question = market.get('question', f'{symbol} 15-min Price')
                     position = self.execution.execute_signal(
                         signal, 
-                        self.risk_manager.current_bankroll
+                        self.risk_manager.current_bankroll,
+                        market_question=market_question
                     )
                     
                     if position:
