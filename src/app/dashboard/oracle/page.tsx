@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Zap, TrendingUp, RefreshCw, ExternalLink, Copy,
     Trophy, Target, Shield, Flame, Crown, Users,
-    ChevronRight, Check, AlertTriangle, Clock, Terminal
+    ChevronRight, Check, AlertTriangle, Clock, Terminal,
+    Activity, Play, Pause, Settings, BarChart3, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import TradeConfirmationModal from '@/components/dashboard/TradeConfirmationModal';
 
@@ -43,18 +44,51 @@ interface LogEntry {
     isError?: boolean;
 }
 
+interface StrategySignal {
+    id: string;
+    timestamp: string;
+    symbol: string;
+    direction: 'LONG' | 'SHORT';
+    zScore: number;
+    confidence: number;
+    entryPrice: number;
+    expectedValue: number;
+    kellySize: number;
+    marketQuestion: string;
+    outcome: 'Yes' | 'No';
+    status: 'PENDING' | 'EXECUTED' | 'CLOSED';
+    pnl?: number;
+}
+
+interface StrategyStats {
+    totalSignals: number;
+    pendingSignals: number;
+    executedSignals: number;
+    closedSignals: number;
+    totalPnl: number;
+    winRate: number;
+    avgZScore: number;
+    avgConfidence: number;
+}
+
 export default function OraclePage() {
     const [signals, setSignals] = useState<Signal[]>([]);
     const [leaderboard, setLeaderboard] = useState<Trader[]>([]);
     const [loading, setLoading] = useState(true);
     const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard' | 'console'>('signals');
+    const [activeTab, setActiveTab] = useState<'signals' | 'leaderboard' | 'console' | 'strategy'>('strategy');
     const [leaderboardStats, setLeaderboardStats] = useState<any>(null);
     const [filterConfidence, setFilterConfidence] = useState<string>('all');
     const [leaderboardPeriod, setLeaderboardPeriod] = useState<'all' | 'daily' | 'weekly' | 'monthly'>('all');
     const [consoleLogs, setConsoleLogs] = useState<LogEntry[]>([]);
     const consoleRef = useRef<HTMLDivElement>(null);
+
+    // Strategy state
+    const [strategySignals, setStrategySignals] = useState<StrategySignal[]>([]);
+    const [strategyStats, setStrategyStats] = useState<StrategyStats | null>(null);
+    const [strategyRunning, setStrategyRunning] = useState(false);
+    const [strategyMode, setStrategyMode] = useState<'simulation' | 'live'>('simulation');
 
     // Trade confirmation modal state
     const [showTradeModal, setShowTradeModal] = useState(false);
@@ -97,6 +131,21 @@ export default function OraclePage() {
         }
     }, []);
 
+    const fetchStrategy = useCallback(async () => {
+        try {
+            const res = await fetch('/api/oracle/strategy');
+            if (res.ok) {
+                const data = await res.json();
+                setStrategySignals(data.signals || []);
+                setStrategyStats(data.stats || null);
+                setStrategyRunning(data.status?.running || false);
+                setStrategyMode(data.status?.mode || 'simulation');
+            }
+        } catch (error) {
+            console.error('Failed to fetch strategy:', error);
+        }
+    }, []);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -110,13 +159,16 @@ export default function OraclePage() {
             // Fetch leaderboard with current period
             await fetchLeaderboard(leaderboardPeriod);
 
+            // Fetch strategy data
+            await fetchStrategy();
+
             setLastUpdate(new Date());
         } catch (error) {
             console.error('Failed to fetch oracle data:', error);
         } finally {
             setLoading(false);
         }
-    }, [fetchLeaderboard, leaderboardPeriod]);
+    }, [fetchLeaderboard, fetchStrategy, leaderboardPeriod]);
 
     // Refetch leaderboard when period changes
     useEffect(() => {
@@ -139,6 +191,15 @@ export default function OraclePage() {
             return () => clearInterval(logsInterval);
         }
     }, [activeTab, fetchLogs]);
+
+    // Fetch strategy data when strategy tab is active
+    useEffect(() => {
+        if (activeTab === 'strategy') {
+            fetchStrategy();
+            const strategyInterval = setInterval(fetchStrategy, 5000); // Refresh every 5s
+            return () => clearInterval(strategyInterval);
+        }
+    }, [activeTab, fetchStrategy]);
 
     // Open trade confirmation modal
     const handleCopyTrade = (signal: Signal) => {
@@ -334,6 +395,19 @@ export default function OraclePage() {
                     >
                         <Trophy className="w-4 h-4" />
                         Leaderboard
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('strategy')}
+                        className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${activeTab === 'strategy'
+                            ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/20 text-cyan-400 border border-cyan-500/30'
+                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                            }`}
+                    >
+                        <Activity className="w-4 h-4" />
+                        Mean Reversion
+                        {strategyRunning && (
+                            <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        )}
                     </button>
                     <button
                         onClick={() => setActiveTab('console')}
@@ -665,6 +739,192 @@ export default function OraclePage() {
                                     <code className="p-2 bg-black/50 rounded text-green-400">pm2 logs oracle-scraper --lines 50</code>
                                     <code className="p-2 bg-black/50 rounded text-green-400">pm2 restart oracle-scraper</code>
                                     <code className="p-2 bg-black/50 rounded text-green-400">pm2 stop oracle-scraper</code>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ) : activeTab === 'strategy' ? (
+                        <motion.div
+                            key="strategy"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="space-y-6"
+                        >
+                            {/* Strategy Header */}
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h2 className="text-xl font-bold flex items-center gap-2">
+                                        <Activity className="w-5 h-5 text-cyan-400" />
+                                        Mean Reversion Strategy
+                                    </h2>
+                                    <p className="text-sm text-muted-foreground">
+                                        Statistical arbitrage on 15-min BTC/ETH markets
+                                    </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${strategyMode === 'simulation'
+                                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                            : 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                        }`}>
+                                        {strategyMode === 'simulation' ? 'SIMULATION' : 'LIVE'}
+                                    </span>
+                                    <button
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${strategyRunning
+                                                ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                                : 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                                            }`}
+                                    >
+                                        {strategyRunning ? (
+                                            <><Pause className="w-4 h-4" /> Stop</>
+                                        ) : (
+                                            <><Play className="w-4 h-4" /> Start</>
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/5 border border-cyan-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-cyan-400/80 uppercase tracking-wide">Total P&L</span>
+                                        <BarChart3 className="w-4 h-4 text-cyan-400" />
+                                    </div>
+                                    <div className={`text-2xl font-bold ${(strategyStats?.totalPnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        ${strategyStats?.totalPnl?.toFixed(2) || '0.00'}
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-green-500/5 border border-emerald-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-emerald-400/80 uppercase tracking-wide">Win Rate</span>
+                                        <Target className="w-4 h-4 text-emerald-400" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-emerald-400">
+                                        {strategyStats?.winRate || 0}%
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/5 border border-purple-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-purple-400/80 uppercase tracking-wide">Avg Z-Score</span>
+                                        <Zap className="w-4 h-4 text-purple-400" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-purple-400">
+                                        {strategyStats?.avgZScore || 0}σ
+                                    </div>
+                                </div>
+                                <div className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/5 border border-amber-500/20">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <span className="text-xs text-amber-400/80 uppercase tracking-wide">Signals</span>
+                                        <Activity className="w-4 h-4 text-amber-400" />
+                                    </div>
+                                    <div className="text-2xl font-bold text-amber-400">
+                                        {strategyStats?.totalSignals || 0}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Strategy Explanation */}
+                            <div className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/0 border border-white/10">
+                                <h3 className="font-medium mb-2 flex items-center gap-2">
+                                    <TrendingUp className="w-4 h-4 text-cyan-400" />
+                                    Strategy Logic
+                                </h3>
+                                <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                                    <div>
+                                        <p className="mb-2"><strong className="text-foreground">Edge:</strong> Mean Reversion after volatility spikes</p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            <li>Detect Z-Score &gt; 2σ on 1-min candles</li>
+                                            <li>Fade the crowd: Buy NO when euphoria spikes</li>
+                                            <li>Win probability ~65% for 2σ moves</li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <p className="mb-2"><strong className="text-foreground">Risk Management:</strong></p>
+                                        <ul className="list-disc list-inside space-y-1">
+                                            <li>Kelly Criterion for position sizing (25%)</li>
+                                            <li>Time-based stop: 5 min max hold</li>
+                                            <li>Max $100 per trade, min 3% edge</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Signals Table */}
+                            <div className="rounded-xl border border-border overflow-hidden">
+                                <div className="p-4 bg-muted/30 border-b border-border flex items-center justify-between">
+                                    <h3 className="font-medium">Recent Signals</h3>
+                                    <div className="flex items-center gap-2 text-xs">
+                                        <span className="px-2 py-1 rounded bg-green-500/20 text-green-400">
+                                            {strategyStats?.pendingSignals || 0} Pending
+                                        </span>
+                                        <span className="px-2 py-1 rounded bg-blue-500/20 text-blue-400">
+                                            {strategyStats?.executedSignals || 0} Executed
+                                        </span>
+                                        <span className="px-2 py-1 rounded bg-gray-500/20 text-gray-400">
+                                            {strategyStats?.closedSignals || 0} Closed
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="divide-y divide-border">
+                                    {strategySignals.length === 0 ? (
+                                        <div className="p-8 text-center text-muted-foreground">
+                                            <Activity className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                                            <p>No signals yet. Bot is monitoring markets...</p>
+                                        </div>
+                                    ) : (
+                                        strategySignals.map((sig) => (
+                                            <div key={sig.id} className="p-4 hover:bg-muted/20 transition-colors">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${sig.direction === 'LONG'
+                                                                ? 'bg-green-500/20 text-green-400'
+                                                                : 'bg-red-500/20 text-red-400'
+                                                            }`}>
+                                                            {sig.direction === 'LONG'
+                                                                ? <ArrowUpRight className="w-5 h-5" />
+                                                                : <ArrowDownRight className="w-5 h-5" />
+                                                            }
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-medium">{sig.symbol}</div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                {sig.marketQuestion}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-4 text-right">
+                                                        <div>
+                                                            <div className="text-sm font-medium text-purple-400">
+                                                                Z: {sig.zScore}σ
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                EV: {(sig.expectedValue * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm">
+                                                                Buy {sig.outcome} @ {sig.entryPrice.toFixed(3)}
+                                                            </div>
+                                                            <div className="text-xs text-muted-foreground">
+                                                                Kelly: {(sig.kellySize * 100).toFixed(1)}%
+                                                            </div>
+                                                        </div>
+                                                        <div className={`px-2 py-1 rounded text-xs font-medium ${sig.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' :
+                                                                sig.status === 'EXECUTED' ? 'bg-blue-500/20 text-blue-400' :
+                                                                    'bg-gray-500/20 text-gray-400'
+                                                            }`}>
+                                                            {sig.status}
+                                                        </div>
+                                                        {sig.pnl !== undefined && (
+                                                            <div className={`font-medium ${sig.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                                ${sig.pnl.toFixed(2)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         </motion.div>
