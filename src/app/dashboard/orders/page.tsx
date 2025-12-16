@@ -157,14 +157,14 @@ export default function OrderBookPage() {
             const response = await fetch(`/api/prices?ids=${marketIds.join(',')}`, {
                 signal: AbortSignal.timeout(10000) // 10s timeout
             });
-            
+
             const pricesData: LivePrices = {};
-            
+
             if (response.ok) {
                 const data = await response.json();
                 Object.assign(pricesData, data.prices || {});
             }
-            
+
             // For mock/paper orders that don't have real Polymarket IDs,
             // simulate realistic price movements around entry price
             openOrders.forEach(order => {
@@ -179,7 +179,7 @@ export default function OrderBookPage() {
                     };
                 }
             });
-            
+
             setLivePrices(pricesData);
             setLastPriceUpdate(new Date());
         } catch (error) {
@@ -428,10 +428,10 @@ export default function OrderBookPage() {
                                             <div className="flex items-center gap-3">
                                                 {/* Market Image - Priority: order.marketImage > crypto icons > fallback */}
                                                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${!order.marketImage && (order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin'))
-                                                        ? 'bg-orange-500/20 text-orange-400'
-                                                        : !order.marketImage && (order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum'))
-                                                            ? 'bg-indigo-500/20 text-indigo-400'
-                                                            : 'bg-muted'
+                                                    ? 'bg-orange-500/20 text-orange-400'
+                                                    : !order.marketImage && (order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum'))
+                                                        ? 'bg-indigo-500/20 text-indigo-400'
+                                                        : 'bg-muted'
                                                     }`}>
                                                     {order.marketImage ? (
                                                         <img
@@ -459,12 +459,12 @@ export default function OrderBookPage() {
                                                         </span>
                                                         {order.source && (
                                                             <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${order.source === 'MEAN_REVERSION'
-                                                                    ? 'bg-purple-500/20 text-purple-400'
-                                                                    : order.source === 'COPY_TRADING'
-                                                                        ? 'bg-blue-500/20 text-blue-400'
-                                                                        : order.source === 'SNIPER'
-                                                                            ? 'bg-red-500/20 text-red-400'
-                                                                            : 'bg-muted text-muted-foreground'
+                                                                ? 'bg-purple-500/20 text-purple-400'
+                                                                : order.source === 'COPY_TRADING'
+                                                                    ? 'bg-blue-500/20 text-blue-400'
+                                                                    : order.source === 'SNIPER'
+                                                                        ? 'bg-red-500/20 text-red-400'
+                                                                        : 'bg-muted text-muted-foreground'
                                                                 }`}>
                                                                 {order.source.replace('_', ' ')}
                                                             </span>

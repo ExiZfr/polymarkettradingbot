@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import { X, ExternalLink, Activity, DollarSign, TrendingUp, Wallet, Clock, Trophy, Target, Copy, RefreshCcw, Check } from 'lucide-react';
+import { X, ExternalLink, Activity, DollarSign, TrendingUp, Wallet, Clock, Trophy, Target, Copy, RefreshCcw } from 'lucide-react';
 import type { WhaleTransaction } from '@/types/tracker';
 import { getTagConfig, formatAmount, formatTimeAgo } from '@/lib/tracker-utils';
-import { paperStore } from '@/lib/paper-trading';
+import CopyTradeModal from './CopyTradeModal';
 
 interface TransactionDetailsProps {
     transaction: WhaleTransaction;
@@ -11,8 +11,8 @@ interface TransactionDetailsProps {
 }
 
 export default function TransactionDetails({ transaction, onClose }: TransactionDetailsProps) {
-    const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle');
-    const [inverseStatus, setInverseStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [tradeModalOpen, setTradeModalOpen] = useState(false);
+    const [tradeMode, setTradeMode] = useState<'copy' | 'inverse'>('copy');
 
     if (!transaction) return null;
 
@@ -21,55 +21,15 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
     const outcomeBg = isBuy ? 'bg-green-500/10' : 'bg-red-500/10';
     const tagConfig = getTagConfig(transaction.wallet_tag);
 
-    // Copy the whale's trade (same direction)
+    // Open trade modal with mode
     const handleCopyTrade = () => {
-        const order = paperStore.placeOrder({
-            marketId: transaction.market_id,
-            marketTitle: transaction.market_question,
-            marketSlug: transaction.market_slug,
-            marketUrl: transaction.market_url || undefined,
-            marketImage: transaction.market_image || undefined,
-            type: 'BUY',
-            outcome: transaction.outcome as 'YES' | 'NO',
-            entryPrice: transaction.price,
-            amount: Math.min(transaction.amount, paperStore.getActiveProfile().currentBalance * 0.1), // Max 10% of balance
-            source: 'COPY_TRADING',
-            notes: `Copied from whale ${transaction.wallet_address.slice(0, 8)}...`
-        });
-
-        if (order) {
-            setCopyStatus('success');
-            setTimeout(() => setCopyStatus('idle'), 2000);
-        } else {
-            setCopyStatus('error');
-            setTimeout(() => setCopyStatus('idle'), 2000);
-        }
+        setTradeMode('copy');
+        setTradeModalOpen(true);
     };
 
-    // Inverse the whale's trade (opposite direction)
     const handleInverseTrade = () => {
-        const inverseOutcome = transaction.outcome === 'YES' ? 'NO' : 'YES';
-        const order = paperStore.placeOrder({
-            marketId: transaction.market_id,
-            marketTitle: transaction.market_question,
-            marketSlug: transaction.market_slug,
-            marketUrl: transaction.market_url || undefined,
-            marketImage: transaction.market_image || undefined,
-            type: 'BUY',
-            outcome: inverseOutcome,
-            entryPrice: 1 - transaction.price, // Inverse price
-            amount: Math.min(transaction.amount, paperStore.getActiveProfile().currentBalance * 0.1),
-            source: 'COPY_TRADING',
-            notes: `Inversed trade from whale ${transaction.wallet_address.slice(0, 8)}...`
-        });
-
-        if (order) {
-            setInverseStatus('success');
-            setTimeout(() => setInverseStatus('idle'), 2000);
-        } else {
-            setInverseStatus('error');
-            setTimeout(() => setInverseStatus('idle'), 2000);
-        }
+        setTradeMode('inverse');
+        setTradeModalOpen(true);
     };
 
     return (
@@ -253,30 +213,30 @@ export default function TransactionDetails({ transaction, onClose }: Transaction
                         {/* Copy/Inverse Trade Buttons */}
                         <button
                             onClick={handleCopyTrade}
-                            disabled={copyStatus !== 'idle'}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${copyStatus === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                                copyStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                                    'bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20 hover:border-green-500/40'
-                                }`}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border bg-green-500/10 hover:bg-green-500/20 text-green-400 border-green-500/20 hover:border-green-500/40"
                         >
-                            {copyStatus === 'success' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                            {copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed' : 'Copy Trade'}
+                            <Copy className="w-4 h-4" />
+                            Copy Trade
                         </button>
                         <button
                             onClick={handleInverseTrade}
-                            disabled={inverseStatus !== 'idle'}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border ${inverseStatus === 'success' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' :
-                                inverseStatus === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-                                    'bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 border-orange-500/20 hover:border-orange-500/40'
-                                }`}
+                            className="flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all border bg-red-500/10 hover:bg-red-500/20 text-red-400 border-red-500/20 hover:border-red-500/40"
                         >
-                            {inverseStatus === 'success' ? <Check className="w-4 h-4" /> : <RefreshCcw className="w-4 h-4" />}
-                            {inverseStatus === 'success' ? 'Inversed!' : inverseStatus === 'error' ? 'Failed' : 'Inverse Trade'}
+                            <RefreshCcw className="w-4 h-4" />
+                            Inverse Trade
                         </button>
                     </div>
 
                 </div>
             </motion.div>
+
+            {/* Copy Trade Modal */}
+            <CopyTradeModal
+                isOpen={tradeModalOpen}
+                onClose={() => setTradeModalOpen(false)}
+                transaction={transaction}
+                mode={tradeMode}
+            />
         </div>
     );
 }
