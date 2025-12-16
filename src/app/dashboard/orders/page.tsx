@@ -140,11 +140,91 @@ export default function OrderBookPage() {
     const [livePrices, setLivePrices] = useState<LivePrices>({});
     const [lastPriceUpdate, setLastPriceUpdate] = useState<Date | null>(null);
 
-    const loadOrders = useCallback(() => {
-        const allOrders = paperStore.getOrders();
-        const activeProfile = paperStore.getActiveProfile();
-        setOrders(allOrders);
-        setProfile(activeProfile);
+    const loadOrders = useCallback(async () => {
+        try {
+            // Load from SERVER API (not localStorage)
+            const response = await fetch('/api/paper-orders/server?status=ALL&limit=500');
+            if (response.ok) {
+                const data = await response.json();
+                // Map server orders to PaperOrder format
+                const serverOrders: PaperOrder[] = (data.orders || []).map((o: any) => ({
+                    id: o.id,
+                    marketId: o.marketId,
+                    profileId: 'server', // Server orders don't have profileId
+                    marketTitle: o.marketTitle,
+                    marketImage: o.marketImage,
+                    marketSlug: o.marketSlug,
+                    marketUrl: o.marketUrl,
+                    type: o.type,
+                    outcome: o.outcome,
+                    amount: o.amount,
+                    entryPrice: o.entryPrice,
+                    currentPrice: o.currentPrice,
+                    shares: o.shares,
+                    timestamp: new Date(o.createdAt).getTime(),
+                    status: o.status,
+                    exitPrice: o.exitPrice,
+                    exitTimestamp: o.closedAt ? new Date(o.closedAt).getTime() : undefined,
+                    pnl: o.pnl,
+                    source: o.source || 'MANUAL',
+                    notes: o.notes,
+                    // TP/SL fields
+                    tp1Percent: o.tp1Percent,
+                    tp1SizePercent: o.tp1SizePercent,
+                    tp1Hit: o.tp1Hit,
+                    tp2Percent: o.tp2Percent,
+                    tp2Hit: o.tp2Hit,
+                    stopLossPercent: o.stopLossPercent,
+                    slHit: o.slHit
+                }));
+                setOrders(serverOrders);
+
+                // Profile from server
+                if (data.profile) {
+                    const serverProfile: PaperProfile = {
+                        id: 'server',
+                        username: 'Server Paper Trading',
+                        initialBalance: 10000,
+                        currentBalance: data.profile.balance,
+                        totalPnL: data.profile.totalPnL,
+                        realizedPnL: data.profile.totalPnL,
+                        unrealizedPnL: 0,
+                        winRate: parseFloat(data.stats?.winRate || '0'),
+                        tradesCount: data.profile.totalTrades,
+                        winCount: data.profile.winningTrades,
+                        lossCount: data.profile.losingTrades,
+                        bestTrade: 0,
+                        worstTrade: 0,
+                        settings: {
+                            enabled: true,
+                            initialBalance: 10000,
+                            riskPerTrade: 2,
+                            defaultPositionSize: 100,
+                            useRiskBasedSizing: false,
+                            autoStopLoss: 0,
+                            autoTakeProfit: 0,
+                            maxOpenPositions: 10,
+                            allowShorts: true
+                        }
+                    };
+                    setProfile(serverProfile);
+                }
+            } else {
+                console.error('Failed to load server orders');
+                // Fallback to localStorage
+                const allOrders = paperStore.getOrders();
+                const activeProfile = paperStore.getActiveProfile();
+                setOrders(allOrders);
+                setProfile(activeProfile);
+            }
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            // Fallback to localStorage
+            const allOrders = paperStore.getOrders();
+            const activeProfile = paperStore.getActiveProfile();
+            setOrders(allOrders);
+            setProfile(activeProfile);
+        }
     }, []);
 
     // Fetch live prices logic with guard against concurrent fetches
