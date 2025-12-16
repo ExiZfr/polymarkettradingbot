@@ -144,8 +144,11 @@ export default function OrderBookPage() {
         try {
             // Load from SERVER API (not localStorage)
             const response = await fetch('/api/paper-orders/server?status=ALL&limit=500');
+            console.log('[Orders] Server API response:', response.status, response.ok);
             if (response.ok) {
                 const data = await response.json();
+                console.log('[Orders] Server data:', data);
+                console.log('[Orders] Number of orders:', data.orders?.length || 0);
                 // Map server orders to PaperOrder format
                 const serverOrders: PaperOrder[] = (data.orders || []).map((o: any) => ({
                     id: o.id,
@@ -177,6 +180,7 @@ export default function OrderBookPage() {
                     stopLossPercent: o.stopLossPercent,
                     slHit: o.slHit
                 }));
+                console.log('[Orders] Mapped orders:', serverOrders.length);
                 setOrders(serverOrders);
 
                 // Profile from server
