@@ -8,7 +8,7 @@ import {
     BarChart3, Activity, Shield, Percent
 } from 'lucide-react';
 import { useToast } from '@/components/ui/Toast';
-import { PolymarketLink } from '@/components/PolymarketLink';
+import PolymarketLink from '@/components/ui/PolymarketLink';
 
 interface ArbOpportunity {
     id: string;
@@ -136,8 +136,8 @@ export default function ArbitragePage() {
                                 </h1>
                                 <div className="flex items-center gap-3 mt-2">
                                     <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${stats?.opportunities_found
-                                            ? 'bg-green-500/10 text-green-400 border-green-500/20'
-                                            : 'bg-muted text-muted-foreground border-border'
+                                        ? 'bg-green-500/10 text-green-400 border-green-500/20'
+                                        : 'bg-muted text-muted-foreground border-border'
                                         }`}>
                                         <Target className="w-3 h-3" />
                                         {stats?.opportunities_found || 0} Opportunities
@@ -171,8 +171,8 @@ export default function ArbitragePage() {
                             <button
                                 onClick={() => setAutoRefresh(!autoRefresh)}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${autoRefresh
-                                        ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                        : 'bg-muted text-muted-foreground border border-border'
+                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                    : 'bg-muted text-muted-foreground border border-border'
                                     }`}
                             >
                                 {autoRefresh ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
@@ -329,8 +329,8 @@ export default function ArbitragePage() {
                                             {/* Total */}
                                             <td className="py-4 px-4 text-center">
                                                 <span className={`px-2 py-1 rounded font-mono text-sm ${opp.total_price < 1
-                                                        ? 'bg-emerald-500/20 text-emerald-400'
-                                                        : 'bg-orange-500/20 text-orange-400'
+                                                    ? 'bg-emerald-500/20 text-emerald-400'
+                                                    : 'bg-orange-500/20 text-orange-400'
                                                     }`}>
                                                     {formatPrice(opp.total_price)}
                                                 </span>
