@@ -278,107 +278,109 @@ class OracleScraper:
             return markets
     
     def fetch_global_leaderboard(self, limit: int = 500) -> List[dict]:
-        """Fetch global Polymarket leaderboard from multiple sources"""
-        logger.info(f"🏆 Fetching global leaderboard (top {limit})...")
+        """Fetch traders from crypto market events - this endpoint works reliably"""
+        logger.info(f"🏆 Fetching traders from crypto market activity...")
         
-        traders = []
+        all_traders = {}
         
-        # Source 1: Gamma API users endpoint
-        try:
-            response = self.session.get(
-                f"{GAMMA_API}/users",
-                params={"limit": 100, "sortBy": "pnl", "order": "desc"},
-                timeout=30
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    traders.extend(data)
-                    logger.info(f"   Source 1 (users): {len(data)} traders")
-        except Exception as e:
-            logger.warning(f"   Source 1 failed: {e}")
-        
-        # Source 2: Gamma API profiles
-        try:
-            response = self.session.get(
-                f"{GAMMA_API}/profiles",
-                params={"limit": 100},
-                timeout=30
-            )
-            if response.status_code == 200:
-                data = response.json()
-                if isinstance(data, list):
-                    # Filter unique addresses
-                    existing = {t.get("address", t.get("user", "")) for t in traders}
-                    new_traders = [t for t in data if t.get("address", t.get("user", "")) not in existing]
-                    traders.extend(new_traders)
-                    logger.info(f"   Source 2 (profiles): {len(new_traders)} traders")
-        except Exception as e:
-            logger.warning(f"   Source 2 failed: {e}")
-        
-        # Source 3: CLOB API recent trades (get unique traders)
-        try:
-            response = self.session.get(
-                f"{CLOB_API}/trades",
-                params={"limit": 500},
-                timeout=30
-            )
-            if response.status_code == 200:
-                data = response.json()
-                trades = data if isinstance(data, list) else data.get("trades", [])
+        # Get traders from each crypto market's events
+        for market_id, market in list(self.crypto_markets.items())[:50]:  # Limit to 50 markets
+            try:
+                # Use events endpoint which returns trade activity
+                response = self.session.get(
+                    f"{GAMMA_API}/events",
+                    params={
+                        "market": market_id,
+                        "limit": 100
+                    },
+                    timeout=15
+                )
                 
-                # Extract unique traders
-                existing = {t.get("address", t.get("user", "")) for t in traders}
-                trader_addresses = set()
-                
-                for trade in trades:
-                    addr = trade.get("maker", trade.get("taker", ""))
-                    if addr and addr not in existing and addr not in trader_addresses:
-                        trader_addresses.add(addr)
-                        traders.append({
-                            "address": addr,
-                            "pnl": 0,
-                            "trades": 1,
-                            "from_trades": True
-                        })
-                
-                logger.info(f"   Source 3 (CLOB trades): {len(trader_addresses)} traders")
-        except Exception as e:
-            logger.warning(f"   Source 3 failed: {e}")
-        
-        # Source 4: Activity feed across all markets
-        try:
-            response = self.session.get(
-                f"{GAMMA_API}/activity",
-                params={"limit": 500},
-                timeout=30
-            )
-            if response.status_code == 200:
-                activities = response.json()
-                if isinstance(activities, list):
-                    existing = {t.get("address", t.get("user", "")) for t in traders}
-                    activity_traders = {}
-                    
-                    for act in activities:
-                        addr = act.get("proxyWallet", act.get("user", ""))
-                        if addr and addr not in existing:
-                            if addr not in activity_traders:
-                                activity_traders[addr] = {
+                if response.status_code == 200:
+                    events = response.json()
+                    if isinstance(events, list):
+                        for event in events:
+                            # Extract trader address from various fields
+                            addr = (
+                                event.get("proxyWallet") or 
+                                event.get("user") or 
+                                event.get("trader") or
+                                event.get("maker") or
+                                event.get("taker") or
+                                ""
+                            )
+                            
+                            if not addr or len(addr) < 10:
+                                continue
+                            
+                            if addr not in all_traders:
+                                all_traders[addr] = {
                                     "address": addr,
                                     "pnl": 0,
                                     "trades": 0,
-                                    "volume": 0
+                                    "volume": 0,
+                                    "markets": set()
                                 }
-                            activity_traders[addr]["trades"] += 1
-                            activity_traders[addr]["volume"] += float(act.get("usdcSize", 0) or 0)
-                    
-                    traders.extend(activity_traders.values())
-                    logger.info(f"   Source 4 (activity): {len(activity_traders)} traders")
-        except Exception as e:
-            logger.warning(f"   Source 4 failed: {e}")
+                            
+                            all_traders[addr]["trades"] += 1
+                            all_traders[addr]["volume"] += float(event.get("size", 0) or event.get("usdcSize", 0) or 0)
+                            all_traders[addr]["markets"].add(market_id)
+                
+                time.sleep(0.1)  # Rate limiting
+                
+            except Exception as e:
+                logger.debug(f"   Event fetch failed for {market_id[:8]}...: {e}")
+                continue
         
-        logger.info(f"   Total: {len(traders)} traders from all sources")
-        return traders[:limit]
+        # Also try the trades endpoint for each market
+        for market_id, market in list(self.crypto_markets.items())[:30]:
+            try:
+                response = self.session.get(
+                    f"{GAMMA_API}/trades",
+                    params={
+                        "market": market_id,
+                        "limit": 100
+                    },
+                    timeout=15
+                )
+                
+                if response.status_code == 200:
+                    trades = response.json()
+                    if isinstance(trades, list):
+                        for trade in trades:
+                            addr = trade.get("proxyWallet") or trade.get("user") or ""
+                            
+                            if not addr or len(addr) < 10:
+                                continue
+                            
+                            if addr not in all_traders:
+                                all_traders[addr] = {
+                                    "address": addr,
+                                    "pnl": 0,
+                                    "trades": 0,
+                                    "volume": 0,
+                                    "markets": set()
+                                }
+                            
+                            all_traders[addr]["trades"] += 1
+                            size = float(trade.get("size", 0) or trade.get("usdcSize", 0) or 0)
+                            all_traders[addr]["volume"] += size
+                            all_traders[addr]["markets"].add(market_id)
+                
+                time.sleep(0.1)
+                
+            except Exception as e:
+                continue
+        
+        # Convert sets to counts
+        traders_list = []
+        for addr, data in all_traders.items():
+            data["crypto_markets_count"] = len(data.get("markets", set()))
+            data.pop("markets", None)
+            traders_list.append(data)
+        
+        logger.info(f"   Found {len(traders_list)} unique traders from market activity")
+        return traders_list[:limit]
     
     def fetch_market_activity(self, market_id: str, limit: int = 100) -> List[dict]:
         """Fetch recent activity for a market"""
