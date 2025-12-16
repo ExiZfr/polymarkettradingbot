@@ -7,7 +7,6 @@ import {
     AlertTriangle, CheckCircle2, Play, Pause, ExternalLink,
     BarChart3, Activity, Shield, Percent
 } from 'lucide-react';
-import { useToast } from '@/components/ui/Toast';
 import PolymarketLink from '@/components/ui/PolymarketLink';
 
 interface ArbOpportunity {
@@ -44,8 +43,7 @@ export default function ArbitragePage() {
     const [autoRefresh, setAutoRefresh] = useState(true);
     const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
     const [minArbFilter, setMinArbFilter] = useState(0.5);
-
-    const { showSuccessToast, showErrorToast } = useToast();
+    const [executionMessage, setExecutionMessage] = useState<string | null>(null);
 
     // Fetch arbitrage data
     const fetchData = useCallback(async () => {
@@ -85,12 +83,14 @@ export default function ArbitragePage() {
 
             if (response.ok) {
                 const data = await response.json();
-                showSuccessToast('Arbitrage Simulated!', data.message);
+                setExecutionMessage(data.message);
+                setTimeout(() => setExecutionMessage(null), 5000);
             } else {
-                showErrorToast('Failed', 'Could not execute arbitrage');
+                setExecutionMessage('Failed to execute arbitrage');
+                setTimeout(() => setExecutionMessage(null), 5000);
             }
         } catch (error) {
-            showErrorToast('Error', 'Execution failed');
+            console.error('Execution failed:', error);
         }
     };
 
@@ -307,7 +307,7 @@ export default function ArbitragePage() {
                                                     )}
                                                     <div>
                                                         <p className="text-sm font-medium line-clamp-2">{opp.market_question}</p>
-                                                        <PolymarketLink marketId={opp.market_id} marketSlug={opp.market_slug} className="text-xs" />
+                                                        <PolymarketLink marketId={opp.market_id} className="text-xs" />
                                                     </div>
                                                 </div>
                                             </td>
