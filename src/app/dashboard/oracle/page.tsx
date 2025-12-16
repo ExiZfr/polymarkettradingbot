@@ -63,7 +63,7 @@ export default function OraclePage() {
     const [takenSignals, setTakenSignals] = useState<Set<string>>(new Set());
     const [skippedSignals, setSkippedSignals] = useState<Set<string>>(new Set());
     const [tradeAmount, setTradeAmount] = useState<number>(10);
-    const [autoMode, setAutoMode] = useState<boolean>(false); // Manual by default
+    const [autoMode, setAutoMode] = useState<boolean>(true); // Auto by default
 
     const { showSuccessToast, showErrorToast } = useToast();
 
@@ -181,6 +181,18 @@ export default function OraclePage() {
     );
 
     const paperProfile = paperStore.getActiveProfile();
+
+    // Get REAL metrics from order book (MEAN_REVERSION source only)
+    const allOrders = paperStore.getAllOrders();
+    const meanReversionOrders = allOrders.filter(o => o.source === 'MEAN_REVERSION');
+    const closedMROrders = meanReversionOrders.filter(o => o.status === 'CLOSED');
+    const openMROrders = meanReversionOrders.filter(o => o.status === 'OPEN');
+    const winningOrders = closedMROrders.filter(o => (o.pnl || 0) > 0);
+    const realWinRate = closedMROrders.length > 0
+        ? (winningOrders.length / closedMROrders.length) * 100
+        : 0;
+    const totalPnL = closedMROrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+    const realTradesTaken = meanReversionOrders.length;
 
     return (
         <div className="min-h-screen bg-background text-foreground space-y-6 p-6">
@@ -322,13 +334,16 @@ export default function OraclePage() {
                             <CheckCircle2 className="w-5 h-5" />
                         </div>
                         <span className="text-xs text-muted-foreground font-mono">
-                            Today
+                            From Order Book
                         </span>
                     </div>
                     <div className="space-y-1">
                         <div className="text-sm text-muted-foreground">Trades Taken</div>
                         <div className="text-3xl font-bold tracking-tight text-green-400">
-                            {takenSignals.size}
+                            {realTradesTaken}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {openMROrders.length} open · {closedMROrders.length} closed
                         </div>
                     </div>
                 </div>
@@ -339,11 +354,17 @@ export default function OraclePage() {
                         <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-500/20">
                             <Target className="w-5 h-5" />
                         </div>
+                        <span className={`text-xs px-2 py-1 rounded font-bold ${totalPnL >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>
+                            {totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}
+                        </span>
                     </div>
                     <div className="space-y-1">
-                        <div className="text-sm text-muted-foreground">Signal Win Rate</div>
+                        <div className="text-sm text-muted-foreground">Real Win Rate</div>
                         <div className="text-3xl font-bold tracking-tight text-emerald-400">
-                            {stats ? formatPct(stats.winRate) : '0.0%'}
+                            {formatPct(realWinRate)}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            {winningOrders.length}W / {closedMROrders.length - winningOrders.length}L
                         </div>
                     </div>
                 </div>
