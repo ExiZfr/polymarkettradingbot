@@ -289,13 +289,13 @@ class OracleScraper:
                 with self.db.conn.cursor() as cur:
                     cur.execute("""
                         SELECT 
-                            "traderAddress",
+                            "walletAddress",
                             COUNT(*) as trade_count,
-                            COALESCE(SUM(CAST(size AS FLOAT)), 0) as total_volume,
+                            COALESCE(SUM(amount), 0) as total_volume,
                             COUNT(DISTINCT "marketSlug") as market_count
                         FROM whale_transactions
                         WHERE "createdAt" > NOW() - INTERVAL '30 days'
-                        GROUP BY "traderAddress"
+                        GROUP BY "walletAddress"
                         ORDER BY trade_count DESC
                         LIMIT 500
                     """)
