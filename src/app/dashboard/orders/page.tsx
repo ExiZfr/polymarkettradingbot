@@ -42,17 +42,17 @@ function PortfolioHeader({ profile, unrealizedPnL, orders }: { profile: PaperPro
     // Calculate realized P&L from closed orders
     const closedOrders = orders.filter(o => o.status === 'CLOSED');
     const realizedPnL = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
-    
+
     // Calculate win/loss stats
     const wins = closedOrders.filter(o => (o.pnl || 0) > 0).length;
     const losses = closedOrders.filter(o => (o.pnl || 0) < 0).length;
     const totalTrades = wins + losses;
     const realWinRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
-    
+
     // Total portfolio value = available cash + unrealized P&L
     const totalValue = profile.currentBalance + unrealizedPnL;
     const totalPnL = realizedPnL + unrealizedPnL;
-    
+
     const roi = profile.initialBalance > 0
         ? ((totalValue - profile.initialBalance) / profile.initialBalance) * 100
         : 0;
@@ -364,7 +364,7 @@ export default function OrderBookPage() {
                 </div>
             </div>
 
-            {profile && <PortfolioHeader profile={profile} unrealizedPnL={unrealizedPnL} />}
+            {profile && <PortfolioHeader profile={profile} unrealizedPnL={unrealizedPnL} orders={orders} />}
 
             {/* Controls Bar */}
             <div className="flex flex-col lg:flex-row gap-4 mb-6">
