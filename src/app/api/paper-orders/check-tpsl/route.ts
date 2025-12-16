@@ -184,6 +184,42 @@ export async function POST(request: NextRequest) {
         writeOrders(orders);
         writeProfile(profile);
 
+        // Add notifications for each trigger
+        if (triggers.length > 0) {
+            const NOTIFS_FILE = path.join(process.cwd(), 'data', 'notifications.json');
+            try {
+                let notifs: any[] = [];
+                if (fs.existsSync(NOTIFS_FILE)) {
+                    notifs = JSON.parse(fs.readFileSync(NOTIFS_FILE, 'utf-8'));
+                }
+
+                for (const trigger of triggers) {
+                    const order = orders.find(o => o.id === trigger.orderId);
+                    const emoji = trigger.type === 'SL' ? '🛑' : trigger.type === 'TP1' ? '✅' : '🎯';
+                    const title = trigger.type === 'SL'
+                        ? 'Stop Loss Hit'
+                        : trigger.type === 'TP1'
+                            ? 'Take Profit 1 Hit (50%)'
+                            : 'Take Profit 2 Hit (100%)';
+
+                    notifs.push({
+                        id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                        type: trigger.type === 'SL' ? 'SL_HIT' : 'TP_HIT',
+                        title: `${emoji} ${title}`,
+                        message: `${order?.marketTitle || 'Order'} | PnL: ${trigger.pnl >= 0 ? '+' : ''}$${trigger.pnl.toFixed(2)}`,
+                        timestamp: new Date().toISOString(),
+                        read: false,
+                        data: { orderId: trigger.orderId, pnl: trigger.pnl, type: trigger.type }
+                    });
+                }
+
+                fs.writeFileSync(NOTIFS_FILE, JSON.stringify(notifs.slice(-100), null, 2));
+                console.log(`[TPSL] 🔔 Added ${triggers.length} notifications`);
+            } catch (e) {
+                console.error('Error adding notifications:', e);
+            }
+        }
+
         return NextResponse.json({
             success: true,
             triggers,

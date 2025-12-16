@@ -196,6 +196,36 @@ export async function POST(request: NextRequest) {
 
         console.log(`[Execute API] ✅ SERVER ORDER PLACED: ${serverOrder.id} - ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)})`);
 
+        // Add notification for auto-trade
+        const NOTIFS_FILE = path.join(process.cwd(), 'data', 'notifications.json');
+        try {
+            let notifs: any[] = [];
+            if (fs.existsSync(NOTIFS_FILE)) {
+                notifs = JSON.parse(fs.readFileSync(NOTIFS_FILE, 'utf-8'));
+            }
+            notifs.push({
+                id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                type: 'ORACLE_TRADE',
+                title: '🤖 Oracle Trade Executed',
+                message: `${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) | TP1: +${dynamicTP1}% | TP2: +${dynamicTP2}% | SL: ${dynamicSL}%`,
+                timestamp: new Date().toISOString(),
+                read: false,
+                data: {
+                    orderId: serverOrder.id,
+                    symbol: signal.symbol,
+                    entryPrice,
+                    tp1: dynamicTP1,
+                    tp2: dynamicTP2,
+                    sl: dynamicSL
+                }
+            });
+            fs.writeFileSync(NOTIFS_FILE, JSON.stringify(notifs.slice(-100), null, 2));
+            console.log(`[Execute API] 🔔 Notification added for order ${serverOrder.id}`);
+        } catch (e) {
+            console.error('Error adding notification:', e);
+        }
+
+
 
         // Update signals file to mark as executed
         try {
