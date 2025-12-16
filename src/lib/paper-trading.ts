@@ -36,7 +36,7 @@ export interface PaperOrder {
     exitTimestamp?: number;
     pnl?: number;
     roi?: number;
-    source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE';
+    source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE' | 'MEAN_REVERSION';
     stopLoss?: number;
     takeProfit?: number;
     marketSlug?: string;
