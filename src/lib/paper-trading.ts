@@ -42,6 +42,14 @@ export interface PaperOrder {
     marketSlug?: string;
     marketUrl?: string;
     notes?: string;
+    // Advanced TP/SL
+    tp1Percent?: number;
+    tp1SizePercent?: number;
+    tp1Hit?: boolean;
+    tp2Percent?: number;
+    tp2Hit?: boolean;
+    stopLossPercent?: number;
+    slHit?: boolean;
 }
 
 export interface PaperProfile {

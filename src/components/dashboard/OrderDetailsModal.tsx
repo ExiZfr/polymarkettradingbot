@@ -185,42 +185,42 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
                         </motion.div>
 
                         {/* TP/SL Targets Section */}
-                        {(order as any).tp1Percent && (
+                        {order.tp1Percent !== undefined && (order.tp1Percent !== null) && (
                             <motion.div variants={itemVariants} className="p-5 rounded-3xl bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-blue-500/10">
                                 <p className="text-[10px] text-blue-400/60 uppercase tracking-widest font-bold mb-4">Take Profit / Stop Loss</p>
                                 <div className="grid grid-cols-3 gap-3">
                                     {/* TP1 */}
-                                    <div className={`p-3 rounded-xl border ${(order as any).tp1Hit ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/[0.02] border-white/5'}`}>
-                                        <p className="text-[9px] text-white/40 uppercase font-bold mb-1">TP1 ({(order as any).tp1SizePercent || 50}%)</p>
-                                        <p className={`text-sm font-bold ${(order as any).tp1Hit ? 'text-emerald-400' : 'text-white/70'}`}>
-                                            +{(order as any).tp1Percent}%
+                                    <div className={`p-3 rounded-xl border ${order.tp1Hit ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/[0.02] border-white/5'}`}>
+                                        <p className="text-[9px] text-white/40 uppercase font-bold mb-1">TP1 ({order.tp1SizePercent || 50}%)</p>
+                                        <p className={`text-sm font-bold ${order.tp1Hit ? 'text-emerald-400' : 'text-white/70'}`}>
+                                            +{order.tp1Percent}%
                                         </p>
                                         <p className="text-[10px] text-white/30 font-mono mt-1">
-                                            ${(order.entryPrice * (1 + (order as any).tp1Percent / 100)).toFixed(3)}
+                                            ${(order.entryPrice * (1 + (order.tp1Percent || 0) / 100)).toFixed(3)}
                                         </p>
-                                        {(order as any).tp1Hit && <span className="text-[8px] text-emerald-400 font-bold">✓ HIT</span>}
+                                        {order.tp1Hit && <span className="text-[8px] text-emerald-400 font-bold">✓ HIT</span>}
                                     </div>
                                     {/* TP2 */}
-                                    <div className={`p-3 rounded-xl border ${(order as any).tp2Hit ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/[0.02] border-white/5'}`}>
+                                    <div className={`p-3 rounded-xl border ${order.tp2Hit ? 'bg-emerald-500/10 border-emerald-500/30' : 'bg-white/[0.02] border-white/5'}`}>
                                         <p className="text-[9px] text-white/40 uppercase font-bold mb-1">TP2 (Full)</p>
-                                        <p className={`text-sm font-bold ${(order as any).tp2Hit ? 'text-emerald-400' : 'text-white/70'}`}>
-                                            +{(order as any).tp2Percent}%
+                                        <p className={`text-sm font-bold ${order.tp2Hit ? 'text-emerald-400' : 'text-white/70'}`}>
+                                            +{order.tp2Percent}%
                                         </p>
                                         <p className="text-[10px] text-white/30 font-mono mt-1">
-                                            ${(order.entryPrice * (1 + (order as any).tp2Percent / 100)).toFixed(3)}
+                                            ${(order.entryPrice * (1 + (order.tp2Percent || 0) / 100)).toFixed(3)}
                                         </p>
-                                        {(order as any).tp2Hit && <span className="text-[8px] text-emerald-400 font-bold">✓ HIT</span>}
+                                        {order.tp2Hit && <span className="text-[8px] text-emerald-400 font-bold">✓ HIT</span>}
                                     </div>
                                     {/* SL */}
-                                    <div className={`p-3 rounded-xl border ${(order as any).slHit ? 'bg-rose-500/10 border-rose-500/30' : 'bg-white/[0.02] border-white/5'}`}>
+                                    <div className={`p-3 rounded-xl border ${order.slHit ? 'bg-rose-500/10 border-rose-500/30' : 'bg-white/[0.02] border-white/5'}`}>
                                         <p className="text-[9px] text-white/40 uppercase font-bold mb-1">Stop Loss</p>
-                                        <p className={`text-sm font-bold ${(order as any).slHit ? 'text-rose-400' : 'text-rose-400/70'}`}>
-                                            {(order as any).stopLossPercent}%
+                                        <p className={`text-sm font-bold ${order.slHit ? 'text-rose-400' : 'text-rose-400/70'}`}>
+                                            {order.stopLossPercent}%
                                         </p>
                                         <p className="text-[10px] text-white/30 font-mono mt-1">
-                                            ${(order.entryPrice * (1 + (order as any).stopLossPercent / 100)).toFixed(3)}
+                                            ${(order.entryPrice * (1 + (order.stopLossPercent || 0) / 100)).toFixed(3)}
                                         </p>
-                                        {(order as any).slHit && <span className="text-[8px] text-rose-400 font-bold">✗ HIT</span>}
+                                        {order.slHit && <span className="text-[8px] text-rose-400 font-bold">✗ HIT</span>}
                                     </div>
                                 </div>
                             </motion.div>

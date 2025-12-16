@@ -145,7 +145,11 @@ export async function POST(request: NextRequest) {
         const expectedValuePercent = Math.abs((signal.expectedValue || 0.15) * 100);
         const dynamicTP1 = Math.max(5, Math.round(expectedValuePercent)); // Min 5%, based on EV
         const dynamicTP2 = Math.max(10, Math.round(expectedValuePercent * 2)); // 2x EV
-        const dynamicSL = -Math.max(20, Math.round(expectedValuePercent * 2)); // SL = 2x EV negative
+        // SL is at least 30%, or 2x EV if that is higher (more risk allowed for higher conviction?)
+        // Actually, user said "sl est tjr a 30%". Let's force min 30%.
+        // If 2x EV is > 30% (e.g. 40%), we should probably stick to 30% fixed or scale it?
+        // Let's implement: Min SL = 30%. If riskier trade requires wider SL, use it.
+        const dynamicSL = -Math.max(30, Math.round(expectedValuePercent * 2));
 
         console.log(`[Execute API] Dynamic TP/SL: TP1=${dynamicTP1}%, TP2=${dynamicTP2}%, SL=${dynamicSL}% (EV=${expectedValuePercent.toFixed(1)}%)`);
 
