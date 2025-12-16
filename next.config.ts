@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for better PM2 integration
+  // This creates a minimal standalone folder that can be deployed without node_modules
+  output: 'standalone',
+
   // Exclude Python venv and scripts from build
   webpack: (config) => {
     config.watchOptions = {

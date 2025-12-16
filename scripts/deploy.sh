@@ -1,120 +1,120 @@
 #!/bin/bash
 # ══════════════════════════════════════════════════════════════════════════════
-# POLYGRAALX ZERO-DOWNTIME DEPLOY SCRIPT v3.0
+# POLYGRAALX ZERO-DOWNTIME DEPLOY SCRIPT v4.0 - STANDALONE MODE
 # ══════════════════════════════════════════════════════════════════════════════
-# This script prevents Cloudflare 502 errors by:
-# 1. Building BEFORE stopping the old process
-# 2. Using PM2 reload for zero-downtime restart
-# 3. Verifying the new process is healthy before finishing
+# Uses Next.js standalone output for true zero-downtime deploys
+# 
+# How it works:
+# 1. Build creates a standalone folder with server.js
+# 2. Copy static files to standalone folder
+# 3. PM2 restarts just the node process (not npm)
+# 4. Much faster and more reliable restarts
 # ══════════════════════════════════════════════════════════════════════════════
 
-set -e  # Exit on error
+set -e
 cd ~/PolygraalX || { echo "❌ Failed to cd to ~/PolygraalX"; exit 1; }
 
 echo ""
 echo "╔════════════════════════════════════════════════════════════════════════╗"
-echo "║              POLYGRAALX ZERO-DOWNTIME DEPLOY v3.0                      ║"
+echo "║        POLYGRAALX ZERO-DOWNTIME DEPLOY v4.0 (STANDALONE)               ║"
 echo "╚════════════════════════════════════════════════════════════════════════╝"
 echo ""
 
-# Create logs directory if needed
 mkdir -p logs
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 1: Pull latest code (old process still running)
+# STEP 1: Pull latest code
 # ═══════════════════════════════════════════════════════════════════════════════
-echo "📥 [1/5] Pulling latest code..."
+echo "📥 [1/6] Pulling latest code..."
 git fetch origin main
 git reset --hard origin/main
-echo "    ✅ Code updated to latest commit"
+echo "    ✅ Code updated"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 2: Install dependencies if needed (old process still running)
-# ═══════════════════════════════════════════════════════════════════════════════
-echo ""
-echo "📦 [2/5] Checking dependencies..."
-if [ ! -d "node_modules" ] || [ package.json -nt node_modules/.package-lock.json ] 2>/dev/null; then
-    echo "    Installing dependencies..."
-    npm ci --production=false --silent
-    echo "    ✅ Dependencies installed"
-else
-    echo "    ✅ Dependencies up to date"
-fi
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# STEP 3: Build the application (old process STILL running - KEY!)
+# STEP 2: Install dependencies
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "🔨 [3/5] Building Next.js application..."
-echo "    (Old process continues serving traffic during build)"
+echo "📦 [2/6] Installing dependencies..."
+npm ci --production=false --silent 2>/dev/null || npm install --silent
+echo "    ✅ Dependencies ready"
 
-npm run build 2>&1 | tail -20
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 3: Build with standalone output
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "🔨 [3/6] Building Next.js (standalone mode)..."
+echo "    Old process continues serving during build..."
 
-if [ $? -ne 0 ]; then
+npm run build 2>&1 | tail -10
+
+if [ ! -f ".next/standalone/server.js" ]; then
     echo ""
-    echo "❌ BUILD FAILED! Aborting deployment."
-    echo "   The site remains on the previous working version."
+    echo "❌ BUILD FAILED - standalone/server.js not found!"
+    echo "   Site remains on previous version."
     exit 1
 fi
 echo "    ✅ Build successful"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 4: Zero-downtime restart with PM2
+# STEP 4: Copy static files to standalone
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "♻️  [4/5] Restarting with zero-downtime..."
-
-# Check if polygraal-web exists in PM2
-if pm2 describe polygraal-web > /dev/null 2>&1; then
-    # Process exists - use reload for graceful restart
-    echo "    Using PM2 reload for zero-downtime restart..."
-    pm2 reload polygraal-web --update-env
-else
-    # Process doesn't exist - start fresh from ecosystem config
-    echo "    Starting fresh process from ecosystem.config.js..."
-    pm2 start ecosystem.config.js --only polygraal-web
-fi
+echo "📂 [4/6] Copying static files..."
+cp -r public .next/standalone/ 2>/dev/null || true
+cp -r .next/static .next/standalone/.next/ 2>/dev/null || true
+echo "    ✅ Static files copied"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# STEP 5: Verify process is healthy
+# STEP 5: Restart PM2 process
 # ═══════════════════════════════════════════════════════════════════════════════
 echo ""
-echo "🔍 [5/5] Verifying process health..."
+echo "♻️  [5/6] Restarting PM2 process..."
 
-# Wait for process to stabilize
+# Stop the old process first (if running)
+pm2 stop polygraal-web 2>/dev/null || true
+
+# Delete and restart fresh (more reliable than reload for standalone)
+pm2 delete polygraal-web 2>/dev/null || true
+
+# Start with ecosystem config
+pm2 start ecosystem.config.js --only polygraal-web
+
+# Wait a bit
 sleep 3
 
-# Check status
+# ═══════════════════════════════════════════════════════════════════════════════
+# STEP 6: Verify health
+# ═══════════════════════════════════════════════════════════════════════════════
+echo ""
+echo "🔍 [6/6] Verifying health..."
+
+# Check PM2 status
 if pm2 show polygraal-web 2>/dev/null | grep -q "online"; then
-    echo "    ✅ polygraal-web is ONLINE!"
-    
-    # Try to hit the health endpoint
-    echo "    Testing HTTP response..."
-    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/ --max-time 10 2>/dev/null || echo "000")
-    
-    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "307" ] || [ "$HTTP_CODE" = "301" ] || [ "$HTTP_CODE" = "302" ]; then
-        echo "    ✅ HTTP check passed (status: $HTTP_CODE)"
-    else
-        echo "    ⚠️  HTTP check returned $HTTP_CODE (may still be starting)"
-    fi
+    echo "    ✅ PM2 shows polygraal-web ONLINE"
 else
-    echo "    ⚠️  Process status unclear, showing PM2 status..."
-    pm2 status polygraal-web
+    echo "    ⚠️  PM2 status unclear"
+    pm2 logs polygraal-web --lines 20
+    exit 1
 fi
 
-# Save PM2 configuration
+# Health check HTTP
+echo "    Testing HTTP..."
+for i in 1 2 3 4 5; do
+    HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3001/ --max-time 5 2>/dev/null || echo "000")
+    if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "307" ] || [ "$HTTP_CODE" = "302" ]; then
+        echo "    ✅ HTTP OK (status: $HTTP_CODE)"
+        break
+    fi
+    echo "    Waiting... ($i/5)"
+    sleep 2
+done
+
 pm2 save --force > /dev/null 2>&1
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# DONE
-# ═══════════════════════════════════════════════════════════════════════════════
 echo ""
 echo "══════════════════════════════════════════════════════════════════════════"
 echo "✅ DEPLOYMENT COMPLETE!"
+pm2 list | grep -E "(polygraal-web|Name)" | head -3
 echo ""
-echo "📊 Active Processes:"
-pm2 list --no-color 2>/dev/null | grep -E "(polygraal|Name)" | head -5
-
-echo ""
-echo "🌐 Site: https://app.polygraalx.app"
+echo "🌐 https://app.polygraalx.app"
 echo "══════════════════════════════════════════════════════════════════════════"

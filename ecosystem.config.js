@@ -6,11 +6,12 @@ module.exports = {
     apps: [
         {
             name: "polygraal-web",
-            script: "npm",
-            args: "start",
+            // Use standalone server.js for better PM2 control
+            script: ".next/standalone/server.js",
+            cwd: process.cwd(),
             // Zero-downtime restart settings
-            wait_ready: true,           // Wait for process to send 'ready' signal
-            listen_timeout: 10000,      // 10s timeout for ready signal
+            wait_ready: false,          // Standalone doesn't send ready signal
+            listen_timeout: 15000,      // 15s timeout to start
             kill_timeout: 5000,         // 5s grace period before SIGKILL
             max_restarts: 10,           // Max restart attempts
             min_uptime: "10s",          // Min uptime to consider "started"
@@ -23,7 +24,8 @@ module.exports = {
             log_date_format: "YYYY-MM-DD HH:mm:ss",
             env: {
                 NODE_ENV: "production",
-                PORT: 3001
+                PORT: 3001,
+                HOSTNAME: "0.0.0.0"
             }
         },
         {
