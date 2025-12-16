@@ -189,6 +189,27 @@ export default function OrderBookPage() {
 
             setLivePrices(pricesData);
             setLastPriceUpdate(new Date());
+
+            // Check TP/SL conditions and auto-trigger
+            if (Object.keys(pricesData).length > 0) {
+                try {
+                    const tpslResponse = await fetch('/api/paper-orders/check-tpsl', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prices: pricesData })
+                    });
+                    if (tpslResponse.ok) {
+                        const tpslData = await tpslResponse.json();
+                        if (tpslData.triggeredCount > 0) {
+                            console.log(`[TPSL] ${tpslData.triggeredCount} triggers executed`);
+                            // Reload orders to show updated positions
+                            loadOrders();
+                        }
+                    }
+                } catch (e) {
+                    // Non-critical, ignore
+                }
+            }
         } catch (error) {
             // Only log non-abort errors
             if (error instanceof Error && error.name !== 'AbortError') {

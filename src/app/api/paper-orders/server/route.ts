@@ -32,12 +32,24 @@ interface ServerPaperOrder {
     entryPrice: number;
     exitPrice?: number;
     amount: number;
+    originalAmount: number; // Track original for partial closes
     shares: number;
-    status: 'OPEN' | 'CLOSED' | 'CANCELLED';
+    originalShares: number; // Track original for partial closes
+    status: 'OPEN' | 'CLOSED' | 'PARTIAL' | 'CANCELLED';
     source: string;
     notes?: string;
     pnl?: number;
     closedAt?: string;
+    // Take Profit / Stop Loss
+    tp1Percent: number;      // First TP target (e.g., 30%)
+    tp1SizePercent: number;  // How much to close at TP1 (e.g., 50%)
+    tp1Hit: boolean;         // Has TP1 been triggered?
+    tp1HitAt?: string;
+    tp1PnL?: number;
+    tp2Percent: number;      // Second TP target (e.g., 100%)
+    tp2Hit: boolean;         // Has TP2 been triggered (full close)?
+    stopLossPercent?: number; // Optional SL (e.g., -20%)
+    slHit: boolean;
 }
 
 interface ServerPaperProfile {
@@ -192,7 +204,8 @@ export async function POST(request: NextRequest) {
         // Calculate shares
         const shares = amount / entryPrice;
 
-        // Create order
+        // Create order with TP/SL settings
+        // Default: TP1 at +30% closes 50%, TP2 at +100% closes remaining
         const order: ServerPaperOrder = {
             id: generateId(),
             createdAt: new Date().toISOString(),
@@ -206,10 +219,20 @@ export async function POST(request: NextRequest) {
             outcome,
             entryPrice,
             amount,
+            originalAmount: amount,
             shares,
+            originalShares: shares,
             status: 'OPEN',
             source,
-            notes
+            notes,
+            // TP/SL defaults for Oracle trades
+            tp1Percent: 30,       // Take profit at +30%
+            tp1SizePercent: 50,   // Close 50% at TP1
+            tp1Hit: false,
+            tp2Percent: 100,      // Take profit at +100%
+            tp2Hit: false,
+            stopLossPercent: -50, // Stop loss at -50%
+            slHit: false
         };
 
         // Update profile balance

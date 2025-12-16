@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // Create server paper order
+        // Create server paper order with TP/SL
         const entryPrice = signal.entryPrice || 0.5;
         const shares = size_usd / entryPrice;
         const serverOrder = {
@@ -152,10 +152,20 @@ export async function POST(request: NextRequest) {
             outcome: outcome === 'Yes' ? 'YES' : 'NO',
             entryPrice,
             amount: size_usd,
+            originalAmount: size_usd,
             shares,
+            originalShares: shares,
             status: 'OPEN',
             source: 'MEAN_REVERSION',
-            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`
+            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`,
+            // TP/SL: TP1 at +30% closes 50%, TP2 at +100% closes rest
+            tp1Percent: 30,
+            tp1SizePercent: 50,
+            tp1Hit: false,
+            tp2Percent: 100,
+            tp2Hit: false,
+            stopLossPercent: -50,
+            slHit: false
         };
 
         // Save order to server storage
