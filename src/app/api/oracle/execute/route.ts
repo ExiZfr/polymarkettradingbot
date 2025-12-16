@@ -136,9 +136,19 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // Create server paper order with TP/SL
+        // Create server paper order with DYNAMIC TP/SL based on Oracle analysis
         const entryPrice = signal.entryPrice || 0.5;
         const shares = size_usd / entryPrice;
+
+        // Dynamic TP based on Expected Value from Oracle
+        // EV comes as decimal (e.g., 0.169 = 16.9%)
+        const expectedValuePercent = Math.abs((signal.expectedValue || 0.15) * 100);
+        const dynamicTP1 = Math.max(5, Math.round(expectedValuePercent)); // Min 5%, based on EV
+        const dynamicTP2 = Math.max(10, Math.round(expectedValuePercent * 2)); // 2x EV
+        const dynamicSL = -Math.max(20, Math.round(expectedValuePercent * 2)); // SL = 2x EV negative
+
+        console.log(`[Execute API] Dynamic TP/SL: TP1=${dynamicTP1}%, TP2=${dynamicTP2}%, SL=${dynamicSL}% (EV=${expectedValuePercent.toFixed(1)}%)`);
+
         const serverOrder = {
             id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
             createdAt: new Date().toISOString(),
@@ -157,14 +167,14 @@ export async function POST(request: NextRequest) {
             originalShares: shares,
             status: 'OPEN',
             source: 'MEAN_REVERSION',
-            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`,
-            // TP/SL: TP1 at +15% closes 50%, TP2 at +30% closes rest
-            tp1Percent: 15,
-            tp1SizePercent: 50,
+            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${expectedValuePercent.toFixed(1)}% | TP1: ${dynamicTP1}% | TP2: ${dynamicTP2}%`,
+            // Dynamic TP/SL based on Oracle EV
+            tp1Percent: dynamicTP1,       // First TP at EV%
+            tp1SizePercent: 50,           // Close 50% at TP1
             tp1Hit: false,
-            tp2Percent: 30,
+            tp2Percent: dynamicTP2,       // Second TP at 2x EV%
             tp2Hit: false,
-            stopLossPercent: -35,
+            stopLossPercent: dynamicSL,   // SL at -2x EV%
             slHit: false
         };
 
