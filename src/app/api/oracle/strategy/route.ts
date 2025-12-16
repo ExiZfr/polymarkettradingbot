@@ -38,6 +38,10 @@ interface Signal {
     outcome: 'Yes' | 'No';
     status: 'PENDING' | 'EXECUTED' | 'CLOSED';
     pnl?: number;
+    marketId?: string;
+    marketImage?: string;
+    marketUrl?: string;
+    marketSlug?: string;
 }
 
 function ensureDataDir() {
@@ -97,36 +101,64 @@ function writeSignals(signals: Signal[]) {
 
 // Mock signals for demo (until real bot integration)
 function generateMockSignals(): Signal[] {
-    const symbols = ['BTC/USDT', 'ETH/USDT'];
-    const questions = [
-        'Will BTC be above $105,000 at 15:00 UTC?',
-        'Will ETH be above $4,000 at 15:00 UTC?',
-        'Will BTC be above $104,500 at 15:15 UTC?',
-        'Will ETH be above $3,950 at 15:15 UTC?'
+    const markets = [
+        {
+            symbol: 'BTC/USDT',
+            question: 'Will BTC be above $105,000 at 15:00 UTC?',
+            marketId: 'btc-105k-15utc',
+            slug: 'bitcoin-above-105000',
+            image: 'https://polymarket-upload.s3.us-east-2.amazonaws.com/bitcoin.png'
+        },
+        {
+            symbol: 'ETH/USDT',
+            question: 'Will ETH be above $4,000 at 15:00 UTC?',
+            marketId: 'eth-4k-15utc',
+            slug: 'ethereum-above-4000',
+            image: 'https://polymarket-upload.s3.us-east-2.amazonaws.com/ethereum.png'
+        },
+        {
+            symbol: 'BTC/USDT',
+            question: 'Will BTC be above $104,500 at 15:15 UTC?',
+            marketId: 'btc-1045k-1515utc',
+            slug: 'bitcoin-above-104500',
+            image: 'https://polymarket-upload.s3.us-east-2.amazonaws.com/bitcoin.png'
+        },
+        {
+            symbol: 'ETH/USDT',
+            question: 'Will ETH be above $3,950 at 15:15 UTC?',
+            marketId: 'eth-395k-1515utc',
+            slug: 'ethereum-above-3950',
+            image: 'https://polymarket-upload.s3.us-east-2.amazonaws.com/ethereum.png'
+        }
     ];
 
     const signals: Signal[] = [];
     const now = Date.now();
 
     for (let i = 0; i < 5; i++) {
+        const market = markets[i % markets.length];
         const isLong = Math.random() > 0.5;
-        const zScore = 2 + Math.random() * 1.5; // 2-3.5 sigma
-        const confidence = 0.6 + Math.random() * 0.2; // 60-80%
+        const zScore = 2 + Math.random() * 1.5;
+        const confidence = 0.6 + Math.random() * 0.2;
 
         signals.push({
             id: `sig_${now}_${i}`,
-            timestamp: new Date(now - i * 60000 * 5).toISOString(), // Every 5 min
-            symbol: symbols[i % 2],
+            timestamp: new Date(now - i * 60000 * 5).toISOString(),
+            symbol: market.symbol,
             direction: isLong ? 'LONG' : 'SHORT',
             zScore: parseFloat(zScore.toFixed(2)),
             confidence: parseFloat(confidence.toFixed(2)),
-            entryPrice: parseFloat((0.3 + Math.random() * 0.4).toFixed(3)), // 0.3-0.7
-            expectedValue: parseFloat((0.05 + Math.random() * 0.15).toFixed(4)), // 5-20%
-            kellySize: parseFloat((0.05 + Math.random() * 0.1).toFixed(3)), // 5-15%
-            marketQuestion: questions[i % questions.length],
+            entryPrice: parseFloat((0.3 + Math.random() * 0.4).toFixed(3)),
+            expectedValue: parseFloat((0.05 + Math.random() * 0.15).toFixed(4)),
+            kellySize: parseFloat((0.05 + Math.random() * 0.1).toFixed(3)),
+            marketQuestion: market.question,
             outcome: isLong ? 'Yes' : 'No',
             status: i === 0 ? 'PENDING' : (i < 3 ? 'EXECUTED' : 'CLOSED'),
-            pnl: i >= 3 ? parseFloat(((Math.random() - 0.3) * 20).toFixed(2)) : undefined
+            pnl: i >= 3 ? parseFloat(((Math.random() - 0.3) * 20).toFixed(2)) : undefined,
+            marketId: market.marketId,
+            marketImage: market.image,
+            marketSlug: market.slug,
+            marketUrl: `https://polymarket.com/event/${market.slug}`
         });
     }
 

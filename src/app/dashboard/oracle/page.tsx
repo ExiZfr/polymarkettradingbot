@@ -28,6 +28,9 @@ interface StrategySignal {
     status: 'PENDING' | 'EXECUTED' | 'CLOSED' | 'SKIPPED' | 'TAKEN';
     pnl?: number;
     marketId?: string;
+    marketImage?: string;
+    marketUrl?: string;
+    marketSlug?: string;
 }
 
 interface StrategyStats {
@@ -107,6 +110,9 @@ export default function OraclePage() {
                 const order = paperStore.placeOrder({
                     marketId: signal.marketId || signal.id,
                     marketTitle: signal.marketQuestion,
+                    marketImage: signal.marketImage,
+                    marketUrl: signal.marketUrl,
+                    marketSlug: signal.marketSlug,
                     type: 'BUY',
                     outcome: signal.outcome === 'Yes' ? 'YES' : 'NO',
                     entryPrice: signal.entryPrice,
@@ -135,6 +141,9 @@ export default function OraclePage() {
         const order = paperStore.placeOrder({
             marketId: signal.marketId || signal.id,
             marketTitle: signal.marketQuestion,
+            marketImage: signal.marketImage,
+            marketUrl: signal.marketUrl,
+            marketSlug: signal.marketSlug,
             type: 'BUY',
             outcome: signal.outcome === 'Yes' ? 'YES' : 'NO',
             entryPrice: signal.entryPrice,

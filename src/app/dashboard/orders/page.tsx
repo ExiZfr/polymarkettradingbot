@@ -406,23 +406,27 @@ export default function OrderBookPage() {
                                         {/* Market */}
                                         <td className="py-4 px-6">
                                             <div className="flex items-center gap-3">
-                                                {/* Crypto Icon or Market Image */}
-                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin')
+                                                {/* Market Image - Priority: order.marketImage > crypto icons > fallback */}
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden ${!order.marketImage && (order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin'))
                                                         ? 'bg-orange-500/20 text-orange-400'
-                                                        : order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum')
+                                                        : !order.marketImage && (order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum'))
                                                             ? 'bg-indigo-500/20 text-indigo-400'
                                                             : 'bg-muted'
                                                     }`}>
-                                                    {order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin') ? (
+                                                    {order.marketImage ? (
+                                                        <img
+                                                            src={order.marketImage}
+                                                            alt=""
+                                                            className="w-full h-full object-cover"
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                                (e.target as HTMLImageElement).parentElement!.innerHTML = '<span class="text-muted-foreground">📊</span>';
+                                                            }}
+                                                        />
+                                                    ) : order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin') ? (
                                                         <span className="text-lg font-bold">₿</span>
                                                     ) : order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum') ? (
                                                         <span className="text-lg font-bold">Ξ</span>
-                                                    ) : order.marketImage ? (
-                                                        <img
-                                                            src={order.marketImage}
-                                                            className="w-full h-full object-cover rounded-xl"
-                                                            onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
-                                                        />
                                                     ) : (
                                                         <Activity className="w-5 h-5 text-muted-foreground" />
                                                     )}
@@ -445,14 +449,27 @@ export default function OrderBookPage() {
                                                                 {order.source.replace('_', ' ')}
                                                             </span>
                                                         )}
-                                                        <PolymarketLink
-                                                            marketId={order.marketId}
-                                                            className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <span onClick={(e) => e.stopPropagation()}>
+                                                        {/* Direct URL if available, else use resolver */}
+                                                        {order.marketUrl ? (
+                                                            <a
+                                                                href={order.marketUrl}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                onClick={(e) => e.stopPropagation()}
+                                                                className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
                                                                 View <ExternalLink size={8} />
-                                                            </span>
-                                                        </PolymarketLink>
+                                                            </a>
+                                                        ) : (
+                                                            <PolymarketLink
+                                                                marketId={order.marketId}
+                                                                className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <span onClick={(e) => e.stopPropagation()}>
+                                                                    View <ExternalLink size={8} />
+                                                                </span>
+                                                            </PolymarketLink>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
