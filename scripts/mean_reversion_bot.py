@@ -680,11 +680,15 @@ class ExecutionEngine:
                     'entryPrice': signal.entry_price,
                     'expectedValue': signal.expected_value,
                     'kellySize': signal.kelly_size,
-                    'marketQuestion': market_question or f"{signal.symbol} 15-min Price"
+                    'marketQuestion': market_question or f"{signal.symbol} 15-min Price",
+                    'marketImage': signal.market_image,
+                    'marketUrl': signal.market_url,
+                    'marketSlug': signal.market_slug
                 },
                 'size_usd': size_usd,
                 'market_id': signal.market_id,
-                'outcome': signal.outcome
+                'outcome': signal.outcome,
+                'market_question': market_question or signal.market_question
             }
             
             response = requests.post(
