@@ -111,11 +111,38 @@ export async function POST(request: NextRequest) {
         executions.push(execution);
         writeExecutions(executions);
 
-        // Create pending paper order for frontend to process
-        const paperOrderQueue = path.join(process.cwd(), 'data', 'paper_order_queue.json');
-        const pendingOrder = {
-            id: `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
-            timestamp: new Date().toISOString(),
+        // ====================================================================
+        // PLACE ORDER DIRECTLY IN SERVER-SIDE STORAGE
+        // This runs without needing a browser open!
+        // ====================================================================
+        const SERVER_ORDERS_FILE = path.join(process.cwd(), 'data', 'server_paper_orders.json');
+        const SERVER_PROFILE_FILE = path.join(process.cwd(), 'data', 'server_paper_profile.json');
+
+        // Read/initialize profile
+        let profile = { balance: 10000, totalPnL: 0, totalTrades: 0, winningTrades: 0, losingTrades: 0, lastUpdated: new Date().toISOString() };
+        try {
+            if (fs.existsSync(SERVER_PROFILE_FILE)) {
+                profile = JSON.parse(fs.readFileSync(SERVER_PROFILE_FILE, 'utf-8'));
+            }
+        } catch (e) { /* use default */ }
+
+        // Check balance
+        if (size_usd > profile.balance) {
+            console.log(`[Execute API] Insufficient balance: $${profile.balance.toFixed(2)}`);
+            return NextResponse.json({
+                success: false,
+                error: 'Insufficient balance',
+                balance: profile.balance
+            }, { status: 400 });
+        }
+
+        // Create server paper order
+        const entryPrice = signal.entryPrice || 0.5;
+        const shares = size_usd / entryPrice;
+        const serverOrder = {
+            id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             marketId: market_id,
             marketTitle: market_question || signal.marketQuestion || `${signal.symbol} Mean Reversion`,
             marketSlug: '',
@@ -123,28 +150,32 @@ export async function POST(request: NextRequest) {
             marketImage: signal.marketImage || '',
             type: 'BUY',
             outcome: outcome === 'Yes' ? 'YES' : 'NO',
-            entryPrice: signal.entryPrice || 0.5,
+            entryPrice,
             amount: size_usd,
+            shares,
+            status: 'OPEN',
             source: 'MEAN_REVERSION',
-            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`,
-            processed: false
+            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`
         };
 
-        // Add to queue
-        let queue: any[] = [];
+        // Save order to server storage
+        let orders: any[] = [];
         try {
-            if (fs.existsSync(paperOrderQueue)) {
-                queue = JSON.parse(fs.readFileSync(paperOrderQueue, 'utf-8'));
+            if (fs.existsSync(SERVER_ORDERS_FILE)) {
+                orders = JSON.parse(fs.readFileSync(SERVER_ORDERS_FILE, 'utf-8'));
             }
-        } catch (e) {
-            queue = [];
-        }
-        queue.push(pendingOrder);
-        // Keep last 100 orders in queue
-        queue = queue.slice(-100);
-        fs.writeFileSync(paperOrderQueue, JSON.stringify(queue, null, 2));
+        } catch (e) { orders = []; }
+        orders.push(serverOrder);
+        fs.writeFileSync(SERVER_ORDERS_FILE, JSON.stringify(orders, null, 2));
 
-        console.log('[Execute API] Paper order queued:', pendingOrder.id);
+        // Update profile
+        profile.balance -= size_usd;
+        profile.totalTrades += 1;
+        profile.lastUpdated = new Date().toISOString();
+        fs.writeFileSync(SERVER_PROFILE_FILE, JSON.stringify(profile, null, 2));
+
+        console.log(`[Execute API] ✅ SERVER ORDER PLACED: ${serverOrder.id} - ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)})`);
+
 
         // Update signals file to mark as executed
         try {
@@ -177,11 +208,12 @@ export async function POST(request: NextRequest) {
                 status: execution.status,
                 timestamp: execution.timestamp
             },
-            paperOrder: {
-                id: pendingOrder.id,
-                queued: true
+            serverOrder: {
+                id: serverOrder.id,
+                stored: true,
+                balance: profile.balance
             },
-            message: `Trade executed: ${execution.direction} ${execution.outcome} @ ${execution.entryPrice.toFixed(3)} ($${execution.sizeUsd.toFixed(2)})`
+            message: `✅ Order placed: ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) - Balance: $${profile.balance.toFixed(2)}`
         });
 
     } catch (error) {
