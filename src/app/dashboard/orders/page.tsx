@@ -27,6 +27,7 @@ import { showTradeNotification } from "@/components/dashboard/TradeNotificationS
 import ClosePositionModal from "@/components/dashboard/ClosePositionModal";
 import OrderDetailsModal from "@/components/dashboard/OrderDetailsModal";
 import MiniPriceChart from "@/components/ui/MiniPriceChart";
+import PolymarketLink from "@/components/ui/PolymarketLink";
 
 type FilterStatus = "ALL" | "OPEN" | "CLOSED" | "CANCELLED";
 type SortField = "timestamp" | "pnl" | "amount";
@@ -419,14 +420,14 @@ export default function OrderBookPage() {
                                                         <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
                                                             {new Date(order.timestamp).toLocaleDateString()}
                                                         </span>
-                                                        <a
-                                                            href={`https://polymarket.com/markets?_q=${encodeURIComponent((order.marketTitle || '').slice(0, 50))}`}
-                                                            target="_blank"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        <PolymarketLink
+                                                            marketId={order.marketId}
+                                                            className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
-                                                            Open <ExternalLink size={8} />
-                                                        </a>
+                                                            <span onClick={(e) => e.stopPropagation()}>
+                                                                Open <ExternalLink size={8} />
+                                                            </span>
+                                                        </PolymarketLink>
                                                     </div>
                                                 </div>
                                             </div>

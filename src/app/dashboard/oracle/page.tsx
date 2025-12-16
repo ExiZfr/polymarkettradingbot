@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Activity, Play, Pause, BarChart3,
     ArrowUpRight, ArrowDownRight, Zap, Target,
-    Shield, TrendingUp, Terminal,
+    Shield, TrendingUp, Terminal, ExternalLink,
     Wallet, RefreshCw, CheckCircle2, XCircle, DollarSign, Bell
 } from 'lucide-react';
 import { paperStore } from '@/lib/paper-trading';
 import { useToast } from '@/contexts/ToastContext';
+import PolymarketLink from '@/components/ui/PolymarketLink';
 
 // Types
 interface StrategySignal {
@@ -486,8 +487,18 @@ export default function OraclePage() {
                                                             {signal.direction}
                                                         </span>
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground truncate max-w-[300px]">
-                                                        {signal.marketQuestion}
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="text-sm text-muted-foreground truncate max-w-[250px]">
+                                                            {signal.marketQuestion}
+                                                        </div>
+                                                        {signal.marketId && (
+                                                            <PolymarketLink
+                                                                marketId={signal.marketId}
+                                                                className="flex items-center gap-1 text-xs text-cyan-400 hover:text-cyan-300 transition-colors"
+                                                            >
+                                                                <ExternalLink className="w-3 h-3" />
+                                                            </PolymarketLink>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
