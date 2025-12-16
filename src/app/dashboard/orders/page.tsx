@@ -132,6 +132,7 @@ export default function OrderBookPage() {
     const [profile, setProfile] = useState<PaperProfile | null>(null);
     const [selectedOrderToClose, setSelectedOrderToClose] = useState<PaperOrder | null>(null);
     const [selectedOrderDetails, setSelectedOrderDetails] = useState<PaperOrder | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
     const [filterStatus, setFilterStatus] = useState<FilterStatus>("ALL");
     const [searchQuery, setSearchQuery] = useState("");
@@ -232,6 +233,8 @@ export default function OrderBookPage() {
             const activeProfile = paperStore.getActiveProfile();
             setOrders(allOrders);
             setProfile(activeProfile);
+        } finally {
+            setIsLoading(false);
         }
     }, []);
 
@@ -423,7 +426,7 @@ export default function OrderBookPage() {
             });
     }, [orders, filterStatus, searchQuery, sortField, sortDirection]);
 
-    const handleConfirmClose = () => {
+    const handleConfirmClose = async () => {
         if (!selectedOrderToClose) return;
 
         // Live price resolution
@@ -433,11 +436,31 @@ export default function OrderBookPage() {
             exitPrice = selectedOrderToClose.outcome === 'YES' ? livePriceData.yes : livePriceData.no;
         }
 
-        const closedOrder = paperStore.closeOrder(selectedOrderToClose.id, exitPrice);
-        if (closedOrder) showTradeNotification(closedOrder, 'CLOSED');
+        try {
+            // Close via server API
+            const response = await fetch('/api/paper-orders/server', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orderId: selectedOrderToClose.id,
+                    action: 'CLOSE',
+                    exitPrice
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[Orders] Order closed:', data);
+                showTradeNotification(selectedOrderToClose, 'CLOSED');
+            } else {
+                console.error('[Orders] Failed to close order');
+            }
+        } catch (error) {
+            console.error('[Orders] Error closing order:', error);
+        }
 
         setSelectedOrderToClose(null);
-        setSelectedOrderDetails(null); // Also close details if open
+        setSelectedOrderDetails(null);
         loadOrders();
     };
 
@@ -682,7 +705,17 @@ export default function OrderBookPage() {
                                 );
                             })}
 
-                            {filteredOrders.length === 0 && (
+                            {isLoading ? (
+                                <tr>
+                                    <td colSpan={6} className="py-24 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <RefreshCw size={32} className="animate-spin text-primary mb-4" />
+                                            <p className="text-lg font-medium text-foreground">Loading orders...</p>
+                                            <p className="text-sm text-muted-foreground mt-1">Fetching from server</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filteredOrders.length === 0 && (
                                 <tr>
                                     <td colSpan={6} className="py-24 text-center">
                                         <div className="flex flex-col items-center justify-center opacity-40">
