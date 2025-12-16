@@ -8,9 +8,22 @@ module.exports = {
             name: "polygraal-web",
             script: "npm",
             args: "start",
+            // Zero-downtime restart settings
+            wait_ready: true,           // Wait for process to send 'ready' signal
+            listen_timeout: 10000,      // 10s timeout for ready signal
+            kill_timeout: 5000,         // 5s grace period before SIGKILL
+            max_restarts: 10,           // Max restart attempts
+            min_uptime: "10s",          // Min uptime to consider "started"
+            restart_delay: 2000,        // 2s delay between restarts
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "512M", // Restart if memory exceeds 512MB
+            error_file: "logs/polygraal-web-error.log",
+            out_file: "logs/polygraal-web-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss",
             env: {
                 NODE_ENV: "production",
-                PORT: 3001  // Fixed: was 3000, should be 3001 for production
+                PORT: 3001
             }
         },
         {

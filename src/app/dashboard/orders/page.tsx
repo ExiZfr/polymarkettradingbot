@@ -38,33 +38,36 @@ type LivePrices = Record<string, { yes: number; no: number; lastUpdate: string }
 
 // --- Components ---
 
-function PortfolioHeader({ profile, unrealizedPnL }: { profile: PaperProfile; unrealizedPnL: number }) {
+function PortfolioHeader({ profile, unrealizedPnL, orders }: { profile: PaperProfile; unrealizedPnL: number; orders: PaperOrder[] }) {
+    // Calculate realized P&L from closed orders
+    const closedOrders = orders.filter(o => o.status === 'CLOSED');
+    const realizedPnL = closedOrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
+    
+    // Calculate win/loss stats
+    const wins = closedOrders.filter(o => (o.pnl || 0) > 0).length;
+    const losses = closedOrders.filter(o => (o.pnl || 0) < 0).length;
+    const totalTrades = wins + losses;
+    const realWinRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+    
+    // Total portfolio value = available cash + unrealized P&L
+    const totalValue = profile.currentBalance + unrealizedPnL;
+    const totalPnL = realizedPnL + unrealizedPnL;
+    
     const roi = profile.initialBalance > 0
-        ? ((profile.currentBalance + unrealizedPnL - profile.initialBalance) / profile.initialBalance) * 100
+        ? ((totalValue - profile.initialBalance) / profile.initialBalance) * 100
         : 0;
-
-    const totalStats = paperStore.getOrders().reduce((acc, o) => {
-        if (o.status === 'CLOSED') {
-            if ((o.pnl || 0) > 0) acc.wins++;
-            else acc.losses++;
-        }
-        return acc;
-    }, { wins: 0, losses: 0 });
-
-    const totalTrades = totalStats.wins + totalStats.losses;
-    const realWinRate = totalTrades > 0 ? (totalStats.wins / totalTrades) * 100 : 0;
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             {/* Main Balance Card */}
-            <div className="md:col-span-2 p-6 rounded-2xl bg-gradient-to-br from-card to-muted border border-border relative overflow-hidden group">
+            <div className="md:col-span-2 p-6 rounded-2xl bg-linear-to-br from-card to-muted border border-border relative overflow-hidden group">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-3xl rounded-full -translate-y-1/2 translate-x-1/3" />
 
                 <div className="flex justify-between items-start mb-4 relative z-10">
                     <div>
                         <p className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total Portfolio Value</p>
                         <h2 className="text-3xl font-bold text-foreground mt-1">
-                            ${(profile.currentBalance + unrealizedPnL).toFixed(2)}
+                            ${totalValue.toFixed(2)}
                         </h2>
                     </div>
                     <div className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${roi >= 0 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'}`}>
@@ -78,28 +81,32 @@ function PortfolioHeader({ profile, unrealizedPnL }: { profile: PaperProfile; un
                         <p className="text-base font-mono text-foreground/80">${profile.currentBalance.toFixed(2)}</p>
                     </div>
                     <div>
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Invested</p>
-                        <p className="text-base font-mono text-foreground/80">${(profile.initialBalance + profile.totalPnL - profile.currentBalance).toFixed(2)}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Unrealized P&L</p>
+                        <p className={`text-base font-mono ${unrealizedPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                            {unrealizedPnL >= 0 ? '+' : ''}${unrealizedPnL.toFixed(2)}
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* PnL Stats */}
             <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-center relative group">
-                <div className={`absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity ${profile.totalPnL >= 0 ? 'from-emerald-500/20' : 'from-rose-500/20'}`} />
+                <div className={`absolute inset-0 bg-linear-to-br opacity-0 group-hover:opacity-10 transition-opacity ${realizedPnL >= 0 ? 'from-emerald-500/20' : 'from-rose-500/20'}`} />
                 <div className="flex items-center gap-2 mb-2">
-                    <div className={`p-1.5 rounded bg-muted ${profile.totalPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                        {profile.totalPnL >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                    <div className={`p-1.5 rounded bg-muted ${realizedPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                        {realizedPnL >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                     </div>
-                    <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Total P&L</span>
+                    <span className="text-xs text-muted-foreground uppercase tracking-widest font-bold">Realized P&L</span>
                 </div>
-                <p className={`text-2xl font-bold ${profile.totalPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {profile.totalPnL >= 0 ? '+' : ''}${profile.totalPnL.toFixed(2)}
+                <p className={`text-2xl font-bold ${realizedPnL >= 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {realizedPnL >= 0 ? '+' : ''}${realizedPnL.toFixed(2)}
                 </p>
-                <p className="text-xs text-muted-foreground mt-1">Realized Profit/Loss</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                    Total: <span className={totalPnL >= 0 ? 'text-emerald-400' : 'text-rose-400'}>{totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}</span>
+                </p>
             </div>
 
-            {/* Win Value */}
+            {/* Win Rate */}
             <div className="p-6 rounded-2xl bg-card border border-border flex flex-col justify-center">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="p-1.5 rounded bg-blue-500/10 text-blue-500">
@@ -111,9 +118,9 @@ function PortfolioHeader({ profile, unrealizedPnL }: { profile: PaperProfile; un
                     {realWinRate.toFixed(1)}%
                 </p>
                 <div className="flex gap-2 text-xs mt-1">
-                    <span className="text-emerald-500">{totalStats.wins} W</span>
+                    <span className="text-emerald-500">{wins} W</span>
                     <span className="text-muted-foreground/20">|</span>
-                    <span className="text-rose-500">{totalStats.losses} L</span>
+                    <span className="text-rose-500">{losses} L</span>
                 </div>
             </div>
         </div>
