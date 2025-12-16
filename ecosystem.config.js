@@ -46,10 +46,11 @@ module.exports = {
             log_date_format: "YYYY-MM-DD HH:mm:ss"
         },
         {
-            name: "crypto-oracle",
-            script: "scripts/crypto_oracle.py",
-            interpreter: "./venv/bin/python",  // Use venv Python
+            name: "mean-reversion-bot",
+            script: "scripts/mean_reversion_bot.py",
+            interpreter: "./venv/bin/python",
             cwd: process.cwd(),
+            args: "--bankroll 100 --dry-run",  // Start in simulation mode
             max_restarts: 5,
             min_uptime: "30s",
             restart_delay: 30000,
@@ -58,10 +59,11 @@ module.exports = {
             max_memory_restart: "500M",
             env: {
                 PYTHONUNBUFFERED: "1",
-                POLY_PRIVATE_KEY: ""  // Set via: pm2 set crypto-oracle:POLY_PRIVATE_KEY <key>
+                POLY_API_KEY: process.env.POLY_API_KEY || "",
+                POLY_SECRET: process.env.POLY_SECRET || ""
             },
-            error_file: "logs/crypto-oracle-error.log",
-            out_file: "logs/crypto-oracle-out.log",
+            error_file: "logs/mean-reversion-error.log",
+            out_file: "logs/mean-reversion-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
         },
         {
