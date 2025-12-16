@@ -400,32 +400,57 @@ export default function OrderBookPage() {
                                 return (
                                     <tr
                                         key={order.id}
-                                        className="hover:bg-muted/30 transition-colors group cursor-pointer"
+                                        className="hover:bg-muted/30 transition-colors group cursor-pointer border-b border-border/30 last:border-0"
                                         onClick={() => setSelectedOrderDetails(order)}
                                     >
                                         {/* Market */}
                                         <td className="py-4 px-6">
-                                            <div className="flex items-center gap-4">
-                                                <div className="w-10 h-10 rounded-lg bg-muted p-0.5 flex-shrink-0 relative overflow-hidden">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10" />
-                                                    <img
-                                                        src={order.marketImage || '/placeholder.png'}
-                                                        className="w-full h-full object-cover rounded-md opacity-80 group-hover:opacity-100 transition-opacity relative z-10"
-                                                        onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
-                                                    />
+                                            <div className="flex items-center gap-3">
+                                                {/* Crypto Icon or Market Image */}
+                                                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin')
+                                                        ? 'bg-orange-500/20 text-orange-400'
+                                                        : order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum')
+                                                            ? 'bg-indigo-500/20 text-indigo-400'
+                                                            : 'bg-muted'
+                                                    }`}>
+                                                    {order.marketTitle?.toLowerCase().includes('btc') || order.marketTitle?.toLowerCase().includes('bitcoin') ? (
+                                                        <span className="text-lg font-bold">₿</span>
+                                                    ) : order.marketTitle?.toLowerCase().includes('eth') || order.marketTitle?.toLowerCase().includes('ethereum') ? (
+                                                        <span className="text-lg font-bold">Ξ</span>
+                                                    ) : order.marketImage ? (
+                                                        <img
+                                                            src={order.marketImage}
+                                                            className="w-full h-full object-cover rounded-xl"
+                                                            onError={(e) => (e.target as HTMLImageElement).style.display = 'none'}
+                                                        />
+                                                    ) : (
+                                                        <Activity className="w-5 h-5 text-muted-foreground" />
+                                                    )}
                                                 </div>
-                                                <div className="max-w-[240px]">
-                                                    <p className="text-sm font-medium text-foreground truncate">{order.marketTitle}</p>
-                                                    <div className="flex items-center gap-2 mt-1">
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm font-medium text-foreground truncate max-w-[220px]">{order.marketTitle}</p>
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-mono">
                                                             {new Date(order.timestamp).toLocaleDateString()}
                                                         </span>
+                                                        {order.source && (
+                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase ${order.source === 'MEAN_REVERSION'
+                                                                    ? 'bg-purple-500/20 text-purple-400'
+                                                                    : order.source === 'COPY_TRADING'
+                                                                        ? 'bg-blue-500/20 text-blue-400'
+                                                                        : order.source === 'SNIPER'
+                                                                            ? 'bg-red-500/20 text-red-400'
+                                                                            : 'bg-muted text-muted-foreground'
+                                                                }`}>
+                                                                {order.source.replace('_', ' ')}
+                                                            </span>
+                                                        )}
                                                         <PolymarketLink
                                                             marketId={order.marketId}
                                                             className="text-[10px] text-cyan-400 hover:text-cyan-300 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             <span onClick={(e) => e.stopPropagation()}>
-                                                                Open <ExternalLink size={8} />
+                                                                View <ExternalLink size={8} />
                                                             </span>
                                                         </PolymarketLink>
                                                     </div>
@@ -451,16 +476,23 @@ export default function OrderBookPage() {
                                             </div>
                                         </td>
 
-                                        {/* P&L */}
+                                        {/* P&L - Now with animation */}
                                         <td className="py-4 px-6 text-right">
-                                            <div className="flex flex-col items-end">
+                                            <motion.div
+                                                className="flex flex-col items-end"
+                                                animate={{ scale: order.status === 'OPEN' ? [1, 1.02, 1] : 1 }}
+                                                transition={{ duration: 2, repeat: order.status === 'OPEN' ? Infinity : 0 }}
+                                            >
                                                 <span className={`text-sm font-bold font-mono ${isPos ? 'text-emerald-500' : 'text-rose-500'}`}>
-                                                    {isPos ? '+' : ''}{rowPnl.toFixed(2)}
+                                                    {isPos ? '+' : ''}${Math.abs(rowPnl).toFixed(2)}
                                                 </span>
                                                 <span className={`text-[10px] px-1.5 rounded mt-0.5 font-bold ${isPos ? 'text-emerald-500 bg-emerald-500/10' : 'text-rose-500 bg-rose-500/10'}`}>
-                                                    {rowRoi.toFixed(2)}%
+                                                    {isPos ? '+' : ''}{rowRoi.toFixed(1)}%
                                                 </span>
-                                            </div>
+                                                {order.status === 'CLOSED' && (
+                                                    <span className="text-[9px] text-muted-foreground mt-1">Realized</span>
+                                                )}
+                                            </motion.div>
                                         </td>
 
                                         {/* Chart */}
