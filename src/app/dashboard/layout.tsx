@@ -6,6 +6,7 @@ import { Menu, Sun, Moon } from "lucide-react";
 import Sidebar from "@/components/dashboard/Sidebar";
 import FloatingWalletWidget from "@/components/dashboard/FloatingWalletWidget";
 import TradeNotificationSystem from "@/components/dashboard/TradeNotificationSystem";
+import { useOracleAutoTrader } from "@/lib/useOracleAutoTrader";
 
 function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
     const [theme, setTheme] = useState<'light' | 'dark'>('dark');
@@ -70,6 +71,10 @@ function DashboardHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const [isSidebarOpen, setSidebarOpen] = useState(false);
     const pathname = usePathname();
+
+    // Enable Oracle auto-trader to process orders in background
+    // This runs on ALL dashboard pages, not just the Oracle page
+    useOracleAutoTrader(true, 5000); // Poll every 5 seconds
 
     const toggleSidebar = () => setSidebarOpen(!isSidebarOpen);
 

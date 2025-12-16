@@ -111,6 +111,41 @@ export async function POST(request: NextRequest) {
         executions.push(execution);
         writeExecutions(executions);
 
+        // Create pending paper order for frontend to process
+        const paperOrderQueue = path.join(process.cwd(), 'data', 'paper_order_queue.json');
+        const pendingOrder = {
+            id: `order_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+            timestamp: new Date().toISOString(),
+            marketId: market_id,
+            marketTitle: market_question || signal.marketQuestion || `${signal.symbol} Mean Reversion`,
+            marketSlug: '',
+            marketUrl: '',
+            marketImage: signal.marketImage || '',
+            type: 'BUY',
+            outcome: outcome === 'Yes' ? 'YES' : 'NO',
+            entryPrice: signal.entryPrice || 0.5,
+            amount: size_usd,
+            source: 'MEAN_REVERSION',
+            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`,
+            processed: false
+        };
+
+        // Add to queue
+        let queue: any[] = [];
+        try {
+            if (fs.existsSync(paperOrderQueue)) {
+                queue = JSON.parse(fs.readFileSync(paperOrderQueue, 'utf-8'));
+            }
+        } catch (e) {
+            queue = [];
+        }
+        queue.push(pendingOrder);
+        // Keep last 100 orders in queue
+        queue = queue.slice(-100);
+        fs.writeFileSync(paperOrderQueue, JSON.stringify(queue, null, 2));
+
+        console.log('[Execute API] Paper order queued:', pendingOrder.id);
+
         // Update signals file to mark as executed
         try {
             if (fs.existsSync(SIGNALS_FILE)) {
@@ -142,7 +177,11 @@ export async function POST(request: NextRequest) {
                 status: execution.status,
                 timestamp: execution.timestamp
             },
-            message: `Trade executed: ${execution.direction} ${execution.outcome} @ ${execution.entryPrice.toFixed(3)} (${execution.sizeUsd} USD)`
+            paperOrder: {
+                id: pendingOrder.id,
+                queued: true
+            },
+            message: `Trade executed: ${execution.direction} ${execution.outcome} @ ${execution.entryPrice.toFixed(3)} ($${execution.sizeUsd.toFixed(2)})`
         });
 
     } catch (error) {
