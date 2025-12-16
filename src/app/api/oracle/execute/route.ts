@@ -158,13 +158,13 @@ export async function POST(request: NextRequest) {
             status: 'OPEN',
             source: 'MEAN_REVERSION',
             notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${(signal.expectedValue * 100)?.toFixed(1) || 0}%`,
-            // TP/SL: TP1 at +30% closes 50%, TP2 at +100% closes rest
-            tp1Percent: 30,
+            // TP/SL: TP1 at +15% closes 50%, TP2 at +30% closes rest
+            tp1Percent: 15,
             tp1SizePercent: 50,
             tp1Hit: false,
-            tp2Percent: 100,
+            tp2Percent: 30,
             tp2Hit: false,
-            stopLossPercent: -50,
+            stopLossPercent: -35,
             slHit: false
         };
 

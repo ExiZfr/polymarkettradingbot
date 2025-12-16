@@ -226,12 +226,12 @@ export async function POST(request: NextRequest) {
             source,
             notes,
             // TP/SL defaults for Oracle trades
-            tp1Percent: 30,       // Take profit at +30%
+            tp1Percent: 15,       // Take profit at +15%
             tp1SizePercent: 50,   // Close 50% at TP1
             tp1Hit: false,
-            tp2Percent: 100,      // Take profit at +100%
+            tp2Percent: 30,       // Take profit at +30%
             tp2Hit: false,
-            stopLossPercent: -50, // Stop loss at -50%
+            stopLossPercent: -35, // Stop loss at -35%
             slHit: false
         };
 
