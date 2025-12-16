@@ -1,6 +1,5 @@
-// Load environment variables from .env files
-require('dotenv').config({ path: '.env.local' });
-require('dotenv').config({ path: '.env' });
+// PM2 Ecosystem Configuration
+// Note: Environment variables should be set in the env blocks below
 
 module.exports = {
     apps: [
@@ -73,9 +72,8 @@ module.exports = {
             watch: false,
             max_memory_restart: "500M",
             env: {
-                PYTHONUNBUFFERED: "1",
-                POLY_API_KEY: process.env.POLY_API_KEY || "",
-                POLY_SECRET: process.env.POLY_SECRET || ""
+                PYTHONUNBUFFERED: "1"
+                // POLY_API_KEY and POLY_SECRET should be set in system environment
             },
             error_file: "logs/mean-reversion-error.log",
             out_file: "logs/mean-reversion-out.log",
@@ -93,8 +91,8 @@ module.exports = {
             watch: false,
             max_memory_restart: "400M",
             env: {
-                PYTHONUNBUFFERED: "1",
-                DATABASE_URL: process.env.DATABASE_URL || ""
+                PYTHONUNBUFFERED: "1"
+                // DATABASE_URL should be set in system environment
             },
             error_file: "logs/oracle-scraper-error.log",
             out_file: "logs/oracle-scraper-out.log",
