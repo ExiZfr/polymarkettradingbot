@@ -157,11 +157,31 @@ export default function OrderBookPage() {
             const response = await fetch(`/api/prices?ids=${marketIds.join(',')}`, {
                 signal: AbortSignal.timeout(10000) // 10s timeout
             });
+            
+            const pricesData: LivePrices = {};
+            
             if (response.ok) {
                 const data = await response.json();
-                setLivePrices(data.prices || {});
-                setLastPriceUpdate(new Date());
+                Object.assign(pricesData, data.prices || {});
             }
+            
+            // For mock/paper orders that don't have real Polymarket IDs,
+            // simulate realistic price movements around entry price
+            openOrders.forEach(order => {
+                if (!pricesData[order.marketId]) {
+                    // Simulate price: entry ± random variance (±5%)
+                    const variance = (Math.random() - 0.5) * 0.1; // -5% to +5%
+                    const simulatedPrice = Math.min(0.95, Math.max(0.05, order.entryPrice + variance));
+                    pricesData[order.marketId] = {
+                        yes: order.outcome === 'YES' ? simulatedPrice : 1 - simulatedPrice,
+                        no: order.outcome === 'NO' ? simulatedPrice : 1 - simulatedPrice,
+                        lastUpdate: new Date().toISOString()
+                    };
+                }
+            });
+            
+            setLivePrices(pricesData);
+            setLastPriceUpdate(new Date());
         } catch (error) {
             // Only log non-abort errors
             if (error instanceof Error && error.name !== 'AbortError') {

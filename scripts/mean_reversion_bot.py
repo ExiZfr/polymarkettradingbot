@@ -151,6 +151,10 @@ class Signal:
     kelly_size: float
     market_id: str
     outcome: str  # "YES" or "NO"
+    market_question: str = ""
+    market_image: str = ""
+    market_url: str = ""
+    market_slug: str = ""
 
 
 @dataclass
@@ -430,7 +434,14 @@ class SignalGenerator:
         odds = (1 - entry_price) / entry_price if entry_price > 0 else 0
         kelly_size = self.calculate_kelly_size(base_win_prob, odds)
         
-        # Create signal
+        # Extract market metadata
+        market_id = market_info.get('conditionId', '')
+        market_question = market_info.get('question', f'{symbol} 15-min Price Market')
+        market_image = market_info.get('image', '') or market_info.get('icon', '')
+        market_slug = market_info.get('slug', '') or market_info.get('id', '')
+        market_url = f"https://polymarket.com/event/{market_slug}" if market_slug else ''
+        
+        # Create signal with full market metadata
         signal = Signal(
             symbol=symbol,
             timestamp=datetime.now(),
@@ -440,8 +451,12 @@ class SignalGenerator:
             entry_price=entry_price,
             expected_value=ev,
             kelly_size=kelly_size,
-            market_id=market_info.get('conditionId', ''),
-            outcome=outcome
+            market_id=market_id,
+            outcome=outcome,
+            market_question=market_question,
+            market_image=market_image,
+            market_url=market_url,
+            market_slug=market_slug
         )
         
         self.signals_generated += 1
@@ -612,7 +627,7 @@ class ExecutionEngine:
                 with open(self.signals_file, 'r') as f:
                     signals = json.load(f)
             
-            # Create signal record
+            # Create signal record with all market metadata
             signal_data = {
                 'id': f"sig_{signal.timestamp.timestamp()}_{signal.symbol.replace('/', '_')}",
                 'timestamp': signal.timestamp.isoformat(),
@@ -623,10 +638,15 @@ class ExecutionEngine:
                 'entryPrice': round(signal.entry_price, 4),
                 'expectedValue': round(signal.expected_value, 4),
                 'kellySize': round(signal.kelly_size, 4),
-                'marketQuestion': f"{signal.symbol} 15-min Price Market",
+                'marketQuestion': signal.market_question or f"{signal.symbol} 15-min Price Market",
                 'outcome': signal.outcome,
                 'status': status,
-                'pnl': round(pnl, 2) if pnl is not None else None
+                'pnl': round(pnl, 2) if pnl is not None else None,
+                # Market metadata for frontend
+                'marketId': signal.market_id,
+                'marketImage': signal.market_image,
+                'marketUrl': signal.market_url,
+                'marketSlug': signal.market_slug
             }
             
             # Check if signal already exists
