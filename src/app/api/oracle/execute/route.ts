@@ -251,16 +251,15 @@ export async function POST(request: NextRequest) {
                 id: `notif_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
                 type: 'ORACLE_TRADE',
                 title: '🤖 Oracle Trade Executed',
-                message: `${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) | TP1: +${dynamicTP1}% | TP2: +${dynamicTP2}% | SL: ${dynamicSL}%`,
+                message: `${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) | TP: +${takeProfit}% | SL: ${stopLoss}%`,
                 timestamp: new Date().toISOString(),
                 read: false,
                 data: {
                     orderId: serverOrder.id,
                     symbol: signal.symbol,
                     entryPrice,
-                    tp1: dynamicTP1,
-                    tp2: dynamicTP2,
-                    sl: dynamicSL
+                    tp: takeProfit,
+                    sl: stopLoss
                 }
             });
             fs.writeFileSync(NOTIFS_FILE, JSON.stringify(notifs.slice(-100), null, 2));
