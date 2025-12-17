@@ -97,6 +97,25 @@ module.exports = {
             error_file: "logs/oracle-scraper-error.log",
             out_file: "logs/oracle-scraper-out.log",
             log_date_format: "YYYY-MM-DD HH:mm:ss"
+        },
+        {
+            name: "price-updater",
+            script: "scripts/price_updater.py",
+            interpreter: "./venv/bin/python",
+            cwd: process.cwd(),
+            max_restarts: 10,
+            min_uptime: "10s",
+            restart_delay: 5000,
+            autorestart: true,
+            watch: false,
+            max_memory_restart: "200M",
+            env: {
+                PYTHONUNBUFFERED: "1",
+                DATA_DIR: process.cwd() + "/data"
+            },
+            error_file: "logs/price-updater-error.log",
+            out_file: "logs/price-updater-out.log",
+            log_date_format: "YYYY-MM-DD HH:mm:ss"
         }
     ]
 };
