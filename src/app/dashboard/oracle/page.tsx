@@ -385,7 +385,7 @@ export default function OraclePage() {
                             {realTradesTaken}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            {openMROrders.length} open · {closedMROrders.length} closed
+                            {meanReversionStats.openCount} open · {meanReversionStats.closedCount} closed
                         </div>
                     </div>
                 </div>
