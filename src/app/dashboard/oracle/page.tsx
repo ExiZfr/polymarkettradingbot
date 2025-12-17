@@ -187,7 +187,8 @@ export default function OraclePage() {
         realWinRate: 0,
         totalPnL: 0,
         openCount: 0,
-        closedCount: 0
+        closedCount: 0,
+        winCount: 0
     });
 
     // Fetch paper trading data from server
@@ -218,7 +219,8 @@ export default function OraclePage() {
                     realWinRate: closedMROrders.length > 0 ? (winningOrders.length / closedMROrders.length) * 100 : 0,
                     totalPnL: closedMROrders.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
                     openCount: openMROrders.length,
-                    closedCount: closedMROrders.length
+                    closedCount: closedMROrders.length,
+                    winCount: winningOrders.length
                 });
             }
         } catch (error) {
@@ -406,7 +408,7 @@ export default function OraclePage() {
                             {formatPct(realWinRate)}
                         </div>
                         <div className="text-xs text-muted-foreground">
-                            {winningOrders.length}W / {closedMROrders.length - winningOrders.length}L
+                            {meanReversionStats.winCount}W / {meanReversionStats.closedCount - meanReversionStats.winCount}L
                         </div>
                     </div>
                 </div>
