@@ -184,39 +184,50 @@ export default function OrderBookPage() {
                 console.log('[Orders] Mapped orders:', serverOrders.length);
                 setOrders(serverOrders);
 
-                // Profile from server
-                if (data.profile) {
-                    const serverProfile: PaperProfile = {
-                        id: 'server',
-                        username: 'Server Paper Trading',
-                        initialBalance: 10000,
-                        currentBalance: data.profile.balance,
-                        totalPnL: data.profile.totalPnL,
-                        realizedPnL: data.profile.totalPnL,
-                        unrealizedPnL: 0,
-                        winRate: parseFloat(data.stats?.winRate || '0'),
-                        tradesCount: data.profile.totalTrades,
-                        winCount: data.profile.winningTrades,
-                        lossCount: data.profile.losingTrades,
-                        bestTrade: 0,
-                        worstTrade: 0,
-                        avgTradeSize: 0,
-                        active: true,
-                        autoFollow: false,
-                        createdAt: Date.now(),
-                        settings: {
-                            enabled: true,
-                            initialBalance: 10000,
-                            riskPerTrade: 2,
-                            defaultPositionSize: 100,
-                            useRiskBasedSizing: false,
-                            autoStopLoss: 0,
-                            autoTakeProfit: 0,
-                            maxOpenPositions: 10,
-                            allowShorts: true
+                // Fetch active profile from profiles API
+                try {
+                    const profilesRes = await fetch('/api/paper-orders/profiles');
+                    if (profilesRes.ok) {
+                        const profilesData = await profilesRes.json();
+                        const activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
+
+                        if (activeProfileData) {
+                            const serverProfile: PaperProfile = {
+                                id: activeProfileData.id,
+                                username: activeProfileData.name,
+                                initialBalance: activeProfileData.initialBalance,
+                                currentBalance: activeProfileData.balance,
+                                totalPnL: activeProfileData.totalPnL,
+                                realizedPnL: activeProfileData.totalPnL,
+                                unrealizedPnL: 0,
+                                winRate: activeProfileData.totalTrades > 0 ? (activeProfileData.winningTrades / activeProfileData.totalTrades) * 100 : 0,
+                                tradesCount: activeProfileData.totalTrades,
+                                winCount: activeProfileData.winningTrades,
+                                lossCount: activeProfileData.losingTrades,
+                                bestTrade: 0,
+                                worstTrade: 0,
+                                avgTradeSize: 0,
+                                active: true,
+                                autoFollow: false,
+                                createdAt: new Date(activeProfileData.createdAt).getTime(),
+                                settings: {
+                                    enabled: true,
+                                    initialBalance: activeProfileData.initialBalance,
+                                    riskPerTrade: activeProfileData.settings?.riskPerTrade || 5,
+                                    defaultPositionSize: 100,
+                                    useRiskBasedSizing: false,
+                                    autoStopLoss: activeProfileData.settings?.autoStopLoss || 0,
+                                    autoTakeProfit: activeProfileData.settings?.autoTakeProfit || 0,
+                                    maxOpenPositions: activeProfileData.settings?.maxOpenPositions || 10,
+                                    allowShorts: activeProfileData.settings?.allowShorts ?? true
+                                }
+                            };
+                            setProfile(serverProfile);
+                            console.log('[Orders] Active profile loaded:', activeProfileData.name);
                         }
-                    };
-                    setProfile(serverProfile);
+                    }
+                } catch (profileError) {
+                    console.error('[Orders] Error loading active profile:', profileError);
                 }
             } else {
                 console.error('Failed to load server orders');
