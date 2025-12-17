@@ -65,6 +65,11 @@ class Config:
     POLY_SECRET: str = os.getenv("POLY_SECRET", "")
     POLY_PASSPHRASE: str = os.getenv("POLY_PASSPHRASE", "")
     
+    # PolygraalX Backend API (for auto-execute)
+    API_BASE_URL: str = os.getenv("API_BASE_URL", "http://127.0.0.1:3001")
+    AUTO_EXECUTE_ENABLED: bool = os.getenv("AUTO_EXECUTE_ENABLED", "true").lower() == "true"
+    DEFAULT_TRADE_SIZE: float = float(os.getenv("DEFAULT_TRADE_SIZE", "10"))
+    
     # Polymarket CLOB
     CLOB_HOST: str = "https://clob.polymarket.com"
     GAMMA_API: str = "https://gamma-api.polymarket.com"
@@ -954,6 +959,33 @@ class MeanReversionBot:
                     
                     if position:
                         self.risk_manager.add_position(position)
+                        
+                        # AUTO-EXECUTE: Send trade to PolygraalX backend API
+                        if config.AUTO_EXECUTE_ENABLED:
+                            try:
+                                api_url = f"{config.API_BASE_URL}/api/oracle/execute"
+                                payload = {
+                                    "action": "BUY",
+                                    "signal": {
+                                        "symbol": signal.symbol,
+                                        "direction": signal.direction,
+                                        "zScore": signal.z_score,
+                                        "confidence": signal.confidence,
+                                        "entryPrice": signal.entry_price,
+                                        "expectedValue": signal.expected_value
+                                    },
+                                    "size_usd": config.DEFAULT_TRADE_SIZE,
+                                    "market_id": signal.market_id,
+                                    "outcome": signal.outcome
+                                }
+                                response = requests.post(api_url, json=payload, timeout=10)
+                                if response.status_code == 200:
+                                    result = response.json()
+                                    logger.info(f"✅ AUTO-EXECUTE: Order placed on server - ID: {result.get('serverOrder', {}).get('id', 'N/A')}")
+                                else:
+                                    logger.warning(f"⚠️ AUTO-EXECUTE failed: {response.status_code} - {response.text[:200]}")
+                            except Exception as api_error:
+                                logger.error(f"❌ AUTO-EXECUTE error: {api_error}")
                 
             except Exception as e:
                 logger.error(f"Error processing {symbol}: {e}")
