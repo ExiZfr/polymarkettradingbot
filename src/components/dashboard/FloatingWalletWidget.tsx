@@ -63,7 +63,7 @@ export default function FloatingWalletWidget() {
             setProfile(serverProfile);
 
             // Map server orders to PaperOrder format
-            const serverOrders: PaperOrder[] = (data.orders || []).filter((o: any) => o.status === 'OPEN').map((o: any) => ({
+            const serverOrders: PaperOrder[] = (ordersData.orders || []).filter((o: any) => o.status === 'OPEN').map((o: any) => ({
                 id: o.id,
                 marketId: o.marketId,
                 profileId: 'server',
