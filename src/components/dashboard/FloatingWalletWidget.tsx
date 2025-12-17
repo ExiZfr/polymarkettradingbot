@@ -16,23 +16,35 @@ export default function FloatingWalletWidget() {
 
     const loadData = async () => {
         try {
-            const response = await fetch('/api/paper-orders/server?status=ALL&limit=100');
-            if (!response.ok) throw new Error('Failed to load');
-            const data = await response.json();
+            // First, fetch active profile from profiles API
+            const profilesRes = await fetch('/api/paper-orders/profiles');
+            let activeProfileData: any = null;
+            if (profilesRes.ok) {
+                const profilesData = await profilesRes.json();
+                activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
+            }
 
-            // Create profile from server data
+            // Then fetch orders
+            const ordersRes = await fetch('/api/paper-orders/server?status=ALL&limit=100');
+            if (!ordersRes.ok) throw new Error('Failed to load orders');
+            const ordersData = await ordersRes.json();
+
+            // Create profile from active profile data (or fallback to orders data)
+            const balance = activeProfileData?.balance ?? ordersData.profile?.balance ?? 10000;
+            const profileName = activeProfileData?.name ?? 'Paper Trading';
+
             const serverProfile: PaperProfile = {
-                id: 'server',
-                username: 'Paper Trading',
-                initialBalance: 10000,
-                currentBalance: data.profile?.balance || 10000,
-                totalPnL: data.profile?.totalPnL || 0,
-                realizedPnL: data.profile?.totalPnL || 0,
+                id: activeProfileData?.id || 'server',
+                username: profileName,
+                initialBalance: activeProfileData?.initialBalance || 10000,
+                currentBalance: balance,
+                totalPnL: activeProfileData?.totalPnL ?? ordersData.profile?.totalPnL ?? 0,
+                realizedPnL: activeProfileData?.totalPnL ?? ordersData.profile?.totalPnL ?? 0,
                 unrealizedPnL: 0,
-                winRate: parseFloat(data.stats?.winRate || '0'),
-                tradesCount: data.profile?.totalTrades || 0,
-                winCount: data.profile?.winningTrades || 0,
-                lossCount: data.profile?.losingTrades || 0,
+                winRate: activeProfileData ? (activeProfileData.totalTrades > 0 ? (activeProfileData.winningTrades / activeProfileData.totalTrades) * 100 : 0) : parseFloat(ordersData.stats?.winRate || '0'),
+                tradesCount: activeProfileData?.totalTrades ?? ordersData.profile?.totalTrades ?? 0,
+                winCount: activeProfileData?.winningTrades ?? ordersData.profile?.winningTrades ?? 0,
+                lossCount: activeProfileData?.losingTrades ?? ordersData.profile?.losingTrades ?? 0,
                 bestTrade: 0,
                 worstTrade: 0,
                 avgTradeSize: 0,
