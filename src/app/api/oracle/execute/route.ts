@@ -116,23 +116,62 @@ export async function POST(request: NextRequest) {
         // This runs without needing a browser open!
         // ====================================================================
         const SERVER_ORDERS_FILE = path.join(process.cwd(), 'data', 'server_paper_orders.json');
-        const SERVER_PROFILE_FILE = path.join(process.cwd(), 'data', 'server_paper_profile.json');
+        const SERVER_PROFILES_FILE = path.join(process.cwd(), 'data', 'server_paper_profiles.json');
 
-        // Read/initialize profile
-        let profile = { balance: 10000, totalPnL: 0, totalTrades: 0, winningTrades: 0, losingTrades: 0, lastUpdated: new Date().toISOString() };
+        // Read profiles and find active one
+        interface ServerProfile {
+            id: string;
+            name: string;
+            balance: number;
+            initialBalance: number;
+            totalPnL: number;
+            totalTrades: number;
+            winningTrades: number;
+            losingTrades: number;
+            isActive: boolean;
+            createdAt: string;
+            updatedAt: string;
+            settings: any;
+        }
+
+        let profiles: ServerProfile[] = [];
         try {
-            if (fs.existsSync(SERVER_PROFILE_FILE)) {
-                profile = JSON.parse(fs.readFileSync(SERVER_PROFILE_FILE, 'utf-8'));
+            if (fs.existsSync(SERVER_PROFILES_FILE)) {
+                profiles = JSON.parse(fs.readFileSync(SERVER_PROFILES_FILE, 'utf-8'));
             }
-        } catch (e) { /* use default */ }
+        } catch (e) {
+            console.error('[Execute API] Error reading profiles:', e);
+        }
+
+        // Find active profile (or create default)
+        let activeProfile = profiles.find(p => p.isActive);
+        if (!activeProfile) {
+            // Create default profile if none exists
+            activeProfile = {
+                id: 'default',
+                name: 'Paper Trading',
+                balance: 10000,
+                initialBalance: 10000,
+                totalPnL: 0,
+                totalTrades: 0,
+                winningTrades: 0,
+                losingTrades: 0,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                settings: { riskPerTrade: 5, autoStopLoss: 20, autoTakeProfit: 50, maxOpenPositions: 10, allowShorts: true }
+            };
+            profiles.push(activeProfile);
+            fs.writeFileSync(SERVER_PROFILES_FILE, JSON.stringify(profiles, null, 2));
+        }
 
         // Check balance
-        if (size_usd > profile.balance) {
-            console.log(`[Execute API] Insufficient balance: $${profile.balance.toFixed(2)}`);
+        if (size_usd > activeProfile.balance) {
+            console.log(`[Execute API] Insufficient balance: $${activeProfile.balance.toFixed(2)}`);
             return NextResponse.json({
                 success: false,
                 error: 'Insufficient balance',
-                balance: profile.balance
+                balance: activeProfile.balance
             }, { status: 400 });
         }
 
@@ -192,11 +231,17 @@ export async function POST(request: NextRequest) {
         orders.push(serverOrder);
         fs.writeFileSync(SERVER_ORDERS_FILE, JSON.stringify(orders, null, 2));
 
-        // Update profile
-        profile.balance -= size_usd;
-        profile.totalTrades += 1;
-        profile.lastUpdated = new Date().toISOString();
-        fs.writeFileSync(SERVER_PROFILE_FILE, JSON.stringify(profile, null, 2));
+        // Update active profile
+        activeProfile.balance -= size_usd;
+        activeProfile.totalTrades += 1;
+        activeProfile.updatedAt = new Date().toISOString();
+
+        // Save profiles back to file
+        const profileIndex = profiles.findIndex(p => p.id === activeProfile!.id);
+        if (profileIndex !== -1) {
+            profiles[profileIndex] = activeProfile;
+        }
+        fs.writeFileSync(SERVER_PROFILES_FILE, JSON.stringify(profiles, null, 2));
 
         console.log(`[Execute API] ✅ SERVER ORDER PLACED: ${serverOrder.id} - ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)})`);
 
@@ -265,9 +310,9 @@ export async function POST(request: NextRequest) {
             serverOrder: {
                 id: serverOrder.id,
                 stored: true,
-                balance: profile.balance
+                balance: activeProfile.balance
             },
-            message: `✅ Order placed: ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) - Balance: $${profile.balance.toFixed(2)}`
+            message: `✅ Order placed: ${serverOrder.outcome} @ $${entryPrice.toFixed(3)} ($${size_usd.toFixed(2)}) - Balance: $${activeProfile.balance.toFixed(2)}`
         });
 
     } catch (error) {
