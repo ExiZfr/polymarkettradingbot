@@ -88,7 +88,7 @@ export default function OraclePage() {
     // Initial load and polling
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 5000); // 5s polling
+        const interval = setInterval(fetchData, 1000); // 1s polling for faster response
         return () => clearInterval(interval);
     }, [fetchData]);
 
@@ -103,31 +103,44 @@ export default function OraclePage() {
             !skippedSignals.has(s.id)
         );
 
-        // Auto-take each new signal
-        newSignals.forEach(signal => {
-            const profile = paperStore.getActiveProfile();
-            if (profile && profile.currentBalance >= tradeAmount) {
-                const order = paperStore.placeOrder({
-                    marketId: signal.marketId || signal.id,
-                    marketTitle: signal.marketQuestion,
-                    marketImage: signal.marketImage,
-                    marketUrl: signal.marketUrl,
-                    marketSlug: signal.marketSlug,
-                    type: 'BUY',
-                    outcome: signal.outcome === 'Yes' ? 'YES' : 'NO',
-                    entryPrice: signal.entryPrice,
-                    amount: tradeAmount,
-                    source: 'MEAN_REVERSION',
-                    notes: `[AUTO] Z-Score: ${signal.zScore}σ | EV: ${(signal.expectedValue * 100).toFixed(1)}%`
+        // Auto-take each new signal via SERVER API
+        newSignals.forEach(async (signal) => {
+            try {
+                // Call server API to execute trade
+                const response = await fetch('/api/oracle/execute', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'BUY',
+                        signal: {
+                            symbol: signal.symbol,
+                            direction: signal.direction,
+                            zScore: signal.zScore,
+                            confidence: signal.confidence,
+                            entryPrice: signal.entryPrice,
+                            expectedValue: signal.expectedValue
+                        },
+                        size_usd: tradeAmount,
+                        market_id: signal.marketId || signal.id,
+                        outcome: signal.outcome
+                    })
                 });
 
-                if (order) {
+                if (response.ok) {
                     setTakenSignals(prev => new Set([...prev, signal.id]));
                     showSuccessToast('Auto Trade!', `${signal.direction} ${signal.outcome} @ ${signal.entryPrice.toFixed(3)}`);
+                    // Refresh paper data
+                    fetchPaperData();
+                } else {
+                    const errorData = await response.json();
+                    console.error('[Oracle] Auto-trade failed:', errorData);
+                    showErrorToast('Trade Failed', errorData.error || 'Could not place order');
                 }
+            } catch (error) {
+                console.error('[Oracle] Auto-trade error:', error);
             }
         });
-    }, [signals, autoMode, takenSignals, skippedSignals, tradeAmount, showSuccessToast]);
+    }, [signals, autoMode, takenSignals, skippedSignals, tradeAmount, showSuccessToast, showErrorToast, fetchPaperData]);
 
     // Take Trade - Execute in Paper Trading
     const handleTakeTrade = (signal: StrategySignal) => {
