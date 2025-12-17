@@ -51,27 +51,39 @@ export default function CopyTradeModal({ isOpen, onClose, transaction, mode }: C
         setIsSubmitting(true);
 
         try {
-            // SL/TP info stored in notes for now (will be implemented in order book engine)
+            // SL/TP info stored in notes
             const slTpInfo = useAutoRisk
                 ? ` | SL: ${stopLoss}% @ $${slPrice.toFixed(3)} | TP: ${takeProfit}% @ $${tpPrice.toFixed(3)}`
                 : '';
 
-            const order = paperStore.placeOrder({
-                marketId: transaction.market_id,
-                marketTitle: transaction.market_question,
-                marketSlug: transaction.market_slug,
-                marketUrl: transaction.market_url || undefined,
-                marketImage: transaction.market_image || undefined,
-                type: 'BUY',
-                outcome: outcome,
-                entryPrice: entryPrice,
-                amount: amount,
-                source: 'COPY_TRADING',
-                notes: `${mode === 'inverse' ? 'Inversed' : 'Copied'} from whale ${transaction.wallet_address.slice(0, 8)}...${slTpInfo}`,
+            // Use server API instead of localStorage
+            const response = await fetch('/api/paper-orders/server', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    marketId: transaction.market_id,
+                    marketTitle: transaction.market_question,
+                    marketSlug: transaction.market_slug,
+                    marketUrl: transaction.market_url || undefined,
+                    marketImage: transaction.market_image || undefined,
+                    type: 'BUY',
+                    outcome: outcome,
+                    entryPrice: entryPrice,
+                    amount: amount,
+                    source: 'COPY_TRADING',
+                    notes: `${mode === 'inverse' ? 'Inversed' : 'Copied'} from whale ${transaction.wallet_address.slice(0, 8)}...${slTpInfo}`,
+                    // TP/SL for price updater
+                    tp1Percent: useAutoRisk ? takeProfit : 0,
+                    tp1SizePercent: 100,
+                    stopLossPercent: useAutoRisk ? -stopLoss : 0
+                })
             });
 
-            if (order) {
+            if (response.ok) {
                 onClose();
+            } else {
+                const error = await response.json();
+                console.error('[CopyTrade] Failed:', error);
             }
         } finally {
             setIsSubmitting(false);

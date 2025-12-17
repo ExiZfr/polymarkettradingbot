@@ -175,22 +175,17 @@ export async function POST(request: NextRequest) {
             }, { status: 400 });
         }
 
-        // Create server paper order with DYNAMIC TP/SL based on Oracle analysis
+        // Create server paper order with simplified TP/SL
         const entryPrice = signal.entryPrice || 0.5;
         const shares = size_usd / entryPrice;
 
-        // Dynamic TP based on Expected Value from Oracle
-        // EV comes as decimal (e.g., 0.169 = 16.9%)
+        // TP = Oracle's Expected Value (close 100% when hit)
+        // SL = Fixed at -30%
         const expectedValuePercent = Math.abs((signal.expectedValue || 0.15) * 100);
-        const dynamicTP1 = Math.max(5, Math.round(expectedValuePercent)); // Min 5%, based on EV
-        const dynamicTP2 = Math.max(10, Math.round(expectedValuePercent * 2)); // 2x EV
-        // SL is at least 30%, or 2x EV if that is higher (more risk allowed for higher conviction?)
-        // Actually, user said "sl est tjr a 30%". Let's force min 30%.
-        // If 2x EV is > 30% (e.g. 40%), we should probably stick to 30% fixed or scale it?
-        // Let's implement: Min SL = 30%. If riskier trade requires wider SL, use it.
-        const dynamicSL = -Math.max(30, Math.round(expectedValuePercent * 2));
+        const takeProfit = Math.max(5, Math.round(expectedValuePercent)); // TP based on EV, min 5%
+        const stopLoss = -30; // Fixed SL at -30%
 
-        console.log(`[Execute API] Dynamic TP/SL: TP1=${dynamicTP1}%, TP2=${dynamicTP2}%, SL=${dynamicSL}% (EV=${expectedValuePercent.toFixed(1)}%)`);
+        console.log(`[Execute API] TP/SL: TP=${takeProfit}% (100% close), SL=${stopLoss}% (EV=${expectedValuePercent.toFixed(1)}%)`);
 
         const serverOrder = {
             id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
@@ -210,14 +205,14 @@ export async function POST(request: NextRequest) {
             originalShares: shares,
             status: 'OPEN',
             source: 'MEAN_REVERSION',
-            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${expectedValuePercent.toFixed(1)}% | TP1: ${dynamicTP1}% | TP2: ${dynamicTP2}%`,
-            // Dynamic TP/SL based on Oracle EV
-            tp1Percent: dynamicTP1,       // First TP at EV%
-            tp1SizePercent: 50,           // Close 50% at TP1
+            notes: `Z-Score: ${signal.zScore?.toFixed(2) || 'N/A'} | Direction: ${signal.direction} | EV: ${expectedValuePercent.toFixed(1)}% | TP: +${takeProfit}% | SL: ${stopLoss}%`,
+            // Simplified TP/SL: Single TP at EV (100% close), SL at -30%
+            tp1Percent: takeProfit,       // TP at EV%
+            tp1SizePercent: 100,          // Close 100% at TP
             tp1Hit: false,
-            tp2Percent: dynamicTP2,       // Second TP at 2x EV%
+            tp2Percent: 0,                // No TP2
             tp2Hit: false,
-            stopLossPercent: dynamicSL,   // SL at -2x EV%
+            stopLossPercent: stopLoss,    // Fixed SL at -30%
             slHit: false
         };
 
