@@ -180,19 +180,61 @@ export default function OraclePage() {
         !skippedSignals.has(s.id)
     );
 
-    const paperProfile = paperStore.getActiveProfile();
+    // Paper trading data from SERVER API
+    const [paperBalance, setPaperBalance] = useState<number>(10000);
+    const [meanReversionStats, setMeanReversionStats] = useState({
+        realTradesTaken: 0,
+        realWinRate: 0,
+        totalPnL: 0,
+        openCount: 0,
+        closedCount: 0
+    });
 
-    // Get REAL metrics from order book (MEAN_REVERSION source only)
-    const allOrders = paperStore.getAllOrders();
-    const meanReversionOrders = allOrders.filter(o => o.source === 'MEAN_REVERSION');
-    const closedMROrders = meanReversionOrders.filter(o => o.status === 'CLOSED');
-    const openMROrders = meanReversionOrders.filter(o => o.status === 'OPEN');
-    const winningOrders = closedMROrders.filter(o => (o.pnl || 0) > 0);
-    const realWinRate = closedMROrders.length > 0
-        ? (winningOrders.length / closedMROrders.length) * 100
-        : 0;
-    const totalPnL = closedMROrders.reduce((sum, o) => sum + (o.pnl || 0), 0);
-    const realTradesTaken = meanReversionOrders.length;
+    // Fetch paper trading data from server
+    const fetchPaperData = useCallback(async () => {
+        try {
+            // Fetch active profile
+            const profileRes = await fetch('/api/paper-orders/profiles');
+            if (profileRes.ok) {
+                const profileData = await profileRes.json();
+                const activeProfile = profileData.profiles?.find((p: any) => p.isActive);
+                if (activeProfile) {
+                    setPaperBalance(activeProfile.balance);
+                }
+            }
+
+            // Fetch orders for stats
+            const ordersRes = await fetch('/api/paper-orders/server?status=ALL&limit=500');
+            if (ordersRes.ok) {
+                const ordersData = await ordersRes.json();
+                const allOrders = ordersData.orders || [];
+                const meanReversionOrders = allOrders.filter((o: any) => o.source === 'MEAN_REVERSION');
+                const closedMROrders = meanReversionOrders.filter((o: any) => o.status === 'CLOSED');
+                const openMROrders = meanReversionOrders.filter((o: any) => o.status === 'OPEN');
+                const winningOrders = closedMROrders.filter((o: any) => (o.pnl || 0) > 0);
+
+                setMeanReversionStats({
+                    realTradesTaken: meanReversionOrders.length,
+                    realWinRate: closedMROrders.length > 0 ? (winningOrders.length / closedMROrders.length) * 100 : 0,
+                    totalPnL: closedMROrders.reduce((sum: number, o: any) => sum + (o.pnl || 0), 0),
+                    openCount: openMROrders.length,
+                    closedCount: closedMROrders.length
+                });
+            }
+        } catch (error) {
+            console.error('[Oracle] Error fetching paper data:', error);
+        }
+    }, []);
+
+    // Load paper data periodically
+    useEffect(() => {
+        fetchPaperData();
+        const interval = setInterval(fetchPaperData, 5000);
+        return () => clearInterval(interval);
+    }, [fetchPaperData]);
+
+    // Destructure stats for easier access
+    const { realTradesTaken, realWinRate, totalPnL } = meanReversionStats;
 
     return (
         <div className="min-h-screen bg-background text-foreground space-y-6 p-6">
@@ -277,7 +319,7 @@ export default function OraclePage() {
                             <div className="text-right">
                                 <div className="text-sm text-muted-foreground mb-1">Paper Balance</div>
                                 <div className="text-2xl font-mono font-bold text-foreground">
-                                    {paperProfile ? formatCurrency(paperProfile.currentBalance) : '$---'}
+                                    {formatCurrency(paperBalance)}
                                 </div>
                             </div>
 
