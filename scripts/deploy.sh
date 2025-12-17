@@ -62,7 +62,12 @@ echo ""
 echo "📂 [4/6] Copying static files..."
 cp -r public .next/standalone/ 2>/dev/null || true
 cp -r .next/static .next/standalone/.next/ 2>/dev/null || true
-echo "    ✅ Static files copied"
+
+# Create symlink for persistent data (profiles, orders stored here)
+mkdir -p ~/PolygraalX/data
+rm -rf .next/standalone/data 2>/dev/null || true
+ln -sf ~/PolygraalX/data .next/standalone/data
+echo "    ✅ Static files and data symlink ready"
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # STEP 5: Restart PM2 process
