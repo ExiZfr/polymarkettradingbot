@@ -140,7 +140,7 @@ export default function OraclePage() {
                 console.error('[Oracle] Auto-trade error:', error);
             }
         });
-    }, [signals, autoMode, takenSignals, skippedSignals, tradeAmount, showSuccessToast, showErrorToast, fetchPaperData]);
+    }, [signals, autoMode, takenSignals, skippedSignals, tradeAmount, showSuccessToast, showErrorToast]);
 
     // Take Trade - Execute in Paper Trading
     const handleTakeTrade = (signal: StrategySignal) => {
