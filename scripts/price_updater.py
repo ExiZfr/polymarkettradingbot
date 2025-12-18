@@ -78,6 +78,70 @@ def get_active_profile(profiles):
     return profiles[0] if profiles else None
 
 
+def sync_balance(orders, profiles):
+    """
+    Sync profile balance by recalculating from order history.
+    This ensures balance is always correct even if previous updates failed.
+    """
+    active_profile = get_active_profile(profiles)
+    if not active_profile:
+        return False
+    
+    initial_balance = active_profile.get("initialBalance", 1000)
+    
+    # Calculate totals from orders
+    total_invested = 0
+    total_recovered = 0
+    total_pnl = 0
+    win_count = 0
+    loss_count = 0
+    
+    for order in orders:
+        original_amount = order.get("originalAmount", order.get("amount", 0))
+        status = order.get("status", "OPEN")
+        
+        if status == "OPEN":
+            # Still invested
+            total_invested += order.get("amount", 0)
+        elif status == "CLOSED":
+            # Was invested, now recovered
+            total_invested += original_amount
+            
+            # Calculate recovery: original + pnl
+            shares = order.get("shares", order.get("originalShares", 0))
+            exit_price = order.get("exitPrice", order.get("entryPrice", 0))
+            entry_price = order.get("entryPrice", 0)
+            
+            if exit_price > 0 and shares > 0:
+                # Use stored pnl if available
+                pnl = order.get("pnl", 0)
+                recovered = original_amount + pnl
+                total_recovered += recovered
+                total_pnl += pnl
+                
+                if pnl > 0:
+                    win_count += 1
+                elif pnl < 0:
+                    loss_count += 1
+    
+    # Correct balance = initial - what's still invested + what was recovered
+    correct_balance = initial_balance - total_invested + total_recovered
+    current_balance = active_profile.get("balance", 0)
+    
+    # Only update if there's a significant difference (> $0.01)
+    if abs(correct_balance - current_balance) > 0.01:
+        logger.info(f"🔄 Balance sync: ${current_balance:.2f} → ${correct_balance:.2f} (diff: ${correct_balance - current_balance:.2f})")
+        active_profile["balance"] = round(correct_balance, 2)
+        active_profile["totalPnL"] = round(total_pnl, 2)
+        active_profile["winningTrades"] = win_count
+        active_profile["losingTrades"] = loss_count
+        active_profile["totalTrades"] = win_count + loss_count
+        active_profile["updatedAt"] = datetime.now().isoformat()
+        return True
+    
+    return False
+
+
 # Price cache to reduce API calls
 price_cache = {}
 cache_ttl = 0.5  # Cache prices for 500ms to reduce API spam
@@ -353,10 +417,16 @@ async def main():
             await update_cycle()
             cycle += 1
             
-            # Log stats every 100 cycles (10 seconds at 100ms)
+            # Log stats and sync balance every 100 cycles (~10 seconds)
             if cycle % 100 == 0:
                 orders = read_orders()
+                profiles = read_profiles()
                 open_count = len([o for o in orders if o.get("status") == "OPEN"])
+                
+                # Auto-sync balance to ensure consistency
+                if sync_balance(orders, profiles):
+                    write_profiles(profiles)
+                
                 logger.info(f"📈 Cycle {cycle}: {open_count} open orders | Cache: {len(price_cache)} markets")
             
             await asyncio.sleep(POLL_INTERVAL)
