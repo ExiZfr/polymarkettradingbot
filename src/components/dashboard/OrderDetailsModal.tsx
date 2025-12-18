@@ -32,8 +32,22 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
         ? (order.outcome === 'YES' ? livePrice.yes : livePrice.no)
         : (order.currentPrice || order.entryPrice);
 
-    const currentValue = order.shares * currentPrice;
-    const pnl = currentValue - order.amount;
+    // Calculate current value and PnL correctly for both YES and NO
+    // For YES: profit when price goes UP (current > entry)
+    // For NO: profit when price goes DOWN (entry > current)
+    let pnl: number;
+    let currentValue: number;
+
+    if (order.outcome === 'YES') {
+        currentValue = order.shares * currentPrice;
+        pnl = currentValue - order.amount;
+    } else {
+        // For NO bets: when price drops, we profit
+        // PnL = (entry - current) * shares = original_amount * (entry - current) / entry
+        pnl = (order.entryPrice - currentPrice) * order.shares;
+        currentValue = order.amount + pnl; // Original investment + profit
+    }
+
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
     const isProfit = pnl >= 0;
 
