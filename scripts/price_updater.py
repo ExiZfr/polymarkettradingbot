@@ -204,14 +204,25 @@ def check_tp_sl(order, profiles):
         logger.info(f"🎯 TP1 HIT! Order {order['id']}: +{price_change_pct:.1f}% (target: +{tp1}%)")
         order["tp1Hit"] = True
         
-        # Partial close: sell 50% of shares
+        # Partial close: sell percentage of position
         tp1_size = order.get("tp1SizePercent", 50) / 100
         shares_to_close = order.get("shares", 0) * tp1_size
-        amount_recovered = shares_to_close * current_price
-        pnl_realized = (current_price - entry_price) * shares_to_close
+        
+        # Calculate PnL correctly for both YES and NO bets
+        # For YES: profit when price goes UP
+        # For NO: profit when price goes DOWN (but we inverted price_change_pct already)
+        if order.get("outcome") == "YES":
+            pnl_realized = (current_price - entry_price) * shares_to_close
+        else:
+            # For NO: price went DOWN which is GOOD, pnl = (entry - current) * shares
+            pnl_realized = (entry_price - current_price) * shares_to_close
+        
+        # Amount recovered = what we originally invested (for this portion) + PnL
+        original_cost_for_portion = entry_price * shares_to_close
+        amount_recovered = original_cost_for_portion + pnl_realized
         
         order["shares"] = order.get("shares", 0) - shares_to_close
-        order["amount"] = order.get("amount", 0) - (entry_price * shares_to_close)
+        order["amount"] = order.get("amount", 0) - original_cost_for_portion
         
         # Update profile balance
         active_profile = get_active_profile(profiles)
@@ -224,6 +235,7 @@ def check_tp_sl(order, profiles):
                 active_profile["losingTrades"] += 1
             active_profile["updatedAt"] = datetime.now().isoformat()
         
+        logger.info(f"   💰 Recovered: ${amount_recovered:.2f} (cost: ${original_cost_for_portion:.2f} + PnL: ${pnl_realized:.2f})")
         order["notes"] = f"{order.get('notes', '')} | TP1 hit at {current_price:.3f}"
         return True
     
@@ -247,11 +259,15 @@ def close_order(order, profiles, exit_price, reason):
     entry_price = order.get("entryPrice", 0)
     shares = order.get("shares", 0)
     
-    # Calculate final PnL
+    # Calculate final PnL (already correct for YES/NO)
     if order.get("outcome") == "YES":
         pnl = (exit_price - entry_price) * shares
     else:
         pnl = (entry_price - exit_price) * shares
+    
+    # Calculate recovered amount = original investment + PnL
+    original_cost = entry_price * shares
+    amount_recovered = original_cost + pnl
     
     order["status"] = "CLOSED"
     order["exitPrice"] = exit_price
@@ -267,7 +283,6 @@ def close_order(order, profiles, exit_price, reason):
     # Update profile
     active_profile = get_active_profile(profiles)
     if active_profile:
-        amount_recovered = shares * exit_price
         active_profile["balance"] += amount_recovered
         active_profile["totalPnL"] += pnl
         if pnl > 0:
@@ -276,7 +291,7 @@ def close_order(order, profiles, exit_price, reason):
             active_profile["losingTrades"] += 1
         active_profile["updatedAt"] = datetime.now().isoformat()
     
-    logger.info(f"✅ Order {order['id']} CLOSED: PnL = {'+' if pnl >= 0 else ''}{pnl:.2f}")
+    logger.info(f"✅ Order {order['id']} CLOSED: PnL = {'+' if pnl >= 0 else ''}{pnl:.2f} | Recovered: ${amount_recovered:.2f}")
     return True
 
 
