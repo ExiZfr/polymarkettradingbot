@@ -189,6 +189,7 @@ export async function POST(request: NextRequest) {
 
         const serverOrder = {
             id: `srv_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
+            profileId: activeProfile.id, // Link to active profile for multi-wallet
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             marketId: market_id,

@@ -143,8 +143,28 @@ export default function OrderBookPage() {
 
     const loadOrders = useCallback(async () => {
         try {
-            // Load from SERVER API (not localStorage)
-            const response = await fetch('/api/paper-orders/server?status=ALL&limit=500');
+            // First, fetch active profile to get the profileId
+            let activeProfileId: string | null = null;
+            let activeProfileData: any = null;
+
+            try {
+                const profilesRes = await fetch('/api/paper-orders/profiles');
+                if (profilesRes.ok) {
+                    const profilesData = await profilesRes.json();
+                    activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
+                    activeProfileId = activeProfileData?.id || null;
+                    console.log('[Orders] Active profile:', activeProfileData?.name, 'ID:', activeProfileId);
+                }
+            } catch (e) {
+                console.error('[Orders] Error fetching active profile:', e);
+            }
+
+            // Load from SERVER API with profileId filter
+            const url = activeProfileId
+                ? `/api/paper-orders/server?status=ALL&limit=500&profileId=${activeProfileId}`
+                : '/api/paper-orders/server?status=ALL&limit=500';
+
+            const response = await fetch(url);
             console.log('[Orders] Server API response:', response.status, response.ok);
             if (response.ok) {
                 const data = await response.json();

@@ -20,6 +20,7 @@ const PROFILE_FILE = path.join(process.cwd(), 'data', 'server_paper_profile.json
 // Types
 interface ServerPaperOrder {
     id: string;
+    profileId: string; // Link to profile for multi-wallet support
     createdAt: string;
     updatedAt: string;
     marketId: string;
@@ -121,10 +122,16 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const status = searchParams.get('status'); // OPEN, CLOSED, ALL
         const source = searchParams.get('source'); // MEAN_REVERSION, etc.
+        const profileId = searchParams.get('profileId'); // Filter by wallet
         const limit = parseInt(searchParams.get('limit') || '100');
 
         let orders = readOrders();
         const profile = readProfile();
+
+        // Filter by profileId (for multi-wallet support)
+        if (profileId) {
+            orders = orders.filter(o => o.profileId === profileId);
+        }
 
         // Filter by status
         if (status && status !== 'ALL') {
@@ -180,7 +187,8 @@ export async function POST(request: NextRequest) {
             entryPrice,
             amount,
             source = 'MANUAL',
-            notes
+            notes,
+            profileId // Optional - if not provided, will use active profile
         } = body;
 
         // Validate required fields
@@ -204,10 +212,29 @@ export async function POST(request: NextRequest) {
         // Calculate shares
         const shares = amount / entryPrice;
 
+        // Determine profileId - use provided one or find active profile
+        let orderProfileId = profileId;
+        if (!orderProfileId) {
+            // Read active profile from profiles file
+            try {
+                const profilesPath = path.join(process.cwd(), 'data', 'server_paper_profiles.json');
+                if (fs.existsSync(profilesPath)) {
+                    const profiles = JSON.parse(fs.readFileSync(profilesPath, 'utf-8'));
+                    const active = profiles.find((p: any) => p.isActive);
+                    orderProfileId = active?.id || 'default';
+                } else {
+                    orderProfileId = 'default';
+                }
+            } catch {
+                orderProfileId = 'default';
+            }
+        }
+
         // Create order with TP/SL settings
         // Default: TP1 at +30% closes 50%, TP2 at +100% closes remaining
         const order: ServerPaperOrder = {
             id: generateId(),
+            profileId: orderProfileId,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
             marketId,
