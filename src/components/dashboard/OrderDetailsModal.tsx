@@ -32,20 +32,23 @@ export default function OrderDetailsModal({ order, livePrice, onClose, onClosePo
         ? (order.outcome === 'YES' ? livePrice.yes : livePrice.no)
         : (order.currentPrice || order.entryPrice);
 
-    // Calculate current value and PnL correctly for both YES and NO
-    // For YES: profit when price goes UP (current > entry)
-    // For NO: profit when price goes DOWN (entry > current)
+    // For CLOSED orders: use the stored PnL (already calculated correctly at close time)
+    // For OPEN orders: calculate current unrealized PnL
     let pnl: number;
     let currentValue: number;
 
-    if (order.outcome === 'YES') {
+    if (order.status === 'CLOSED' && order.pnl !== undefined) {
+        // Use stored realized PnL for closed orders
+        pnl = order.pnl;
+        currentValue = order.amount + pnl;
+    } else if (order.outcome === 'YES') {
+        // OPEN YES order: profit when price goes UP
         currentValue = order.shares * currentPrice;
         pnl = currentValue - order.amount;
     } else {
-        // For NO bets: when price drops, we profit
-        // PnL = (entry - current) * shares = original_amount * (entry - current) / entry
+        // OPEN NO order: profit when price goes DOWN
         pnl = (order.entryPrice - currentPrice) * order.shares;
-        currentValue = order.amount + pnl; // Original investment + profit
+        currentValue = order.amount + pnl;
     }
 
     const roi = order.amount > 0 ? (pnl / order.amount) * 100 : 0;
