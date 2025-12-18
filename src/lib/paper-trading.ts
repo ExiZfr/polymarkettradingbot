@@ -27,14 +27,17 @@ export interface PaperOrder {
     type: 'BUY' | 'SELL';
     outcome: 'YES' | 'NO';
     amount: number;
+    originalAmount?: number; // Original amount before partial closes
     entryPrice: number;
     currentPrice?: number;
     shares: number;
+    originalShares?: number; // Original shares before partial closes
     timestamp: number;
     status: 'OPEN' | 'CLOSED' | 'CANCELLED' | 'PENDING';
     exitPrice?: number;
     exitTimestamp?: number;
     pnl?: number;
+    unrealizedPnL?: number; // Updated by price_updater
     roi?: number;
     source: 'MANUAL' | 'SNIPER' | 'COPY_TRADING' | 'ORACLE' | 'MEAN_REVERSION';
     stopLoss?: number;
