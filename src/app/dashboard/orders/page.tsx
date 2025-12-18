@@ -144,7 +144,11 @@ export default function OrderBookPage() {
     const loadOrders = useCallback(async () => {
         try {
             // Load from SERVER API (not localStorage)
-            const response = await fetch('/api/paper-orders/server?status=ALL&limit=500');
+            const timestamp = Date.now();
+            const response = await fetch(`/api/paper-orders/server?status=ALL&limit=500&_t=${timestamp}`, {
+                cache: 'no-store',
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+            });
             console.log('[Orders] Server API response:', response.status, response.ok);
             if (response.ok) {
                 const data = await response.json();
@@ -152,7 +156,10 @@ export default function OrderBookPage() {
                 console.log('[Orders] Number of orders:', data.orders?.length || 0);
 
                 // First fetch active profile to know which orders to show
-                const profilesRes = await fetch('/api/paper-orders/profiles');
+                const profilesRes = await fetch(`/api/paper-orders/profiles?_t=${timestamp}`, {
+                    cache: 'no-store',
+                    headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' }
+                });
                 let activeProfileId = '';
                 let activeProfileData: any = null;
 
@@ -345,6 +352,15 @@ export default function OrderBookPage() {
         const handleUpdate = () => loadOrders();
         window.addEventListener('paper-update', handleUpdate);
         return () => window.removeEventListener('paper-update', handleUpdate);
+    }, [loadOrders]);
+
+    // Real-time sync: Poll orders and profile every 100ms
+    useEffect(() => {
+        const interval = setInterval(() => {
+            loadOrders(); // Refresh orders and profile data
+        }, 100); // 100ms = 0.1 second for real-time sync
+
+        return () => clearInterval(interval);
     }, [loadOrders]);
 
     // Polling effect - separated to avoid dependency loops
