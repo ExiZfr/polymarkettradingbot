@@ -143,38 +143,42 @@ export default function OrderBookPage() {
 
     const loadOrders = useCallback(async () => {
         try {
-            // First, fetch active profile to get the profileId
-            let activeProfileId: string | null = null;
-            let activeProfileData: any = null;
-
-            try {
-                const profilesRes = await fetch('/api/paper-orders/profiles');
-                if (profilesRes.ok) {
-                    const profilesData = await profilesRes.json();
-                    activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
-                    activeProfileId = activeProfileData?.id || null;
-                    console.log('[Orders] Active profile:', activeProfileData?.name, 'ID:', activeProfileId);
-                }
-            } catch (e) {
-                console.error('[Orders] Error fetching active profile:', e);
-            }
-
-            // Load from SERVER API with profileId filter
-            const url = activeProfileId
-                ? `/api/paper-orders/server?status=ALL&limit=500&profileId=${activeProfileId}`
-                : '/api/paper-orders/server?status=ALL&limit=500';
-
-            const response = await fetch(url);
+            // Load from SERVER API (not localStorage)
+            const response = await fetch('/api/paper-orders/server?status=ALL&limit=500');
             console.log('[Orders] Server API response:', response.status, response.ok);
             if (response.ok) {
                 const data = await response.json();
                 console.log('[Orders] Server data:', data);
                 console.log('[Orders] Number of orders:', data.orders?.length || 0);
-                // Map server orders to PaperOrder format
-                const serverOrders: PaperOrder[] = (data.orders || []).map((o: any) => ({
+
+                // First fetch active profile to know which orders to show
+                const profilesRes = await fetch('/api/paper-orders/profiles');
+                let activeProfileId = '';
+                let activeProfileData: any = null;
+
+                if (profilesRes.ok) {
+                    const profilesData = await profilesRes.json();
+                    activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
+                    if (activeProfileData) {
+                        activeProfileId = activeProfileData.id;
+                        console.log('[Orders] Active profile ID:', activeProfileId);
+                    }
+                }
+
+                // Map and FILTER server orders by active profile
+                const allOrders = data.orders || [];
+                const filteredOrders = allOrders.filter((o: any) => {
+                    // Show orders that belong to active profile
+                    // Orders without profileId are legacy - show them for backward compatibility
+                    return !o.profileId || o.profileId === activeProfileId;
+                });
+
+                console.log('[Orders] Filtered from', allOrders.length, 'to', filteredOrders.length, 'for profile', activeProfileId);
+
+                const serverOrders: PaperOrder[] = filteredOrders.map((o: any) => ({
                     id: o.id,
                     marketId: o.marketId,
-                    profileId: 'server', // Server orders don't have profileId
+                    profileId: o.profileId || activeProfileId, // Use actual profileId
                     marketTitle: o.marketTitle,
                     marketImage: o.marketImage,
                     marketSlug: o.marketSlug,
@@ -182,14 +186,17 @@ export default function OrderBookPage() {
                     type: o.type,
                     outcome: o.outcome,
                     amount: o.amount,
+                    originalAmount: o.originalAmount,
                     entryPrice: o.entryPrice,
                     currentPrice: o.currentPrice,
                     shares: o.shares,
+                    originalShares: o.originalShares,
                     timestamp: new Date(o.createdAt).getTime(),
                     status: o.status,
                     exitPrice: o.exitPrice,
                     exitTimestamp: o.closedAt ? new Date(o.closedAt).getTime() : undefined,
                     pnl: o.pnl,
+                    unrealizedPnL: o.unrealizedPnL,
                     source: o.source || 'MANUAL',
                     notes: o.notes,
                     // TP/SL fields
@@ -204,50 +211,40 @@ export default function OrderBookPage() {
                 console.log('[Orders] Mapped orders:', serverOrders.length);
                 setOrders(serverOrders);
 
-                // Fetch active profile from profiles API
-                try {
-                    const profilesRes = await fetch('/api/paper-orders/profiles');
-                    if (profilesRes.ok) {
-                        const profilesData = await profilesRes.json();
-                        const activeProfileData = profilesData.profiles?.find((p: any) => p.isActive);
-
-                        if (activeProfileData) {
-                            const serverProfile: PaperProfile = {
-                                id: activeProfileData.id,
-                                username: activeProfileData.name,
-                                initialBalance: activeProfileData.initialBalance,
-                                currentBalance: activeProfileData.balance,
-                                totalPnL: activeProfileData.totalPnL,
-                                realizedPnL: activeProfileData.totalPnL,
-                                unrealizedPnL: 0,
-                                winRate: activeProfileData.totalTrades > 0 ? (activeProfileData.winningTrades / activeProfileData.totalTrades) * 100 : 0,
-                                tradesCount: activeProfileData.totalTrades,
-                                winCount: activeProfileData.winningTrades,
-                                lossCount: activeProfileData.losingTrades,
-                                bestTrade: 0,
-                                worstTrade: 0,
-                                avgTradeSize: 0,
-                                active: true,
-                                autoFollow: false,
-                                createdAt: new Date(activeProfileData.createdAt).getTime(),
-                                settings: {
-                                    enabled: true,
-                                    initialBalance: activeProfileData.initialBalance,
-                                    riskPerTrade: activeProfileData.settings?.riskPerTrade || 5,
-                                    defaultPositionSize: 100,
-                                    useRiskBasedSizing: false,
-                                    autoStopLoss: activeProfileData.settings?.autoStopLoss || 0,
-                                    autoTakeProfit: activeProfileData.settings?.autoTakeProfit || 0,
-                                    maxOpenPositions: activeProfileData.settings?.maxOpenPositions || 10,
-                                    allowShorts: activeProfileData.settings?.allowShorts ?? true
-                                }
-                            };
-                            setProfile(serverProfile);
-                            console.log('[Orders] Active profile loaded:', activeProfileData.name);
+                // Use activeProfileData already fetched above
+                if (activeProfileData) {
+                    const serverProfile: PaperProfile = {
+                        id: activeProfileData.id,
+                        username: activeProfileData.name,
+                        initialBalance: activeProfileData.initialBalance,
+                        currentBalance: activeProfileData.balance,
+                        totalPnL: activeProfileData.totalPnL,
+                        realizedPnL: activeProfileData.totalPnL,
+                        unrealizedPnL: 0,
+                        winRate: activeProfileData.totalTrades > 0 ? (activeProfileData.winningTrades / activeProfileData.totalTrades) * 100 : 0,
+                        tradesCount: activeProfileData.totalTrades,
+                        winCount: activeProfileData.winningTrades,
+                        lossCount: activeProfileData.losingTrades,
+                        bestTrade: 0,
+                        worstTrade: 0,
+                        avgTradeSize: 0,
+                        active: true,
+                        autoFollow: false,
+                        createdAt: new Date(activeProfileData.createdAt).getTime(),
+                        settings: {
+                            enabled: true,
+                            initialBalance: activeProfileData.initialBalance,
+                            riskPerTrade: activeProfileData.settings?.riskPerTrade || 5,
+                            defaultPositionSize: 100,
+                            useRiskBasedSizing: false,
+                            autoStopLoss: activeProfileData.settings?.autoStopLoss || 0,
+                            autoTakeProfit: activeProfileData.settings?.autoTakeProfit || 0,
+                            maxOpenPositions: activeProfileData.settings?.maxOpenPositions || 10,
+                            allowShorts: activeProfileData.settings?.allowShorts ?? true
                         }
-                    }
-                } catch (profileError) {
-                    console.error('[Orders] Error loading active profile:', profileError);
+                    };
+                    setProfile(serverProfile);
+                    console.log('[Orders] Active profile loaded:', activeProfileData.name);
                 }
             } else {
                 console.error('Failed to load server orders');
