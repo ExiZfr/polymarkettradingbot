@@ -414,10 +414,29 @@ export default function OrderBookPage() {
         return orders
             .filter(o => o.status === 'OPEN')
             .reduce((sum, order) => {
+                // First try live prices from Polymarket
                 const price = livePrices[order.marketId];
-                if (!price) return sum;
-                const currentPrice = order.outcome === 'YES' ? price.yes : price.no;
-                return sum + ((order.shares * currentPrice) - order.amount);
+                if (price) {
+                    const currentPrice = order.outcome === 'YES' ? price.yes : price.no;
+                    return sum + ((order.shares * currentPrice) - order.amount);
+                }
+
+                // Fallback: use stored unrealizedPnL from price_updater (for Mean Reversion)
+                if (order.unrealizedPnL !== undefined) {
+                    return sum + order.unrealizedPnL;
+                }
+
+                // Calculate from stored currentPrice if available
+                if (order.currentPrice && order.entryPrice) {
+                    if (order.outcome === 'YES') {
+                        return sum + ((order.shares * order.currentPrice) - order.amount);
+                    } else {
+                        // For NO: profit when price drops
+                        return sum + ((order.entryPrice - order.currentPrice) * order.shares);
+                    }
+                }
+
+                return sum;
             }, 0);
     }, [orders, livePrices]);
 
