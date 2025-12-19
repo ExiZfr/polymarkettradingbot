@@ -5,14 +5,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    LayoutDashboard,
-    Settings,
     LogOut,
     Wallet,
     BookOpen,
-    Radar,
-    Brain,
     Zap,
+    TrendingUp,
 } from "lucide-react";
 
 
@@ -21,14 +18,24 @@ type NavItem = {
     href: string;
     icon: React.ElementType;
     badge?: string;
+    description?: string;
 };
 
+// V1 Production - Only Oracle & Order Book
 const navItems: NavItem[] = [
-    { label: "Overview", href: "/dashboard", icon: LayoutDashboard },
-    { label: "Whale Tracker", href: "/dashboard/tracker", icon: Radar, badge: "LIVE" },
-    { label: "CryptoOracle", href: "/dashboard/oracle", icon: Zap, badge: "NEW" },
-    { label: "Carnet d'Ordres", href: "/dashboard/orders", icon: BookOpen },
-    { label: "Settings", href: "/dashboard/settings", icon: Settings },
+    {
+        label: "Crypto Oracle",
+        href: "/dashboard/oracle",
+        icon: Zap,
+        badge: "V1",
+        description: "Smart Money + Mean Reversion"
+    },
+    {
+        label: "Order Book",
+        href: "/dashboard/orderbook",
+        icon: BookOpen,
+        description: "CLOB Trading"
+    },
 ];
 
 

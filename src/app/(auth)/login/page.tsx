@@ -105,7 +105,10 @@ export default function LoginPage() {
         }
     }
 
-    const BOT_USERNAME = process.env.NEXT_PUBLIC_BOT_USERNAME || "Plmktradingbot"
+    // Bot username with fallback - must be defined at component level for SSR
+    const BOT_USERNAME = typeof window !== 'undefined'
+        ? (process.env.NEXT_PUBLIC_BOT_USERNAME || "Plmktradingbot")
+        : "Plmktradingbot"
 
     return (
         <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white relative overflow-hidden">
@@ -165,20 +168,23 @@ export default function LoginPage() {
                                 Open Bot manually
                             </a>
 
-                            <div className="mt-4 p-4 border border-zinc-800 rounded bg-black/40">
-                                <p className="text-xs text-zinc-500 mb-2">DEBUG: Manual Login</p>
-                                <button
-                                    onClick={() => handleAuth({
-                                        id: 7139453099,
-                                        first_name: "Admin",
-                                        auth_date: Math.floor(Date.now() / 1000),
-                                        hash: "dev_bypass"
-                                    })}
-                                    className="text-xs text-zinc-400 underline hover:text-white"
-                                >
-                                    Force Login as Admin
-                                </button>
-                            </div>
+                            {/* Debug button - Only show in development mode */}
+                            {process.env.NEXT_PUBLIC_VERCEL_ENV !== 'production' && process.env.NODE_ENV !== 'production' && (
+                                <div className="mt-4 p-4 border border-zinc-800 rounded bg-black/40">
+                                    <p className="text-xs text-zinc-500 mb-2">DEBUG: Manual Login</p>
+                                    <button
+                                        onClick={() => handleAuth({
+                                            id: 7139453099,
+                                            first_name: "Admin",
+                                            auth_date: Math.floor(Date.now() / 1000),
+                                            hash: "dev_bypass"
+                                        })}
+                                        className="text-xs text-zinc-400 underline hover:text-white"
+                                    >
+                                        Force Login as Admin
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="text-center text-zinc-400">

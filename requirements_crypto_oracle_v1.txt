@@ -1,0 +1,16 @@
+# Crypto Oracle V1 - Production Requirements
+# Minimal dependencies strictly necessary for V1 Production
+
+# Core HTTP & Async
+aiohttp>=3.9.0
+requests>=2.31.0
+
+# Web3 & Polymarket CLOB
+py-clob-client>=0.9.0
+web3>=6.11.0
+
+# Environment Configuration
+python-dotenv>=1.0.0
+
+# Structured Logging
+python-json-logger>=2.0.7

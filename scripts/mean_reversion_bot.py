@@ -61,14 +61,9 @@ class Config:
     """Strategy Configuration - Tune these for your risk appetite"""
     
     # API Keys (set in .env)
-    POLY_API_KEY: str = os.getenv("POLYMARKET_API_KEY", "")
-    POLY_SECRET: str = os.getenv("POLYMARKET_API_SECRET", "")
-    POLY_PASSPHRASE: str = os.getenv("POLYMARKET_API_PASSPHRASE", "")
-    POLY_PRIVATE_KEY: str = os.getenv("POLYMARKET_PRIVATE_KEY", "")
-    POLY_FUNDER_ADDRESS: str = os.getenv("POLYMARKET_FUNDER_ADDRESS", "")
-    
-    # Real Trading Toggle (IMPORTANT: keep false until ready!)
-    REAL_TRADING_ENABLED: bool = os.getenv("REAL_TRADING_ENABLED", "false").lower() == "true"
+    POLY_API_KEY: str = os.getenv("POLY_API_KEY", "")
+    POLY_SECRET: str = os.getenv("POLY_SECRET", "")
+    POLY_PASSPHRASE: str = os.getenv("POLY_PASSPHRASE", "")
     
     # PolygraalX Backend API (for auto-execute)
     API_BASE_URL: str = os.getenv("API_BASE_URL", "http://127.0.0.1:3001")
@@ -762,56 +757,35 @@ class ExecutionEngine:
         return position
     
     def _execute_real_order(self, signal: Signal, size_usd: float) -> Optional[Position]:
-        """Execute real order on Polymarket using CLOB client"""
-        if not config.REAL_TRADING_ENABLED:
-            logger.warning("⚠️ REAL_TRADING_ENABLED=false. Use paper mode instead.")
-            return None
-        
+        """Execute real order on Polymarket"""
         try:
-            # Import CLOB client (lazy import)
-            from polymarket_clob_client import PolymarketCLOBClient
-            
-            # Initialize client
-            clob_client = PolymarketCLOBClient()
-            
-            # Determine side based on direction
-            side = "BUY"  # Always BUY, outcome determines YES or NO token
-            
-            # Get token ID for the outcome
-            # For now, use market_id as token_id (need to fetch correct token from market)
-            token_id = signal.market_id
-            
-            logger.info(f"🔴 REAL TRADE: {signal.direction} ${size_usd:.2f} @ {signal.entry_price:.3f}")
-            logger.warning("⚠️ This will execute a REAL trade with REAL money!")
-            
-            # Place order via CLOB
-            result = clob_client.place_order(
-                token_id=token_id,
-                side=side,
-                size=size_usd,
+            # Build order
+            order = OrderArgs(
                 price=signal.entry_price,
-                market_id=signal.market_id
+                size=size_usd / signal.entry_price,  # Convert to shares
+                side="BUY",
+                token_id=signal.market_id,
             )
             
-            if result and result.get('success'):
+            # Submit order
+            result = self.client.create_order(order)
+            
+            if result.get('success'):
                 position = Position(
                     signal=signal,
                     entry_time=datetime.now(),
                     size_usd=size_usd,
                     entry_price=signal.entry_price,
-                    status="OPEN",
-                    order_id=result.get('order_id')  # Store order ID
+                    status="OPEN"
                 )
-                logger.info(f"✅ REAL ORDER EXECUTED: {result.get('order_id')}")
+                logger.info(f"✅ ORDER EXECUTED: {signal.direction} ${size_usd:.2f}")
                 return position
             else:
-                error_msg = result.get('error', 'Unknown error') if result else 'No response'
-                logger.error(f"❌ Order failed: {error_msg}")
+                logger.error(f"Order failed: {result}")
                 return None
                 
         except Exception as e:
-            logger.error(f"❌ Real order execution error: {e}")
-            logger.info("Falling back to paper mode simulation")
+            logger.error(f"Execution error: {e}")
             return None
     
     def close_position(self, position: Position, current_price: float):
